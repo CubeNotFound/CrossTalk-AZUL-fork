@@ -1,0 +1,377 @@
+<HTML>
+	<HEAD>
+		<title>MSN Messenger Application Directory</title>
+		<meta name="CODE_LANGUAGE" Content="Python">
+		<meta name="vs_defaultClientScript" content="JavaScript">
+		<meta name="vs_targetSchema" content="http://schemas.microsoft.com/intellisense/ie5">
+		<style type="text/css">
+<!--
+A.t {
+	font-family: Tahoma, Verdana, Arial;
+	font-weight:bold;
+	font-size:8pt;
+	color:#5C5C5C;
+	text-decoration: none;
+	line-height: 12pt
+}
+
+A {
+	font-family: Tahoma, Verdana, Arial;
+	font-size:8pt;
+	color:#2F4A8F;
+	text-decoration: none;
+}
+
+A:hover {
+	font-family: Tahoma, Verdana, Arial;
+	font-size:8pt;
+	color:#2F4A8F;
+	text-decoration: underline;
+}
+
+.disclaimer {
+	font-family: Tahoma, Verdana, Arial;
+	font-size:8pt;
+	color:#2F4A8F;
+	text-decoration: none;
+}
+
+.ns {
+	font-family: Tahoma, Verdana, Arial;
+	font-size:8pt;
+	color: red;
+}
+
+BODY { direction: ltr; }-->
+</style>
+
+		<script language="javascript">
+		
+var g_DaysToExpireCookie = 30;// [id, [Kids, MinUsers, MaxUsers]]
+var g_AppInfo = new Array(
+
+{{ app_entries_js }}		[0, [0]]
+);
+
+		</script>
+		<script language="javascript">
+function GetCookieValue(name, defVal) {
+	var c = document.cookie;
+	var i = c.indexOf(name + "=");
+	if (i == -1) return defVal;
+	i = i + name.length + 1;
+	var end = c.indexOf(";", i);
+	if (end == -1) end = c.length;
+	return unescape(c.substring(i, end));		
+}
+
+function SetCookieValue(name, value) {
+	var d = new Date();
+	d.setTime(d.getTime() + 1000 * 60 * 60 * 24 * g_DaysToExpireCookie);
+	document.cookie = name + "=" + escape(value) + "; expires=" + d.toUTCString();
+}
+
+function GetUrlValue(name, defVal) {
+	var i = document.URL.toLowerCase().indexOf(name.toLowerCase() + "=");
+	if (i == -1) return defVal;
+	i = document.URL.indexOf("=", i) + 1;	
+	var end = document.URL.indexOf("&", i);
+	if (end == -1) end = document.URL.indexOf("#", i);
+	if (end == -1) end = document.URL.length;
+	return document.URL.substring(i, end);
+}
+
+function ShowHide(elem, fShow) {
+	if (fShow)
+		elem.style.display = 'block';
+	else
+		elem.style.display = 'none';
+}
+
+function ShowHideRowsInRange(idStart, idEnd, fShow) {
+	var eRow = document.all[idStart];
+	var iRow = eRow.rowIndex;
+	var eTable = eRow.parentElement;
+	while (eTable.tagName != 'TABLE') {
+		eTable = eTable.parentElement;
+	}
+	do {
+		ShowHide(eRow, fShow);
+		iRow++;
+		eRow = eTable.rows[iRow];
+	} while (eRow != null && eRow.id != idEnd)
+	ShowHide(eRow, fShow);
+}
+
+function ToggleCatShow(CatId) {
+	var id = "r" + CatId  + "s";
+	var fShow = true;
+	
+	if (document.all[id].style != null && document.all[id].style.display != "none")
+		fShow = false;
+		
+	if (CatId == 0 && fShow)
+		UpdateFavUI();  // favs don't all show - only the defined ones do.
+	else
+	{
+		ShowHideRowsInRange(id, "r" + CatId + "e", fShow);
+		// v9 if (CatId != 0) SaveCatShowHideState(CatId, fShow);
+	}
+}
+
+function GetCatCookieName() {
+	return "C" + GetUrlValue("k", 0);
+}
+
+/* save for V9
+function SaveCatShowHideState(CatId, fShow) {
+	var aCatHiddenList;
+	var cookieName = GetCatCookieName();
+
+	if (GetCookieValue(cookieName) == null) 
+		aCatHiddenList = new Array();
+	else
+		aCatHiddenList = GetCookieValue(cookieName).split(",");
+
+	var fInHiddenList = (aCatHiddenList.join(",").match(CatId) != null);
+
+	if (fShow != fInHiddenList) return;
+	
+	if (fShow) 
+		aCatHiddenList = aCatHiddenList.join(",").replace(CatId + ",", "").replace("," + CatId, "").replace(CatId, "").split(",");
+	else
+		aCatHiddenList = aCatHiddenList.concat(CatId);
+
+	SetCookieValue(cookieName, aCatHiddenList.join(","));
+}
+
+function HideHiddenCats() {
+	var i;
+	var aCatHiddenList;
+	var cookieName = GetCatCookieName();
+
+	if (GetCookieValue(cookieName) == null) 
+		aCatHiddenList = new Array();
+	else
+		aCatHiddenList = GetCookieValue(cookieName).split(",");
+
+	for (i = 0; i < aCatHiddenList.length; i++) 
+		ShowHideRowsInRange("r" + aCatHiddenList[i] + "s", "r" + aCatHiddenList[i] + "e", false);
+} */
+
+function SetFavLinkValues(eLink, sCookieValue, rowId) {
+	var aV = sCookieValue.split(",");
+	eLink.href = "javascript:RA('" + aV[0] + "', '" + rowId + "');";
+	eLink.title = unescape(aV[5]);
+	eLink.innerText = unescape(aV[1]);
+	if (aV.length > 6) {
+		// icon URL
+		eLink.parentElement.parentElement.children[0].children[0].src = unescape(aV[6]);
+	}
+}
+
+function SetLinkFocus(e, cmd) {
+	for (i = 0; i < document.links.length; i++)  {
+		if (document.links[i] == e) {
+			break;
+		}
+	}
+	switch (cmd) {
+	case "next":
+		i++;
+		break;
+
+	case "prev":
+		i--;
+		break;
+	}
+
+	if (i < 0) 
+		i = document.links.length - 1;
+	else if (i >= document.links.length) 
+		i = 0;
+
+	e = document.links[i];
+	if ((e.style.display != "none") && 
+		(e.parentElement.style.display != "none") && 
+		(e.parentElement.parentElement.style.display != "none")) {
+		e.focus();
+	}
+	else {
+		SetLinkFocus(e, cmd);
+	}
+}
+
+function OnKeyDownHandler() {
+	var e = window.event;
+
+	switch (e.keyCode) {
+	case 40:	// down
+		SetLinkFocus(e.srcElement, "next");
+		break;
+
+	case 38:	// up
+		SetLinkFocus(e.srcElement, "prev");
+		break;
+
+	case 32:	// space
+		e.srcElement.click();
+		break;
+	}
+}
+
+function OnLoad() {
+	for (var i = 0; i < document.links.length; i++)  {
+		document.links[i].onkeydown = OnKeyDownHandler;
+	}
+	UpdateFavUI();
+	// v9 HideHiddenCats();
+	// preload any images so we don't see layout changes if the images are slow to get
+	var img = new Image();
+	img.src = "/static/AppDir/image/line.gif";
+	img.src = "/static/AppDir/image/spacer.gif";
+	img.src = "/static/AppDir/image/defentry.png";
+	img.src = "/static/AppDir/image/icon_star.png";
+	img.src = "/static/AppDir/image/icon_arrow.png";
+
+	try {
+		window.external.Initialize();   // tell the client we are done loading.
+	}
+	catch(e) {
+		window.status = "Initialize would have been called.";
+	}
+}
+
+function GetFavsCookieNamePrefix() {
+	return "F" + GetUrlValue("k", 0) + "-" + GetUrlValue("L", "en-US");
+}
+
+function UpdateFavUI() {
+	if (document.all["cid0"] != null) {
+		var cookieName = GetFavsCookieNamePrefix();
+		var aC = new Array(
+			GetCookieValue(cookieName + 1, "0"),
+			GetCookieValue(cookieName + 2, "0"),
+			GetCookieValue(cookieName + 3, "0"));
+		if (aC[0] == 0)
+			ShowHideRowsInRange("cid0", "r0e", false);	
+		else {
+			ShowHideRowsInRange("cid0", "r0e", true);
+			for (var i = 0; i < 3; i++) {
+				SetFavLinkValues(document.all["a-" + (i+1)], aC[i], -(i+1));
+				ShowHide(document.all["r-" + (i+1)], aC[i] != 0);
+			}
+		}
+	}
+}
+
+function AddIdToFavorites(id, Name, Kids, MinUsers, MaxUsers, Desc, iconUrl) {
+	var cookieName = GetFavsCookieNamePrefix();
+	var aFavs = new Array(
+		GetCookieValue(cookieName + 1, "0").split(","), 
+		GetCookieValue(cookieName + 2, "0").split(","), 
+		GetCookieValue(cookieName + 3, "0").split(",")
+		);
+	// if the same id is already a fav, delete it and shift the others up
+	var i;
+	for (i=0; i < 2; i++) {
+		if (aFavs[i][0] == id) {
+			var j;
+			for (j=i; j < 2; j++) {
+				aFavs[j] = aFavs[j+1];
+			}
+			aFavs[3] = "0".split(",");
+		}
+	}
+	// now insert the new fav and shift the others down
+	SetCookieValue(cookieName + 1, new Array(id, escape(Name), Kids, MinUsers, MaxUsers, escape(Desc), escape(iconUrl)).join(","));
+	SetCookieValue(cookieName + 2, aFavs[0].join(","));
+	SetCookieValue(cookieName + 3, aFavs[1].join(","));
+	UpdateFavUI();
+}
+
+function RA(id, rowId) {
+	var appMinUsers;
+	var appMaxUsers;
+	var appKids;
+	var appName;
+	var appDesc;
+	var SubscriptionURL;
+
+	if (id > 0) {
+		var i;
+		for (i = 0; g_AppInfo[i][0] > 0; i++) {
+			if (id == g_AppInfo[i][0]) {
+				var aInfo = g_AppInfo[i];
+				appKids = aInfo[1][0];
+				appMinUsers = aInfo[1][1];
+				appMaxUsers = aInfo[1][2];
+				SubscriptionURL = aInfo[1][3];
+				break;
+			}
+		}	
+
+		// Layout dependent code! - first cell of row has img
+		//var iconUrl = "/static/AppDir/image/spacer.gif"; // document.all["r" + rowId].children[0].children[0].src;
+		var iconUrl = document.all["r" + rowId].children[0].children[0].src;
+
+		var eLink = document.all["a" + rowId];
+		appName = eLink.innerText;
+		var title = eLink.title;
+		AddIdToFavorites(id, appName, appKids, appMinUsers, appMaxUsers, title, iconUrl);
+	} else { // fav id
+		var aFav = GetCookieValue(GetFavsCookieNamePrefix() + id, "0").split(",");
+		id = aFav[0];
+		appName = unescape(aFav[1]);
+		appKids = aFav[2];
+		appMinUsers = aFav[3];
+		appMaxUsers = aFav[4];
+	}
+	try {
+		var Ex = window.external;
+		if(FindClientVersion() >= 6.1) {		
+			Ex.StartApp2(appName, id, appMaxUsers, appMinUsers, appKids, SubscriptionURL);
+		}
+		else {			
+			Ex.StartApp(appName, id, appMaxUsers, appMinUsers, appKids);
+		}
+	} catch(e) {
+		window.status = "RunApp(" + appName + ", " + id + ", " + appMaxUsers + ", " + appMinUsers + ", " + appKids + ")";	
+	}
+}
+
+function FindClientVersion() {
+	var cstrVersion = "Version";
+	// find the query string (URL string after the '?' char
+	var query = document.location.search.substring(1);
+	// search the query string for the "Version" paramenter		
+	var index = query.indexOf(cstrVersion);
+	// get the string at the end of the version parameter + 1 (skip '=' character)
+	var value = query.substring(index + cstrVersion.length + 1);
+	// return what is after the '=' character and before the '&'
+	var iend = value.indexOf('&');
+	if(iend <= 0)	
+		return value;
+	else
+		return value.substring(0, iend);
+
+}
+</script>
+
+	</HEAD>
+	<body oncontextmenu="return false;" onLoad="OnLoad();" scroll="auto" leftmargin="8" topmargin="10">
+	  <table cellspacing="0" cellpadding="0" width="201" height="100%" border="0">
+		{{ results }}
+<noscript class="ns">Your browser's current security settings will not allow you to use Fun & Games. To use Fun & Games, set your browser security to medium or low, and be sure cookies and scripting are enabled.</noscript><tr><td colspan=3 height=16><img src="/static/AppDir/image/spacer.gif"/></td></tr>
+<tr id="cid0" style="{display: none}"><td colspan=3><a href="#" class="t" title="Fun &amp; Games activities you have launched recently" onClick="ToggleCatShow(0);" width=100%>Recently Played</a></td></tr>
+<tr id="r0s" style="{display: none}"><td colspan=3 height=4><img src="/static/AppDir/image/spacer.gif"></td></tr>
+<tr style="{display: none}"><td colspan=3 height=2 background="/static/AppDir/image/line.gif"></td></tr>
+<tr id="r-1" style="{display: none}"><td valign="top" width=18 height=12><img src=""></td><td width=100% colspan=2><a id="a-1" href="javascript:RA('-1', '-1')" title=""></a></td></tr>
+<tr id="r-2" style="{display: none}"><td valign="top" width=18 height=12><img src=""></td><td width=100% colspan=2><a id="a-2" href="javascript:RA('-2', '-2')" title=""></a></td></tr>
+<tr id="r-3" style="{display: none}"><td valign="top" width=18 height=12><img src=""></td><td width=100% colspan=2><a id="a-3" href="javascript:RA('-3', '-3')" title=""></a></td></tr>
+<tr id="r0e"><td colspan=3 height=1><img src="/static/AppDir/image/spacer.gif"</td></tr>
+<tr><td colspan=3 height=100%><img src="/static/AppDir/image/spacer.gif"</td></tr>
+
+	  </table>
+	</body>
+</HTML>

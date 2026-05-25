@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<colorBlue>blau</colorBlue>
+	<colorWhite>weiß</colorWhite>
+	<cmdHelp>Hilfe</cmdHelp>
+	<cmdRestart>Neustart</cmdRestart>
+	<cmdRoll>Würfeln</cmdRoll>
+	<cmdSwitchTurn>Zug weitergeben</cmdSwitchTurn>
+	<confirmRemoteWantsRestart>{0} möchte das Spiel neu starten, geht das in Ordnung?</confirmRemoteWantsRestart>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>getrennt</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<errorDataSend>Datenfehler; Die Daten können nicht gesendet werden. Spiel gestoppt.</errorDataSend>
+	<errorDisconnected>Getrennt.</errorDisconnected>
+	<errorUserLeft>{0} hat das Spiel verlassen. Das Spiel wurde beendet.</errorUserLeft>
+	<infoBearOff>Alle Ihrer Spielsteine sind im Homeboard, beginnen Sie mit dem Auswürfeln.</infoBearOff>
+	<infoCheckerHit>Ein Spielstein wurde geschlagen und landet auf der Bar.</infoCheckerHit>
+	<infoFromBarFirst>Sie müssen die Bar zuerst leeren.</infoFromBarFirst>
+	<infoLastMove>Dies ist Ihr letzter Zug.</infoLastMove>
+	<infoMovesLeft>Sie haben {0} Züge übrig.</infoMovesLeft>
+	<infoNoRestart>Kein Neustart.</infoNoRestart>
+	<infoRequestRestart>Um Neustart ersuchen..</infoRequestRestart>
+	<infoRestartDenied>{0} möchte das Spiel nicht neu starten.</infoRestartDenied>
+	<infoRoll>Würfeln</infoRoll>
+	<infoSelectPiece>Wählen Sie den Spielstein, den Sie bewegen möchten.</infoSelectPiece>
+	<infoSelectTarget>Wählen Sie das Zielfeld aus oder klicken Sie erneut auf den Spielstein um ihn abzuwählen.</infoSelectTarget>
+	<infoTurnLost>Sie haben Ihren Zug verloren.</infoTurnLost>
+	<infoTurnLostDetail>Sie haben Ihren Zug verloren, es sind keine Züge möglich. Klicken Sie auf 'Zug weitergeben' um fortzufahren.</infoTurnLostDetail>
+	<lblBroughtToYouBy>Wird Ihnen präsentiert von {0}</lblBroughtToYouBy>
+	<lblConnectionType>Verbindungsart</lblConnectionType>
+	<lblVersion>Backgammon {0}</lblVersion>
+	<stateGameOver>Das Spiel wurde beendet.</stateGameOver>
+	<stateGameOverWon>Gratulation, Sie haben gewonnen! Klicken Sie auf 'Neustart' für ein neues Spiel.</stateGameOverWon>
+	<stateGameOverLost>Was für ein Pech! Sie haben verloren.</stateGameOverLost>
+	<stateInitializing>Starte Spiel...</stateInitializing>
+	<stateMyTurn>Sie sind dran.</stateMyTurn>
+	<stateRemoteTurn>Bitte warten Sie bis {0} einen Zug gemacht hat.</stateRemoteTurn>
+	<stateStartMyTurn>Spiel gestartet. Sie spielen mit {0}. Sie sind dran.</stateStartMyTurn>
+	<stateStartRemoteTurn>Spiel gestartet. Sie spielen mit {0}. Bitte warten Sie bis {1} einen Zug gemacht hat.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Bitte warten Sie bis die Verbindung mit Ihrem Gegner hergestellt ist.</stateWaitOnJoin>
+</words>
+

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<colorBlue>bleu</colorBlue>
+	<colorWhite>blanc</colorWhite>
+	<cmdHelp>Aide</cmdHelp>
+	<cmdRestart>Redémarrer</cmdRestart>
+	<cmdRoll>Lancer les dés</cmdRoll>
+	<cmdSwitchTurn>Switch turn</cmdSwitchTurn>
+	<confirmRemoteWantsRestart>{0} veut redémarrer la partie, êtes-vous d'accord ?</confirmRemoteWantsRestart>
+	<connectionDirect>direct</connectionDirect>
+	<connectionDisconnected>déconnecté</connectionDisconnected>
+	<connectionIndirect>indirect</connectionIndirect>
+	<errorDataSend>Erreur de données; impossible d'envoyer les données. Arrêt du jeu.</errorDataSend>
+	<errorDisconnected>Déconnecté.</errorDisconnected>
+	<errorUserLeft>{0} a quitté la partie. Fin du jeu.</errorUserLeft>
+	<infoBearOff>Tous vos pions sont dans le home board, commence bearing off.</infoBearOff>
+	<infoCheckerHit>Un pion has been hit and placed on the bar.</infoCheckerHit>
+	<infoFromBarFirst>Rappellez-vous que vous devez supprimer la barre avant tout.</infoFromBarFirst>
+	<infoLastMove>C'est votre dernier déplacement.</infoLastMove>
+	<infoMovesLeft>Il vous reste {0} déplacements.</infoMovesLeft>
+	<infoNoRestart>Pas de redémarrage.</infoNoRestart>
+	<infoRequestRestart>Demande de redémarrage...</infoRequestRestart>
+	<infoRestartDenied>{0} ne veut pas relancer la partie.</infoRestartDenied>
+	<infoRoll>Lancer les dés</infoRoll>
+	<infoSelectPiece>Choisissez le pion que vous voulez déplacer.</infoSelectPiece>
+	<infoSelectTarget>Maintenant, choisissez un point-cible ou déselectionnez en cliquant sur le pion choisi.</infoSelectTarget>
+	<infoTurnLost>Vous avez perdu votre tour.</infoTurnLost>
+	<infoTurnLostDetail>Vous avez perdu votre tour, il n'y a pas de déplacement valide. Cliquez sur 'Switch turn' pour continuer.</infoTurnLostDetail>
+	<lblBroughtToYouBy>Offert par {0}</lblBroughtToYouBy>
+	<lblConnectionType>Type de connexion</lblConnectionType>
+	<lblVersion>Backgammon {0}</lblVersion>
+	<stateGameOver>Fin de la partie.</stateGameOver>
+	<stateGameOverWon>Félicitations, vous avez gagné ! Cliquez sur 'Redémarrer' pour rejouer.</stateGameOverWon>
+	<stateGameOverLost>Dommage, vous avez perdu.</stateGameOverLost>
+	<stateInitializing>Initialisation du jeu...</stateInitializing>
+	<stateMyTurn>A vous de jouer.</stateMyTurn>
+	<stateRemoteTurn>En attente d'un déplacement de {0}</stateRemoteTurn>
+	<stateStartMyTurn>Début de la partie, vous êtes {0}. A vous de jouer.</stateStartMyTurn>
+	<stateStartRemoteTurn>Début de la partie, vous êtes {0}. Attente de la fin du tour de {1}.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Attente de votre adversaire</stateWaitOnJoin>
+</words>
+

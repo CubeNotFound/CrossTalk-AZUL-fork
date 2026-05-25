@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<colorBlue>blå</colorBlue>
+	<colorWhite>vit</colorWhite>
+	<cmdHelp>Hjälp</cmdHelp>
+	<cmdRestart>Starta om</cmdRestart>
+	<cmdRoll>Rulla tärningarna</cmdRoll>
+	<cmdSwitchTurn>Ändra tur</cmdSwitchTurn>
+	<confirmRemoteWantsRestart>{0} vill starta om omgången, är det okej med dig?</confirmRemoteWantsRestart>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>anslutning bruten</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<errorDataSend>Data fel; omöjligt att skicka data. Spelet har stoppats.</errorDataSend>
+	<errorDisconnected>Anslutning bruten.</errorDisconnected>
+	<errorUserLeft>{0} har lämnat spelet. Spelet är över.</errorUserLeft>
+	<infoBearOff>Alla dina pjäser är på hemmaplan, spelet kan börja.</infoBearOff>
+	<infoCheckerHit>En pjäs har blivit träffad och har placerats på baren.</infoCheckerHit>
+	<infoFromBarFirst>Kom ihåg, du måste rensa baren först.</infoFromBarFirst>
+	<infoLastMove>Det här är ditt sista drag.</infoLastMove>
+	<infoMovesLeft>Du har {0} drag kvar.</infoMovesLeft>
+	<infoNoRestart>Ingen omstart.</infoNoRestart>
+	<infoRequestRestart>Begär omstart..</infoRequestRestart>
+	<infoRestartDenied>{0} vill inte starta om spelet.</infoRestartDenied>
+	<infoRoll>Rulla tärningarna</infoRoll>
+	<infoSelectPiece>Välj pjäsen du vill flytta.</infoSelectPiece>
+	<infoSelectTarget>Välj platsen dit du vill flytta eller avmarkera genom att klicka på den markerade pjäsen.</infoSelectTarget>
+	<infoTurnLost>Du förlorade din tur.</infoTurnLost>
+	<infoTurnLostDetail>Du förlorade din tur, det är inga giltliga drag kvar. Klicka på 'Ändra tur' för att fortsätta.</infoTurnLostDetail>
+	<lblBroughtToYouBy>Framtaget till dig av {0}</lblBroughtToYouBy>
+	<lblConnectionType>Anslutnings typ</lblConnectionType>
+	<lblVersion>Backgammon {0}</lblVersion>
+	<stateGameOver>Spelet över.</stateGameOver>
+	<stateGameOverWon>Grattis, du har vunnit! Klicka på 'Starta om' för att spela igen.</stateGameOverWon>
+	<stateGameOverLost>För dåligt, du förlorade.</stateGameOverLost>
+	<stateInitializing>Påbörjar spelet...</stateInitializing>
+	<stateMyTurn>Det är din tur.</stateMyTurn>
+	<stateRemoteTurn>Väntar på att {0} ska göra sitt drag.</stateRemoteTurn>
+	<stateStartMyTurn>Spelet har startat, du är {0}. Det är din tur.</stateStartMyTurn>
+	<stateStartRemoteTurn>Spelet har startat, du är {0}. Väntar på att {1} ska slutföra hans/hennes tur.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Väntar på att motståndaren ska ansluta</stateWaitOnJoin>
+</words>
+
+

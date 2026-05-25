@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<cmdHelp>Aide</cmdHelp>
+	<cmdRestart>Recommencer</cmdRestart>
+	<confirmRemoteWantsRestart>{0} désire recommencer la partie, êtes-vous d'accord?</confirmRemoteWantsRestart>
+	<connectionDirect>direct</connectionDirect>
+	<connectionDisconnected>disconnected</connectionDisconnected>
+	<connectionIndirect>indirect</connectionIndirect>
+<errorDataSend>Erreur de données; impossible d'envoyer les données. Jeu arrêté.</errorDataSend>
+	<errorDisconnected>Déconnecté.</errorDisconnected>
+	<errorUserLeft>{0} a quitté la partie. Le jeu est terminé.</errorUserLeft>
+	<infoRestartDenied>{0} ne veut pas redémarrer la partie.</infoRestartDenied>
+	<infoClickToPlayAgain>Cliquez sur "Redémarrer" pour rejouer.</infoClickToPlayAgain>
+	<lblBroughtToYouBy>Offert par {0}</lblBroughtToYouBy>
+	<lblConnectionType>Type de connexion</lblConnectionType>
+	<lblPlayers>Joueurs</lblPlayers>
+	<lblColor>Couleur</lblColor>
+	<lblGamePoints>Points</lblGamePoints>
+	<lblGameTotalPoints>Points Total</lblGameTotalPoints>
+	<lblGamesWon>Parties Gagnées</lblGamesWon>
+	<lblRed>rouge</lblRed>
+	<lblVersion>Reversi {0}</lblVersion>
+	<lblWhite>blanc</lblWhite>
+	<stateAnotherMyTurn>{0} ne peut bouger, c'est de nouveau votre tour.</stateAnotherMyTurn>
+	<stateAnotherRemoteTurn>Vous êtes bloqués, à {0} de bouger.</stateAnotherRemoteTurn>
+	<stateInitializing>Initialisation du jeu en cours...</stateInitializing>
+	<stateGameOverDraw>Partie terminée, c'ets un match nul!</stateGameOverDraw>
+	<stateGameOverLost>Partie terminée, vous avez perdu!</stateGameOverLost>
+	<stateGameOverWon>Partie terminée, vous avez gagné!</stateGameOverWon>
+	<stateMyTurn>A vous de jouer.</stateMyTurn>
+	<stateRemoteTurn>En attente d'un mouvement de {0}</stateRemoteTurn>
+	<stateStartMyTurn>Début du jeu, à vous de jouer.</stateStartMyTurn>
+	<stateStartRemoteTurn>Début du jeu, attente d'un mouvement de {0}</stateStartRemoteTurn>
+</words>
+

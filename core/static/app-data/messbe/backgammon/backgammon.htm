@@ -1,0 +1,1056 @@
+<html>
+<!--
+	Copyright by Koen, 2003,2004,2005
+	http://games.mess.be
+-->
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7">
+		<title>Backgammon</title>
+		<style type="text/css">
+		.btn{font-family:Tahoma;font-size:8pt;border-style:none;background-image:url(images/playerbg.gif);height:17px;width:120px}
+		table{font-family:Tahoma;font-size:8pt}
+		</style>
+		<script language="javascript" src="../common/common.js"></script>
+		<script language="javascript">
+var VERSION			= "v2.0";
+
+/// Data commands
+var CMD_RESTART		= "res";
+var CMD_NORESTART	= "nor";
+var CMD_RESTARTOK	= "rok";
+var CMD_DONE		= "done";
+var CMD_SELECT		= "sel";
+var CMD_UNSELECT	= "uns";
+var CMD_MOVE		= "mov";
+var CMD_SWITCHTURN	= "swt";
+var CMD_DICE		= "dic";
+
+/// GAME_STATE
+var GS_INITIALIZING		= 0;
+var GS_WAITFORJOIN		= 1;
+var GS_PLACINGSHIPS		= 2;
+var GS_MYTURN			= 3;
+var GS_REMOTETURN		= 4;
+var GS_MYTURNLOST		= 5;
+var GS_GAMEOVER			= 6;
+var GS_ERROR			= 7;
+
+var CL_EMPTY			= 0;
+var CL_BLUE				= 1;
+var CL_WHITE			= 2;
+var CL_YELLOW			= 3;
+
+var m_remoteUserName;
+var m_gameState = GS_INITIALIZING;
+var m_isInitialized	= false;
+var m_requestRestart = false;
+var m_iStart;
+
+var m_myColor;
+var m_remoteColor;
+var m_board;
+var m_fromPoint = null;
+var m_diceInfo;
+var m_remoteMoves = new Array();
+var m_myBarCount = 0;
+var m_remoteBarCount = 0;
+var m_myBearOffCount = 0;
+var m_remoteBearOffCount = 0;
+var m_iAmBearingOff = false
+
+var m_preloadDone = false;
+var m_remoteLoaded = false;
+
+///
+/// Global event handlers
+///
+function OnLoad(){
+	// load language
+	loadLanguage("backgammon");
+	applyLanguage();
+
+	m_remoteUserName = getRemoteUserName();
+	m_iStart = iAmInviter();
+	m_myColor = m_iStart ? CL_WHITE : CL_BLUE;
+	m_remoteColor = getOppositeColor(m_myColor);
+	
+	updateGameState(GS_INITIALIZING, getWord("stateInitializing"));
+	updateConnectionType();
+
+	m_isInitialized = true;
+	window.external.Channel.Initialize();
+	
+	preloadImages(new Array("ct_direct.gif", "ct_disconnected.gif", "ct_indirect.gif", "dice1.gif", "dice1-fade.gif", 
+	 "dice2.gif", "dice2-fade.gif", "dice3.gif", "dice3-fade.gif", "dice4.gif", "dice4-fade.gif", "dice5.gif", "dice5-fade.gif",
+	  "dice6.gif", "dice6-fade.gif", "empty.gif", "help.gif", "icebluecounter.gif", "icewhitecounter.gif",
+	  "yellowcounter.gif"), OnPreloadProgress, OnPreloadComplete);
+}
+
+function OnUnload(){
+}
+
+///
+/// Preloading stuff
+///
+function OnPreloadProgress(progress){
+	divProgress.style.width = progress + "%";
+}
+
+function OnPreloadComplete(){
+	m_preloadDone = true;
+	initialize();
+}
+
+function initialize(){
+	if (m_preloadDone && m_remoteLoaded){
+		tblPreload.style.display = "none";
+		tblGame.style.display = "";
+		
+		//create images
+		var innerHtmlTop = "";
+		var innerHtmlBottom = "";
+		
+		for(var i = 0; i < 5; i++){
+			innerHtmlTop += "<img id='";
+			innerHtmlBottom += "<img id='";
+
+			innerHtmlTop += i;
+			innerHtmlBottom += (4 - i);			
+			
+			innerHtmlTop += "' src='images/empty.gif' width='26' height='26'>";
+			innerHtmlBottom += "' src='images/empty.gif' width='26' height='26'>";
+		}
+
+		for(var i = 1; i < 25; i++){
+			var td = tblGame.all["p" + i];
+			td.innerHTML = (i < 13) ? innerHtmlBottom : innerHtmlTop;
+		}
+
+		startGame();
+	}
+}
+
+function applyLanguage(){
+	lblBy.innerHTML = getWord("lblBroughtToYouBy", "<b>games.mess.be</b>");
+	lblVersion.innerText = getWord("lblVersion", VERSION);
+	btnHelp.title = getWord("cmdHelp");
+	btnRestart.innerText = getWord("cmdRestart");
+	btnRoll.innerText = getWord("cmdRoll");
+}
+
+///
+/// Channel event handlers
+///
+
+///
+/// Occurs when the remote user closes the application, the conversation window or signs out of Messenger.
+///
+function Channel_OnAppClose(){
+	m_remoteLoaded = false;
+	updateGameState(GS_ERROR, getWord("errorUserLeft", getDisplayName(m_remoteUserName)));
+}
+
+///
+/// Occurs when a data send has failed, inspect Channel.Error for details.
+///
+function Channel_OnDataError(){
+	updateGameState(GS_ERROR, getWord("errorDataSend"));
+}
+
+///
+/// Occurs when new data has been received. The data is available in window.external.Channel.Data.
+///
+function Channel_OnDataReceived(){
+	var data = window.external.Channel.Data;
+
+	if (data == CMD_RESTART){
+		if (m_gameState == GS_MYTURN || m_gameState == GS_REMOTETURN){
+			var restart = confirm(getWord("confirmRemoteWantsRestart", getDisplayName(m_remoteUserName)));
+			var cmd = restart ? CMD_RESTARTOK : CMD_NORESTART;
+			window.external.Channel.SendData(cmd);
+
+			if (restart)
+				startGame();
+		}
+		else if (m_gameState == GS_WAITFORJOIN){
+			window.external.Channel.SendData(CMD_RESTARTOK);		//confirm
+			startGame();
+		}
+	}
+	else if (data == CMD_RESTARTOK){
+		m_requestRestart = false;
+		startGame();
+	}
+	else if (data == CMD_NORESTART){
+		m_requestRestart = false;
+		var msg = getWord("infoNoRestart") + " ";
+		if (m_gameState == GS_MYTURN)
+			msg += getWord("stateMyTurn");
+		else if (m_gameState == GS_REMOTETURN)
+			msg += getWord("stateRemoteTurn", getDisplayName(m_remoteUserName));
+		
+			
+		statusText.innerText = msg; 
+		alert(getWord("infoRestartDenied", getDisplayName(m_remoteUserName)));
+	}
+	else if (data.startsWith(CMD_SELECT)){
+		drawPoint(new Point(data.substr(3)), true, true);
+	}
+	else if (data.startsWith(CMD_UNSELECT)){
+		drawPoint(new Point(data.substr(3)), true, false);
+	}
+	else if (data.startsWith(CMD_MOVE)){
+		m_remoteMoves.push(doMove(new Move(data.substr(3)), true));
+		checkGameOver();
+	}
+	else if (data.startsWith(CMD_DICE)){
+		m_diceInfo = new DiceInfo(data.substr(3));
+		showDice();
+	}
+	else if (data == CMD_SWITCHTURN){
+		setNewGameState();
+	}
+}
+
+///
+/// Occurs when the remote user closes the window that contains the app.
+///
+function Channel_OnRemoteAppClosed(){
+	m_remoteLoaded = false;
+	updateGameState(GS_ERROR, getWord("errorUserLeft", getDisplayName(m_remoteUserName)));
+}
+
+///
+/// Occurs when the remote app has been initialized. Both apps are now initialized.
+///
+function Channel_OnRemoteAppLoaded(){
+	m_remoteLoaded = true;
+	initialize();
+}
+
+///
+/// Occurs when the connection between conversants changes from direct to indirect or disconnected.
+/// The type is available in window.external.Channel.Type
+///
+function Channel_OnTypeChanged(){
+	updateConnectionType();
+}
+
+///
+/// Helpers functions
+///
+function updateConnectionType(){
+	var icon, descr;
+	
+	switch(window.external.Channel.Type){
+		case CT_DIRECT:
+			icon = "ct_direct.gif"
+			descr = getWord("connectionDirect");
+			break;
+		case CT_DISCONNECTED:
+			icon = "ct_disconnected.gif"
+			descr = getWord("connectionDisconnected");
+			
+			if (m_isInitialized)
+				updateGameState(GS_ERROR, getWord("errorDisconnected"));
+			else
+				updateGameState(GS_INITIALIZING, getWord("stateInitializing"));
+
+			break;
+		case CT_INDIRECT:
+			icon = "ct_indirect.gif"
+			descr = getWord("connectionIndirect");
+			break;
+	}
+
+	statusIcon.src = "images/" + icon;
+	statusIcon.title = getWord("lblConnectionType") + ": " + descr;
+}
+
+///
+/// Game specific objects
+///
+function Point(){
+	if (arguments.length == 1){
+		var args = arguments[0].split(",");
+		this.x = parseInt(args[0]);
+		this.y = parseInt(args[1]);
+	}
+	else{
+		this.x = arguments[0];
+		this.y = arguments[1];
+	}
+}
+Point.prototype.copy = function(){
+	return new Point(this.x, this.y);
+}
+Point.prototype.equals = function(f){
+	if (f)
+		return this.x == f.x && this.y == f.y;
+	return false;
+}
+Point.prototype.rotate = function(){
+	this.x = 25 - this.x;
+}
+Point.prototype.toString = function(){
+	return this.x + "," + this.y;
+}
+
+function Move(){
+	if (arguments.length == 1){
+		var args = arguments[0].split(";");
+		this.from = new Point(args[0]);
+		this.to = new Point(args[1]);
+		this.color = parseInt(args[2]);
+	}
+	else{
+		this.from = arguments[0];
+		this.to = arguments[1];
+		this.color = arguments[2]
+	}
+}
+Move.prototype.rotate = function(){
+	this.from.rotate();
+	this.to.rotate();
+}
+Move.prototype.toString = function(){
+	return this.from + ";" + this.to + ";" + this.color;
+}
+function ValidMove(valid, dice){
+	this.valid = valid;
+	this.dice = dice;
+}
+function DiceInfo(){
+	if (arguments.length == 1){
+		var args = arguments[0].split(";");
+		this.dice1 = parseInt(args[0]);
+		this.dice2 = parseInt(args[1]);
+		this.used = new Array(args.length - 2);
+		for(var i = 0; i < this.used.length; i++){
+			this.used[i] = (parseInt(args[i + 2]) == 1) ? true : false;
+		}
+	}
+	else{
+		this.dice1 = getRandomInt(1, 6);
+		this.dice2 = getRandomInt(1, 6);
+		
+		this.used = (this.dice1 == this.dice2) ? new Array(4) : new Array(2);
+		for(var i = 0; i < this.used.length; i++)
+			this.used[i] = false;
+	}
+}
+DiceInfo.prototype.diceLeft = function(){
+	var c = 0;
+	for(var i = 0; i < this.used.length; i++)
+		if(!this.used[i])
+			c++;
+	return c;
+}
+DiceInfo.prototype.getUnused = function(){
+	var d = new Array();
+	if (this.isUnused(this.dice1))
+		d.push(this.dice1);
+	if (this.isUnused(this.dice2))
+		d.push(this.dice2);
+		
+	return d;
+}
+DiceInfo.prototype.allUsed = function(){
+	for(var i = 0; i < this.used.length; i++)
+		if(!this.used[i])
+			return false;
+	return true;
+}
+DiceInfo.prototype.isUnused = function(n){
+	if (n == this.dice1 || n == this.dice2){
+		if (this.dice1 == this.dice2)
+			return !this.allUsed();
+		else if (n == this.dice1)
+			return !this.used[0];
+		else
+			return !this.used[1];
+	}
+	return false;
+}
+DiceInfo.prototype.useAll = function(){
+	for(var i = 0; i < this.used.length; i++)
+		this.used[i] = true;
+}
+DiceInfo.prototype.use = function(n){
+	if (n == this.dice1 || n == this.dice2){
+		if (this.dice1 == this.dice2){
+			for(var i = 0; i < this.used.length; i++){
+				if(!this.used[i]){
+					this.used[i] = true;
+					break;
+				}
+			}
+		}
+		else if (n == this.dice1)
+			this.used[0] = true;
+		else
+			this.used[1] = true;
+			
+		showDice();
+	}
+}
+DiceInfo.prototype.toString = function(){
+	var s = this.dice1 + ";" + this.dice2;
+	for(var i = 0; i < this.used.length; i++)
+		s += ";" + (this.used[i] ? "1" : "0"); 
+	return s;
+}
+
+///
+/// Game specific functions
+///
+function startGame(){
+	document.body.disabled = false;
+
+	m_board = new Array(26);
+	for(var i = 0; i < 26; i++){
+		m_board[i] = new Array(5);
+		for(var j = 0; j < 5; j++)
+			setPoint(new Point(i, j), CL_EMPTY, false);
+	}
+	
+	m_myBarCount = 0;
+	m_remoteBarCount = 0;
+	m_myBearOffCount = 0;
+	m_remoteBearOffCount = 0;
+	
+	setBar(true, false, 0);
+	setBar(false, false, 0);
+	setBar(true, true, 0);
+	setBar(false, true, 0);
+
+	setTriangle(24, m_myColor, 2);
+	setTriangle(13, m_myColor, 5);
+	setTriangle(8, m_myColor, 3);
+	setTriangle(6, m_myColor, 5);
+
+	setTriangle(1, m_remoteColor, 2);
+	setTriangle(12, m_remoteColor, 5);
+	setTriangle(17, m_remoteColor, 3);
+	setTriangle(19, m_remoteColor, 5);
+
+//TESTDATA: use with dice 3 + 6
+/*	setTriangle(24, m_myColor, 2);
+	for(var i = 17; i < 24; i++)
+		setTriangle(i, m_remoteColor, 2);
+		
+	setTriangle(8, m_myColor, 1);
+*/
+	if (m_iStart)
+		updateGameState(GS_MYTURN, getWord("stateStartMyTurn", getColorWord(m_myColor)));
+	else
+		updateGameState(GS_REMOTETURN, getWord("stateStartRemoteTurn", getColorWord(m_myColor), getDisplayName(m_remoteUserName)));
+}
+
+function getColorWord(color){
+	return (color == CL_BLUE) ? getWord("colorBlue") : getWord("colorWhite");
+}
+
+function getOppositeColor(color){
+	return (color == CL_BLUE) ? CL_WHITE : CL_BLUE;
+}
+
+function setBar(isRemote, isBearOff, delta, select){
+	var span;
+	var count;
+	var color;
+	
+	if (isRemote){
+		count = (isBearOff) ? (m_remoteBearOffCount += delta) : (m_remoteBarCount += delta);
+		color = m_remoteColor;
+		span = (isBearOff) ? barBearOffRemote : barRemote;
+	}
+	else{
+		count = (isBearOff) ? (m_myBearOffCount += delta) : (m_myBarCount += delta);
+		color = m_myColor;
+		span = barMe;
+		span = (isBearOff) ? barBearOffMe : barMe;
+	}
+
+	span.style.backgroundImage = (count == 0) ? "none" : "url(" + imgFromColor(select ? CL_YELLOW : color) + ")";
+	span.innerHTML = (count > 1) ? "<b>" + count + "</b>" : "";
+}
+
+function setTriangle(index, color, count){
+	for(var i = 0; i < 5; i++){
+		var c = color;
+		if (i >= count)
+			c = CL_EMPTY;
+
+		setPoint(new Point(index, i), c);
+	}
+}
+
+function setPoint(p, color, selected){
+	m_board[p.x][p.y] = color;
+	drawPoint(p, false, selected);
+}
+
+function drawPoint(p, isRemote, selected){
+	if (isRemote)
+		p.rotate();
+
+	var imgSrc = imgFromColor(selected ? CL_YELLOW : m_board[p.x][p.y]);
+
+	if (p.x == 0 || p.x == 25)
+		setBar(isRemote, false, 0, selected);
+	else{
+		var td = tblGame.all["p" + p.x];
+		var img = td.childNodes[(p.x < 13) ? 4 - p.y : p.y];
+	
+		if (!img.src.endsWith(imgSrc))
+			img.src = imgSrc;
+	}
+}
+
+function imgFromColor(color){
+	switch(color){
+		case CL_BLUE: return "images/icebluecounter.gif";
+		case CL_WHITE: return "images/icewhitecounter.gif";
+		case CL_YELLOW: return "images/yellowcounter.gif";
+		default: return "images/empty.gif";
+	}
+}
+
+function pointFromElement(e){
+	if (e.tagName == "IMG" && e.parentElement.tagName == "TD" && e.parentElement.id.startsWith("p")){
+		var p = parseInt(e.parentElement.id.substr(1));
+		return new Point(p, parseInt(e.id));
+	}
+	else if (e.id == "barMe" || e.parentElement.id == "barMe")
+		return new Point(25, 0);
+	else if (e.id == "bearOff" || e.id == "barBearOffMe" || e.parentElement.id == "barBearOffMe")
+		return new Point(0, 0);
+	return null;
+}
+
+function isTopPiece(p){
+	return p.y == 4 || m_board[p.x][p.y + 1] == CL_EMPTY;
+}
+
+function getMyTopPoint(x){
+	if (i == 25){
+		if (m_myBarCount > 0)
+			return new Point(x, 0);
+	}
+	else{
+		if (m_board[x][0] == m_myColor){
+			for(var i = 1; i < 5; i++){
+				if (m_board[x][i] == CL_EMPTY)
+					return new Point(x, i - 1);
+			}
+			return new Point(x, 5);
+		}
+	}
+	return null;
+}
+
+function getEmptyTop(x){
+	for(var i = 0; i < 5; i++)
+		if (m_board[x][i] == CL_EMPTY)
+			return i;
+	return -1;
+}
+
+function updateGameState(gameState, msg, infoMsg){
+	if (!infoMsg)
+		infoMsg = msg;
+
+	if (gameState != GS_MYTURNLOST){
+		m_diceInfo = null;
+		dice1.style.display = "none";
+		dice2.style.display = "none";
+		btnRoll.disabled = (gameState != GS_MYTURN);
+	}
+
+	if (gameState == GS_ERROR){
+		document.body.disabled = true;
+		infoMsg = "";
+	}
+	else if (gameState == GS_MYTURN){
+		if (canBearOff())
+			infoMsg = infoMsg + " " + getWord("infoBearOff");
+
+		infoMsg = infoMsg + " " + getWord("infoRoll");
+	}
+	
+	showInfo(infoMsg);
+	m_gameState = gameState;
+	statusText.innerText = msg;
+}
+
+function setNewGameState(infoMsg){
+	var newGameState = (m_gameState == GS_REMOTETURN ? GS_MYTURN : GS_REMOTETURN);
+	var msg
+	
+	if (newGameState == GS_MYTURN){
+		msg = getWord("stateMyTurn");
+	}
+	else if (newGameState == GS_REMOTETURN){
+		msg = getWord("stateRemoteTurn", getDisplayName(m_remoteUserName));
+	}
+	updateGameState(newGameState, msg, infoMsg);
+}
+
+function showMoveInfo(select){
+	var msg = getWord(select ? "infoSelectPiece" : "infoSelectTarget") + " ";
+	
+	var n = m_diceInfo.diceLeft();
+	if (n == 1)
+		msg += getWord("infoLastMove");
+	else
+		msg += getWord("infoMovesLeft", n);
+
+	if (m_myBarCount > 0)
+		msg += " <b>" + getWord("infoFromBarFirst") + "</b>";
+
+	showInfo(msg);		
+}
+
+function showInfo(msg){
+	pnlInfo.innerHTML = msg;
+}
+
+function showDice(){
+	dice1.src = "images/dice" + m_diceInfo.dice1 + (m_diceInfo.isUnused(m_diceInfo.dice1) ? "" : "-fade") + ".gif";
+	dice2.src = "images/dice" + m_diceInfo.dice2 + (m_diceInfo.isUnused(m_diceInfo.dice2) ? "" : "-fade") + ".gif";
+	dice1.style.display = "";
+	dice2.style.display = "";
+	
+	if (m_gameState == GS_MYTURN)
+		window.external.Channel.SendData(CMD_DICE + m_diceInfo.toString());
+}
+
+function checkGameOver(){
+	if (m_myBearOffCount == 15 || m_remoteBearOffCount == 15){
+		var msg = getWord("stateGameOver");
+		var infoMsg = msg + " " + ((m_myBearOffCount == 15) ? getWord("stateGameOverWon") : getWord("stateGameOverLost"));
+
+		dice1.style.display = "none";
+		dice2.style.display = "none";
+		btnRoll.disabled = true;
+		
+		m_iStart = (m_myBearOffCount == 15);
+
+		updateGameState(GS_GAMEOVER, msg, infoMsg);
+		return true;
+	}
+	return false;
+}
+
+function checkValidMoves(){
+	m_iAmBearingOff = canBearOff();
+
+	if (m_myBarCount > 0){
+		var valid = false;
+		for(var d = 1; d < 7; d++){
+			if (getValidMove(new Point(25, 0), new Point(25 - d, 0)).valid){
+				valid = true;
+				break;
+			}
+		}
+		if (!valid)
+			m_diceInfo.useAll();
+	}
+	else{
+		var unused = m_diceInfo.getUnused();
+		for(var i = 0; i < unused.length; i++){
+			var valid = false;
+			for(var j = 1; j < 25; j++){
+				var from = getMyTopPoint(j);
+				if (from != null){
+					var to = new Point(j - unused[i], 0)
+					if (getValidMove(from, to).valid){
+						valid = true;
+						break;
+					}
+				}
+			}
+			if (!valid)
+			{
+				if (m_diceInfo.dice1 == m_diceInfo.dice2)
+					m_diceInfo.useAll();
+				else if (m_diceInfo.diceLeft() == 1)
+					m_diceInfo.use(unused[i]);
+			}
+		}
+	}
+
+	// update dice
+	showDice();
+}
+
+function canBearOff(){
+	var allInHome = true;
+	for (var i = 7; i < 25; i++)
+		if (m_board[i][0] == m_myColor){
+			allInHome = false;
+			break;
+		}
+
+	return (m_myBarCount == 0 && allInHome)
+}
+
+function getValidMove(from, to){
+	if (from){
+		if (to){
+			var d = from.x - to.x;
+			if (m_iAmBearingOff){
+				// remove checker on point d
+				if (to.x == 0 && m_diceInfo.isUnused(d)){
+					return new ValidMove(true, d);
+				}
+
+				if (to.x <= 0){
+					// allow remove of highest point < unused dice if no checker at > unused dice
+					var unused = m_diceInfo.getUnused();
+					for(var i = 0; i < unused.length; i++){
+						var dice = unused[i];
+						if (from.x < dice){
+							var hasHigherPoint = false;
+							for (var j = from.x + 1; j < 7; j++){
+								if (m_board[j][0] == m_myColor){
+									hasHigherPoint = true;
+									break;
+								}
+							}
+							if (!hasHigherPoint)
+								return new ValidMove(true, dice);
+						}
+					}
+				}
+			}
+			// is legal move?
+			if (to.x > 0 && m_diceInfo.isUnused(d)){
+				if (m_board[to.x][0] == CL_EMPTY)
+					return new ValidMove(true, d);
+				else if (m_board[to.x][0] == m_remoteColor && m_board[to.x][1] == CL_EMPTY)
+					return new ValidMove(true, d);
+				else if (m_board[to.x][0] == m_myColor && m_board[to.x][4] != m_myColor)
+					return new ValidMove(true, d);
+			}
+		}
+		else{
+			if (from.x == 0)
+				return new ValidMove(false);
+			if (from.x == 25)
+				return new ValidMove(true);
+			else
+				return new ValidMove(m_board[from.x][from.y] == m_myColor && isTopPiece(from) && m_myBarCount == 0);
+		}
+	}
+	return new ValidMove(false);
+}
+
+///
+/// GUI event handlers
+///
+function board_onmouseover(){
+	var newCursor = (m_isIE55) ? "default" : "not-allowed";
+		
+	if (m_gameState == GS_MYTURN && m_diceInfo){
+		var p = pointFromElement(event.srcElement);
+		if (p){
+			var valid;
+			if (m_fromPoint)
+				valid = getValidMove(m_fromPoint, p).valid;
+			else
+				valid = getValidMove(p).valid;
+
+			if (valid || (p && m_fromPoint && p.equals(m_fromPoint)))
+				newCursor = "hand";
+		}
+	}
+	
+	if (tblBoard.style.cursor != newCursor){
+		tblBoard.style.cursor = newCursor;
+	}
+}
+
+function doMove(move, isRemote){
+	if (isRemote)
+		move.rotate();
+
+	if (m_board[move.to.x][0] == getOppositeColor(move.color)){
+		if (isRemote)
+			showInfo(getWord("infoCheckerHit"));
+
+		setBar(!isRemote, false, 1);
+		setPoint(new Point(move.to.x, 0), CL_EMPTY);
+	}
+	if (move.from.x == 0 || move.from.x == 25)
+		setBar(isRemote, false, -1);
+	
+	var to;
+
+	if (move.to.x == 0 || move.to.x == 25){
+		setBar(isRemote, true, 1);
+		to = new Point(0, 0);
+	}
+	else{
+		var to = new Point(move.to.x, getEmptyTop(move.to.x));
+		setPoint(to, move.color, isRemote);
+	}
+	setPoint(move.from, CL_EMPTY);
+	
+	return to;
+}
+
+function board_onclick(){
+	if (m_gameState == GS_MYTURN && m_diceInfo){
+		var p = pointFromElement(event.srcElement);
+		if (p){
+			var validMove;
+			if (m_fromPoint)
+				validMove = getValidMove(m_fromPoint, p);
+			else
+				validMove = getValidMove(p);
+
+			if (validMove.valid){
+				if (m_fromPoint){
+					m_diceInfo.use(validMove.dice);
+					
+					var move = new Move(m_fromPoint, p, m_myColor);
+					doMove(move, false);
+					m_fromPoint = null;
+
+					window.external.Channel.SendData(CMD_MOVE + move);
+					
+					if (checkGameOver())
+						return;
+				
+					if (m_diceInfo.allUsed()){
+						m_diceInfo = null;
+						setNewGameState();
+						window.external.Channel.SendData(CMD_SWITCHTURN);
+						return;
+					}
+					checkValidMoves();
+
+					if (m_diceInfo.allUsed()){
+						updateGameState(GS_MYTURNLOST, getWord("infoTurnLost"), getWord("infoTurnLostDetail"));
+						btnRoll.value = getWord("cmdSwitchTurn");
+						btnRoll.disabled = false;
+					}
+					else{
+						showMoveInfo(true);
+					}
+				}
+				else{
+					drawPoint(p, false, true);
+					m_fromPoint = p;
+					
+					window.external.Channel.SendData(CMD_SELECT + p.toString());
+					
+					showMoveInfo(false);
+				}
+			}
+			else{
+				if (m_fromPoint && p && m_fromPoint.equals(p)){
+					window.external.Channel.SendData(CMD_UNSELECT + m_fromPoint.toString());
+					drawPoint(m_fromPoint, false, false);
+					m_fromPoint = null;
+					
+					showMoveInfo(true);
+				}
+			}
+		}
+	}
+}
+
+function btnRestart_onclick(){
+	if (m_gameState == GS_GAMEOVER){
+		updateGameState(GS_WAITFORJOIN, getWord("stateWaitOnJoin"));
+		window.external.Channel.SendData(CMD_RESTART);
+	}
+	else if ((m_gameState == GS_MYTURN || m_gameState == GS_REMOTETURN) && !m_requestRestart){
+		m_requestRestart = true;
+		statusText.innerText = getWord("infoRequestRestart")
+		window.external.Channel.SendData(CMD_RESTART);
+	}
+}
+
+function btnRoll_onclick(){
+	if (m_gameState == GS_MYTURNLOST){
+		setNewGameState();
+		window.external.Channel.SendData(CMD_SWITCHTURN);
+		btnRoll.disable = true;
+		btnRoll.value = getWord("cmdRoll");
+	}
+	else if (m_gameState == GS_MYTURN && m_diceInfo == null){
+		// unselect remote moves
+		if (m_remoteMoves.length > 0){
+			for(var i = 0; i < m_remoteMoves.length; i++)
+				drawPoint(m_remoteMoves[i], false, false);
+				
+			m_remoteMoves = new Array();
+		}
+
+		m_diceInfo = new DiceInfo();
+		checkValidMoves();
+		
+		if (m_diceInfo.allUsed()){
+			updateGameState(GS_MYTURNLOST, getWord("infoTurnLost"), getWord("infoTurnLostDetail"));
+			btnRoll.value = getWord("cmdSwitchTurn");
+		}
+		else
+		{
+			showMoveInfo(true);
+			btnRoll.disabled = true;
+		}
+	}
+}
+
+function help_onclick(){
+	showHelpFile("help/backgammon-help.htm");
+}
+		</script>
+	</head>
+	<body onload="OnLoad();" onunload="OnUnload();" style="margin:0" scroll="no" style="background-color:#516CA1">
+		<xml id="words"></xml>
+		<table id="tblPreload" width="100%" height="100%">
+			<tr height="20%">
+				<td>&nbsp;</td>
+			</tr>
+			<tr height="40%">
+				<td align="center"><img src="images/backgammon-logo.jpg"><div id="lblBy" style="color:#D4DEF4"></div>
+				</td>
+			</tr>
+			<tr valign="top" height="30%">
+				<td align="center"><div align="left" style="width:100px;height:16px;color:#D4DEF4;border-style:solid;border-width:1px"><div id="divProgress" style="background-color:#D4DEF4;width:0%;height:100%"></div>
+					</div>
+				</td>
+			</tr>
+		</table>
+		<table id="tblGame" width="100%" height="100%" style="display:none;table-layout:fixed">
+			<tr>
+				<td colspan="2" align="center">
+					<TABLE id="tblBoard" onmouseover="board_onmouseover();" onclick="board_onclick();" WIDTH="481" BORDER="0" CELLPADDING="0" CELLSPACING="0">
+						<TR height="5px">
+							<TD style="background-image:url(images/backgammon_01.jpg);width:6"></TD>
+							<TD style="background-image:url(images/backgammon_02.jpg);width:191"></TD>
+							<TD style="background-image:url(images/backgammon_03.jpg);width:22"></TD>
+							<TD style="background-image:url(images/backgammon_04.jpg);width:21"></TD>
+							<TD style="background-image:url(images/backgammon_05.jpg);width:192"></TD>
+							<TD style="background-image:url(images/backgammon_06.jpg);width:43"></TD>
+							<TD style="background-image:url(images/backgammon_07.jpg);width:6"></TD>
+						</TR>
+						<TR height="132px">
+							<TD style="background-image:url(images/backgammon_08.jpg);width:6"></TD>
+							<TD rowspan="3" style="background-image:url(images/backgammon_09.jpg);width:191">
+								<table cellpadding="0" cellspacing="0" height="312px">
+									<tr valign="top" height="132px">
+										<td id="p13" width="30px" align="left"></td>
+										<td id="p14" width="35px" align="center"></td>
+										<td id="p15" width="34px" align="center"></td>
+										<td id="p16" width="33px" align="center"></td>
+										<td id="p17" width="34px" align="right"></td>
+										<td id="p18" width="34px" align="right"></td>
+									</tr>
+									<tr height="47px">
+										<td colspan="6" align="center">
+											<img id="dice1" width="30" height="30" src="images/dice1.gif" style="display:none">
+											<img id="dice2" width="30" height="30" src="images/dice1.gif" style="display:none">
+										</td>
+									</tr>
+									<tr valign="bottom" height="133px">
+										<td id="p12" width="30px" align="left"></td>
+										<td id="p11" width="35px" align="center"></td>
+										<td id="p10" width="34px" align="center"></td>
+										<td id="p9" width="33px" align="center"></td>
+										<td id="p8" width="34px" align="right"></td>
+										<td id="p7" width="34px" align="right"></td>
+									</tr>
+								</table>
+							</TD>
+							<TD colspan="2" align="center" style="background-image:url(images/backgammon_10.jpg);width:43">
+								<span id="barRemote" style="padding-top:6px;background-image:url(images/icewhitecounter.gif);width:26px;height:28px"></span>
+							</TD>
+							<TD rowspan="3" style="background-image:url(images/backgammon_11.jpg);width:192">
+								<table cellpadding="0" cellspacing="0" width="192px" height="312px">
+									<tr valign="top" height="132px">
+										<td id="p19" width="35px" align="left"></td>
+										<td id="p20" width="34px" align="center"></td>
+										<td id="p21" width="33px" align="center"></td>
+										<td id="p22" width="34px" align="center"></td>
+										<td id="p23" width="30px" align="right"></td>
+										<td id="p24" width="32px" align="right"></td>
+									</tr>
+									<tr height="47px">
+										<td colspan="6"></td>
+									</tr>
+									<tr valign="bottom" height="133px">
+										<td id="p6" width="35px" align="left"></td>
+										<td id="p5" width="34px" align="left"></td>
+										<td id="p4" width="33px" align="left"></td>
+										<td id="p3" width="34px" align="left"></td>
+										<td id="p2" width="30px" align="right"></td>
+										<td id="p1" width="32px" align="right"></td>
+									</tr>
+								</table>
+							</TD>
+							<TD align="center" style="background-image:url(images/backgammon_12.jpg);width:43">
+								<span id="barBearOffRemote" style="padding-top:6px;background-image:url(images/icewhitecounter.gif);width:26px;height:28px">
+									<b>12</b></span>
+							</TD>
+							<TD style="background-image:url(images/backgammon_13.jpg);width:6"></TD>
+						</TR>
+						<TR height="47px">
+							<TD style="background-image:url(images/backgammon_14.jpg);width:6"></TD>
+							<TD colspan="2" style="background-image:url(images/backgammon_15.jpg)"></TD>
+							<TD id="bearOff" style="background-image:url(images/backgammon_16.jpg);width:43"></TD>
+							<TD style="background-image:url(images/backgammon_17.jpg);width:6"></TD>
+						</TR>
+						<TR height="133px">
+							<TD style="background-image:url(images/backgammon_18.jpg);width:6"></TD>
+							<TD colspan="2" align="center" style="background-image:url(images/backgammon_19.jpg);width:43">
+								<span id="barMe" style="padding-top:6px;background-image:url(images/icewhitecounter.gif);width:26px;height:28px"></span>
+							</TD>
+							<TD id="bearOff" align="center" style="background-image:url(images/backgammon_20.jpg);width:43">
+								<span id="barBearOffMe" style="padding-top:6px;background-image:url(images/icewhitecounter.gif);width:26px;height:28px"></span>
+							</TD>
+							<TD style="background-image:url(images/backgammon_21.jpg);width:6"></TD>
+						</TR>
+						<TR height="14px">
+							<TD style="background-image:url(images/backgammon_22.jpg);width:6"></TD>
+							<TD style="background-image:url(images/backgammon_23.jpg);width:191"></TD>
+							<TD style="background-image:url(images/backgammon_24.jpg);width:22"></TD>
+							<TD style="background-image:url(images/backgammon_25.jpg);width:21"></TD>
+							<TD style="background-image:url(images/backgammon_26.jpg);width:192"></TD>
+							<TD style="background-image:url(images/backgammon_27.jpg);width:43"></TD>
+							<TD style="background-image:url(images/backgammon_28.jpg);width:6"></TD>
+						</TR>
+					</TABLE>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2" align="center">
+					<div id="pnlInfo" align="left" style="margin-left:10px;margin-right:10px;padding:5px;height:50px;width:90%;background-image:url(images/bigbg.gif);border-style:solid;border-width:1px;border-color:black;padding:2px">
+					</div>
+				</td>
+			</tr>
+			<tr height="100%">
+				<td colspan="2" align="center">
+					<button id="btnRoll" onclick="btnRoll_onclick();" class="btn"></button>&nbsp;&nbsp;
+					<button id="btnRestart" onclick="btnRestart_onclick();" class="btn"></button>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2" align="right" style="font-size:7pt"><a id="lblVersion" href="http://games.mess.be" target="_blank" style="color:white"></a> <a href="javascript:help_onclick();"><img id="btnHelp" align="absmiddle" border="0" src="images/help.gif"></a></td>
+			</tr>
+			<tr valign="bottom" height="17px">
+				<td colspan="2">
+					<div id="statusBar" style="border-style:solid;border-width:0px;border-color:buttonface;height:17px;background-image:url(images/playerbg.gif)">
+						<img id="statusIcon" width="16" height="16" align="absmiddle" style="unselectable;margin:0px 5px" src="images/empty.gif">
+						<span id="statusText" unselectable style="cursor:default"></span>
+					</div>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>

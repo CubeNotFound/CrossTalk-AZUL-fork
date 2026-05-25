@@ -1,0 +1,54 @@
+{% from 'msn:_funcs.xml' import contact_entry, group_entry, generate_me_entry, ab_properties %}
+
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<soap:Header>
+		<ServiceHeader xmlns="http://www.msn.com/webservices/AddressBook">
+			<Version>15.01.1408.0000</Version>
+			<CacheKey>12r1:{{ cachekey }}</CacheKey>
+			<CacheKeyChanged>true</CacheKeyChanged>
+			<PreferredHostName>{{ host }}</PreferredHostName>
+			<SessionId>{{ session_id }}</SessionId>
+		</ServiceHeader>
+	</soap:Header>
+	<soap:Body>
+		<ABFindAllResponse xmlns="http://www.msn.com/webservices/AddressBook">
+			<ABFindAllResult>
+				<groups>
+					{% for group in detail._groups_by_uuid.values() %}
+						{{ group_entry(group, now) }}
+					{% endfor %}
+				</groups>
+				<contacts>
+					{% for ctc in detail.contacts.values() %}
+						{% if ctc.lists.__and__(ContactList.FL) %}
+							<Contact>
+							{{ contact_entry(ab_id, ctc, detail, now) }}
+							</Contact>
+						{% endif %}
+					{% endfor %}
+					{{ generate_me_entry(user, now) }}
+				</contacts>
+				<ab>
+					<abId>{{ ab_id }}</abId>
+					<abInfo>
+						<ownerPuid>0</ownerPuid>
+						<OwnerCID>{{ cid_format(user.uuid, decimal = True) }}</OwnerCID>
+						<ownerEmail>{{ user.email }}</ownerEmail>
+						<fDefault>true</fDefault>
+						<joinedNamespace>false</joinedNamespace>
+						<IsBot>false</IsBot>
+						<IsParentManaged>false</IsParentManaged>
+						<SubscribeExternalPartner>false</SubscribeExternalPartner>
+						<NotifyExternalPartner>false</NotifyExternalPartner>
+						<AddressBookType>Individual</AddressBookType>
+					</abInfo>
+					<lastChange>{{ now }}</lastChange>
+					<DynamicItemLastChanged>0001-01-01T00:00:00</DynamicItemLastChanged>
+					<createDate>{{ date_format(user.date_created) }}</createDate>
+					<propertiesChanged />
+				</ab>
+			</ABFindAllResult>
+		</ABFindAllResponse>
+	</soap:Body>
+</soap:Envelope>

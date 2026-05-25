@@ -1,0 +1,745 @@
+<html>
+<!--
+	Copyright by Koen, 2003
+	http://games.mess.be
+	Turned into Memory from Reversi by Slaugh
+-->
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7">
+		<title>Memory</title>
+		<style type="text/css">
+		table{font-family:Tahoma;font-size:8pt}
+		</style>
+		<script language="javascript" src="../common/common.js"></script>
+		<script language="javascript">
+var VERSION			= "v2.0";
+/// GAME_STATE
+var GS_INITIALIZING	= 0;
+var GS_MYTURN		= 1;
+var GS_REMOTETURN		= 2;
+var GS_GAMEOVER		= 3;
+var GS_ERROR		= 4;
+
+var m_remoteUserName;
+var m_gameState = GS_INITIALIZING;
+var m_isInitialized	= false;
+
+/// Game specific variables
+var PC_EMPTY		= 0;
+var PC_WHITE		= 1;
+var PC_RED			= 2;
+
+/// Data commands
+var CMD_RESTART		= "res";
+var CMD_NORESTART	= "nor";
+
+var m_gamesWon		= 0;
+var m_totalPoints	= 0;
+var m_remoteGames	= 0;
+var m_remoteTotal	= 0;
+var m_iStart;
+var m_fields;
+var m_myColor;
+var m_remoteColor;
+var m_myValidMoves;
+var m_remoteValidMoves;
+var m_requestRestart = false;
+var m_firstMove;
+var m_preloadDone = false;
+var m_remoteLoaded = false;
+
+var waiting = 0;
+var lastgo=new Array();
+var anothergo = true;
+var anothergo2 = false;
+var pics = new Array();
+for (i = 0; i <= 32; i++) {
+pics[i] = new Image();
+pics[i].src = 'images2/image' + i + '.jpg';
+}
+var map=new Array(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32);
+var user = new Array();
+var temparray = new Array();
+var clickarray = new Array(0, 0);
+var ctr, id, oktoclick, finished;
+
+///
+/// Global event handlers
+///
+function OnLoad(){
+	// load language
+	loadLanguage("memory");
+	applyLanguage();
+
+	m_remoteUserName = getRemoteUserName();
+	
+	updateGameState(GS_INITIALIZING, getWord("stateInitializing"));
+	updateConnectionType();
+
+	nameMe.innerText = getDisplayName(window.external.Users.Me.Name);
+	nameRemote.innerText = getDisplayName(m_remoteUserName);
+	
+	m_iStart = iAmInviter();
+	m_myColor = m_iStart ? PC_WHITE : PC_RED;
+	m_remoteColor = getOppositeColor(m_myColor);
+
+	m_isInitialized = true;
+	window.external.Channel.Initialize();
+	
+	preloadImages(new Array("ct_direct.gif", "ct_disconnected.gif", "ct_indirect.gif",
+		"empty.gif", "gameboard.jpg", "gameover.gif", "headerbg.gif", "help.gif", "leftcorner.jpg",
+		"playerbg.gif", "rightcorner.jpg", "star.jpg"), OnPreloadProgress, OnPreloadComplete);
+}
+
+function OnUnload(){
+}
+
+///
+/// Preloading stuff
+///
+function OnPreloadProgress(progress){
+	divProgress.style.width = progress + "%";
+}
+
+function OnPreloadComplete(){
+	m_preloadDone = true;
+	initialize();
+}
+
+function initialize(){
+	if (m_preloadDone && m_remoteLoaded){
+		tblPreload.style.display = "none";
+		tblGame.style.display = "";
+
+		startGame();
+	}
+}
+
+function applyLanguage(){
+	lblBy.innerHTML = getWord("lblBroughtToYouBy", "<b>games.mess.be</b>");
+	lblVersion.innerText = getWord("lblVersion", VERSION);
+	btnHelp.title = getWord("cmdHelp");
+	btnRestart.innerText = getWord("cmdRestart");
+
+	lblPlayers.innerText = getWord("lblPlayers");
+	lblGamePoints.innerText = getWord("lblGamePoints");
+	lblGamesWon.innerText = getWord("lblGamesWon");
+	lblGameTotalPoints.innerText = getWord("lblGameTotalPoints");
+}
+
+///
+/// Channel event handlers
+///
+
+///
+/// Occurs when the remote user closes the application, the conversation window or signs out of Messenger.
+///
+function Channel_OnAppClose(){
+	m_remoteLoaded = false;
+	updateGameState(GS_ERROR, getWord("errorUserLeft", getDisplayName(m_remoteUserName)));
+}
+
+///
+/// Occurs when a data send has failed, inspect Channel.Error for details.
+///
+function Channel_OnDataError(){
+	updateGameState(GS_ERROR, getWord("errorDataSend"));
+}
+
+///
+/// Occurs when new data has been received. The data is available in window.external.Channel.Data.
+///
+function Channel_OnDataReceived(){
+	var data = window.external.Channel.Data;
+	
+	if (data == CMD_RESTART){
+		//if (m_gameState == GS_MYTURN || m_gameState == GS_REMOTETURN){
+			if (m_requestRestart){
+				m_requestRestart = false;
+				
+				startGame();
+			}
+			else{
+				var restart = confirm(getWord("confirmRemoteWantsRestart", getDisplayName(m_remoteUserName)));
+				var cmd = restart ? CMD_RESTART : CMD_NORESTART;
+				window.external.Channel.SendData(cmd);
+				
+				if (restart)
+					startGame();
+			}
+		//}
+	}
+	else if (data == CMD_NORESTART){
+		if (m_gameState == GS_MYTURN || m_gameState == GS_REMOTETURN){
+			m_requestRestart = false;
+
+			alert(getWord("infoRestartDenied", getDisplayName(m_remoteUserName)));
+		}
+	}
+	else {
+		if(waiting < 64) {
+			map[waiting] = data;
+			waiting++;
+}
+	else if (m_gameState == GS_REMOTETURN)
+		doMove(new field(data), m_remoteColor);
+	else if (m_gameState == GS_GAMEOVER)
+		m_firstMove = new field(data);
+}
+}
+
+///
+/// Occurs when the remote user closes the window that contains the app.
+///
+function Channel_OnRemoteAppClosed(){
+	m_remoteLoaded = false;
+	updateGameState(GS_ERROR, getWord("errorUserLeft", getDisplayName(m_remoteUserName)));
+}
+
+///
+/// Occurs when the remote app has been initialized. Both apps are now initialized.
+///
+function Channel_OnRemoteAppLoaded(){
+	m_remoteLoaded = true;
+	initialize();
+}
+
+///
+/// Occurs when the connection between conversants changes from direct to indirect or disconnected.
+/// The type is available in window.external.Channel.Type
+///
+function Channel_OnTypeChanged(){
+	updateConnectionType();
+}
+
+///
+/// Helpers functions
+///
+function updateConnectionType(){
+	var icon, descr;
+	
+	switch(window.external.Channel.Type){
+		case CT_DIRECT:
+			icon = "ct_direct.gif"
+			descr = getWord("connectionDirect");
+			break;
+		case CT_DISCONNECTED:
+			icon = "ct_disconnected.gif"
+			descr = getWord("connectionDisconnected");
+			
+			if (m_isInitialized)
+				updateGameState(GS_ERROR, getWord("errorDisconnected"));
+			else
+				updateGameState(GS_INITIALIZING, getWord("stateInitializing"));
+
+			break;
+		case CT_INDIRECT:
+			icon = "ct_indirect.gif"
+			descr = getWord("connectionIndirect");
+			break;
+	}
+
+	statusIcon.src = "images/" + icon;
+	statusIcon.title = getWord("lblConnectionType") + ": " + descr;
+}
+
+///
+/// Game specific objects
+///
+function field(){
+	if (arguments.length == 1){
+		var args = arguments[0].split(",");
+		this.x = parseInt(args[0]);
+		this.y = parseInt(args[1]);
+	}
+	else{
+		this.x = arguments[0];
+		this.y = arguments[1];
+	}
+}
+field.prototype.toString = function(){
+	return this.x + "," + this.y;
+}
+
+
+
+function score(me, remote){
+	this.me = me;
+	this.remote = remote;
+}
+
+///
+/// Game specific functions
+///
+function startGame(){
+	m_fields = new Array(8);
+	for(var i = 0; i < 8; i++){
+		m_fields[i] = new Array(8);
+		for(var j = 0; j < 8; j++)
+			setField(new field(i, j), PC_EMPTY);
+	}
+	document.body.disabled = false;
+	pnlGameover.style.display = "none";
+
+	
+	updateScore();
+	calcValidMoves();
+	
+	if (m_iStart || (!m_iStart && m_firstMove)){
+		if (m_firstMove){
+
+			doMove(m_firstMove, m_remoteColor);
+			m_firstMove = null;
+		}
+		updateGameState(GS_MYTURN, getWord("stateStartMyTurn"));
+	}
+	else
+		updateGameState(GS_REMOTETURN, getWord("stateStartRemoteTurn", getDisplayName(m_remoteUserName)));
+
+if (m_iStart) {
+	waiting = 65;
+	var tempmap;
+	var i;
+	for (x = 1; x <= 100; x++) {
+		i = Math.floor(Math.random()*64);
+		i2 = Math.floor(Math.random()*64);
+		tempmap = map[i];
+		map[i] = map[i2];
+		map[i2] = tempmap;
+	}
+	for (x = 0; x <= 63; x++) {window.external.Channel.SendData(map[x]);};
+	}
+
+}
+
+function updateGameState(gameState, msg){
+	if (gameState == GS_ERROR && m_gameState != GS_ERROR){
+		m_fields = new Array(8);
+		for(var i = 0; i < 8; i++){
+			m_fields[i] = new Array(8);
+			for(var j = 0; j < 8; j++)
+				setField(new field(i, j), PC_EMPTY);
+		}
+		document.body.disabled = true;
+	}
+	
+	m_gameState = gameState;
+	statusText.innerText = msg;
+}
+
+function setField(f, value){
+if(value != PC_EMPTY) {
+		if(anothergo == true) {
+			if(lastgo[1]) {
+				if(tblBoard.rows[lastgo[1].x].cells[lastgo[1].y].firstChild.src == tblBoard.rows[lastgo[1].x].cells[lastgo[1].y].firstChild.src) {
+				tblBoard.rows[lastgo[1].x].cells[lastgo[1].y].firstChild.height = 42;
+				tblBoard.rows[lastgo[0].x].cells[lastgo[0].y].firstChild.height = 42;
+				}
+				if(m_fields[lastgo[1].x][lastgo[1].y] == PC_EMPTY) {
+				tblBoard.rows[lastgo[1].x].cells[lastgo[1].y].firstChild.height = 42;
+				tblBoard.rows[lastgo[1].x].cells[lastgo[1].y].firstChild.src = "images2/image0.jpg";
+				tblBoard.rows[lastgo[0].x].cells[lastgo[0].y].firstChild.height = 42;
+				tblBoard.rows[lastgo[0].x].cells[lastgo[0].y].firstChild.src = "images2/image0.jpg";
+				}
+			}
+			tblBoard.rows[f.x].cells[f.y].firstChild.src = "images2/image" + map[f.x*8+f.y] + ".jpg";
+			tblBoard.rows[f.x].cells[f.y].firstChild.height = 38;
+			
+			lastgo[0] = f;
+		} else { 
+			if("images2/image" + map[f.x*8+f.y] + ".jpg" == tblBoard.rows[lastgo[0].x].cells[lastgo[0].y].firstChild.src.substring(tblBoard.rows[lastgo[0].x].cells[lastgo[0].y].firstChild.src.indexOf('images2'),tblBoard.rows[lastgo[0].x].cells[lastgo[0].y].firstChild.src.length)) {
+				tblBoard.rows[f.x].cells[f.y].firstChild.src = "images2/image" + map[f.x*8+f.y] + ".jpg";
+				m_fields[f.x][f.y] = value;
+				m_fields[lastgo[0].x][lastgo[0].y] = value;
+				anothergo2 = true;
+			} else {
+				tblBoard.rows[f.x].cells[f.y].firstChild.src = "images2/image" + map[f.x*8+f.y] + ".jpg";
+				//tblBoard.rows[f.x].cells[f.y].firstChild.border = 1;
+				//tblBoard.rows[lastgo[1].x].cells[lastgo[1].y].firstChild.border-color = red;
+			}
+		tblBoard.rows[f.x].cells[f.y].firstChild.height = 38;
+		lastgo[1] = f;
+		}
+} else {
+tblBoard.rows[f.x].cells[f.y].firstChild.src = "images2/image0.jpg";
+tblBoard.rows[f.x].cells[f.y].firstChild.height = 42;
+m_fields[f.x][f.y] = value;
+}
+}
+
+function fieldFromElement(element){
+	var td;
+	if (element.tagName == "TD")
+		td = event.srcElement;
+	else if (element.tagName == "IMG")
+		td = event.srcElement.parentElement;
+	else
+		return null;
+		
+	var y = td.cellIndex;
+	var x = td.parentElement.rowIndex;
+		
+	return new field(x, y);
+}
+
+function calcValidMove(f, color){
+if (m_fields[f.x][f.y] == PC_EMPTY){
+		return true;
+	} else {
+		return false;
+	};
+}
+
+function calcValidMoves(){
+	m_myValidMoves = new Array();
+	m_remoteValidMoves = new Array();
+	
+	for(var x = 0; x < 8; x++){
+		for(var y = 0; y < 8; y++){
+	//		tblBoard.rows[x].cells[y].style.backgroundColor = "";
+			
+			if (m_fields[x][y] == PC_EMPTY){
+				var f = new field(x, y);
+
+				if (calcValidMove(f, m_myColor)){
+	//				tblBoard.rows[f.x].cells[f.y].style.backgroundColor = (m_myColor == PC_WHITE) ? "white" : "red";
+					m_myValidMoves.push(f);
+				}
+				if (calcValidMove(f, m_remoteColor))
+					m_remoteValidMoves.push(f);
+			}
+		}
+	}
+}
+
+function isGameOver(){
+	var hello = 0;
+
+	for(var i = 0; i < 8; i++) {
+		for(var j = 0; j < 8; j++) {
+			if(m_fields[i][j] == PC_EMPTY) {
+				hello = 1;
+			};
+		};
+	};
+	if(hello == 0) {
+		return true;
+	};
+return false;
+
+}
+
+function getNeighbors(x, y, color){
+	var neighbors = new Array();
+	for(i = x - 1; i < x + 2; i++){
+		for(j = y - 1; j < y + 2; j++){
+			if (i > -1 && i < 8 && j > -1 && j < 8 && !(i == x && j == y)){
+				if (m_fields[i][j] == color)
+					neighbors.push(new field(i, j));
+			}
+		}
+	}
+	return neighbors;
+}
+
+function getOppositeColor(color){
+	return (color == PC_RED) ? PC_WHITE : PC_RED;
+}
+
+function isValidMove(f){
+if (m_fields[f.x][f.y] == PC_EMPTY && tblBoard.rows[f.x].cells[f.y].firstChild.src.substring(tblBoard.rows[f.x].cells[f.y].firstChild.src.indexOf('images2'),tblBoard.rows[f.x].cells[f.y].firstChild.src.length) == "images2/image0.jpg"){
+		return true;
+	} else {
+		return false;
+	};
+}
+
+function doMove(f, color){
+	setField(f, color);
+	updateScore();
+	calcValidMoves();
+	
+	if (isGameOver()){
+
+		var msg;
+	me = scoreMe.innerText;
+	remote = scoreRemote.innerText;
+
+		if (me > remote){
+			msg = getWord("stateGameOverWon");
+			m_iStart = true;
+			m_gamesWon++;
+			waiting = 65;
+		}
+		else if (me < remote){
+			msg = getWord("stateGameOverLost");
+			m_iStart = false;
+			m_remoteGames++;
+			waiting = 0;
+		}
+		else
+			msg = getWord("stateGameOverDraw");
+		anothergo = true;
+		anothergo2 = false;
+		updateScore();
+		m_totalPoints = totalMe.innerText;
+		m_remoteTotal = totalRemote.innerText;
+		
+		pnlGameover.style.display = "";
+		
+		updateGameState(GS_GAMEOVER, msg + " " + getWord("infoClickToPlayAgain"));
+	}
+	else if (m_gameState == GS_MYTURN){
+		if (anothergo == false)
+		{
+			if (anothergo2 == true) {
+			anothergo2 = false;
+			anothergo = true;
+			} else {
+			updateGameState(GS_REMOTETURN, getWord("stateRemoteTurn", getDisplayName(m_remoteUserName)));
+			anothergo = true;
+			}
+		} else {
+			updateGameState(GS_MYTURN, getWord("stateAnotherMyTurn", getDisplayName(m_remoteUserName)));
+			anothergo = false;
+		}	
+		tblBoard.style.cursor = (m_isIE55) ? "default" : "not-allowed";
+	}
+	else if (m_gameState == GS_REMOTETURN){
+		if (anothergo == false)
+		{
+			if (anothergo2 == true) {
+			anothergo2 = false;
+			anothergo = true;
+			} else {
+			updateGameState(GS_MYTURN, getWord("stateMyTurn"));
+			anothergo = true;
+			}
+		} else {
+			updateGameState(GS_REMOTETURN, getWord("stateAnotherRemoteTurn", getDisplayName(m_remoteUserName)));
+			anothergo = false;
+		}
+	}
+}
+
+function getScore(){
+	var me = 0;
+	var remote = 0;
+	for(var i = 0; i < 8; i++){
+		for(var j = 0; j < 8; j++){
+			var c = m_fields[i][j];
+			if (m_fields[i][j] == m_myColor)
+				me++;
+			else if (m_fields[i][j] == m_remoteColor)
+				remote++;
+		}
+	}
+
+	return new score(me/2, remote/2);
+}
+function updateScore(){
+	var s = getScore();
+	
+	scoreMe.innerText = s.me;
+	scoreRemote.innerText = s.remote;
+	
+	gamesMe.innerText = m_gamesWon;
+	gamesRemote.innerText = m_remoteGames;
+
+	totalMe.innerText = parseInt(m_totalPoints) + parseInt(s.me);
+	totalRemote.innerText = parseInt(m_remoteTotal) + parseInt(s.remote);	
+}
+
+///
+/// GUI event handlers
+///
+function tblBoard_onmouseover(){
+	var newCursor = (m_isIE55) ? "default" : "not-allowed";
+	
+	if (m_gameState == GS_MYTURN){
+		var f = fieldFromElement(event.srcElement);
+		
+		if (isValidMove(f))
+			newCursor = "hand";
+	}
+	if (tblBoard.style.cursor != newCursor){
+		tblBoard.style.cursor = newCursor;
+	}
+}
+
+function tblBoard_onclick(){
+	if (m_gameState == GS_MYTURN && event.srcElement.tagName=="IMG"){
+		var f = fieldFromElement(event.srcElement);
+		if (isValidMove(f)){
+			window.external.Channel.SendData(f.toString());
+			doMove(f, m_myColor);
+		}
+	}
+}
+
+function btnRestart_onclick(){
+	/*if (m_gameState == GS_GAMEOVER){
+		startGame();
+	}
+	else */if (/*(m_gameState == GS_MYTURN || m_gameState == GS_REMOTETURN) && */!m_requestRestart){
+		m_requestRestart = true;
+		window.external.Channel.SendData(CMD_RESTART);
+	}
+}
+function help_onclick(){
+	showHelpFile("help/memory-help.htm");
+}
+
+		</script>
+	</head>
+	<body onload="OnLoad();" onunload="OnUnload();" style="margin:0" scroll="no" bgcolor="#516CA1">
+		<xml id="words"></xml>
+		<table id="tblPreload" width="100%" height="100%">
+			<tr height="15%">
+				<td>&nbsp;</td>
+			</tr>
+			<tr height="60%">
+				<td align="center"><img src="images/memorylogo.jpg"><div id="lblBy" style="color:#D4DEF4"></div></td>
+			</tr>
+			<tr valign="top" height="25%">
+				<td align="center"><div align="left" style="width:100px;height:16px;color:#D4DEF4;border-style:solid;border-width:1px"><div id="divProgress" style="background-color:#D4DEF4;width:0%;height:100%"></div></div></td>
+			</tr>
+		</table>
+		<table id="tblGame" width="100%" height="100%" style="font-family:Tahoma;font-size:8pt">
+			<tr valign="top">
+				<td align="center" width="100%" colspan="3">
+					<span id="pnlGameover" style="display:none;position:absolute;left:expression(document.body.clientWidth/2 - this.offsetWidth/2);
+						top:expression(document.body.clientHeight/2 - this.offsetHeight)">
+						<img src="images/gameover.gif" style="border-style:outset;border-width:2"></span>
+					<table id="tblBoard" onmouseover="tblBoard_onmouseover();" onclick="tblBoard_onclick();" border="0" cellpadding="0" cellspacing="0" style="background-image:url(images/gameboard.jpg)">
+						<tr>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+						</tr>
+						<tr>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+						</tr>
+						<tr>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+						</tr>
+						<tr>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+						</tr>
+						<tr>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+						</tr>
+						<tr>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+						</tr>
+						<tr>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+						</tr>
+						<tr>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+							<td><img width="42" height="42"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td width="33%">&nbsp;</td>
+				<td width="33%" align="center">
+					<button id="btnRestart" onclick="btnRestart_onclick();" style="font-family:Tahoma;font-size:8pt;border-style:none;background-image:url(images/playerbg.gif);height:17px"></button>
+				</td>
+				<td width="33%" align="right" style="font-size:7pt"><a id="lblVersion" href="http://games.mess.be" target="_blank" style="color:white"></a> <a href="javascript:help_onclick();"><img id="btnHelp" align="absmiddle" border="0" src="images/help.gif"></a></td>
+			</tr>
+			<tr>
+				<td colspan="3">
+					<div style="height:30px">
+						<table cellpadding="0" cellspacing="0" width="100%" style="font-family:Tahoma;font-size:8pt;background-color:white">
+							<tr height="17" style="font-weight:bold;background-image:url(images/headerbg.gif)">
+								<td><img src="images/leftcorner.jpg"></td>
+								<td id="lblPlayers" colspan="2">&nbsp;</td>
+								<td id="lblGamePoints" align="center">&nbsp;</td>
+								<td id="lblGamesWon" align="center">&nbsp;</td>
+								<td id="lblGameTotalPoints" align="center">&nbsp;</td>
+								<td align="right"><img src="images/rightcorner.jpg"></td>
+							</tr>
+							<tr height="17" style="background-image:url(images/playerbg.gif)">
+								<td width="17" colspan="2"><img src="images/star.jpg"</td>
+								<td id="nameMe">&nbsp;</td>
+								<td id="scoreMe" align="center">0</td>
+								<td id="gamesMe" align="center">0</td>
+								<td id="totalMe" align="center" colspan="2">0</td>
+							</tr>
+							<tr height="17" style="background-image:url(images/playerbg.gif)">
+								<td width="17" colspan="2">&nbsp;</td>
+								<td id="nameRemote">&nbsp;</td>
+								<td id="scoreRemote" align="center">0</td>
+								<td id="gamesRemote" align="center">0</td>
+								<td id="totalRemote" align="center" colspan="2">0</td>
+							</tr>
+						</table>
+					</div>
+				</td>
+			</tr>
+			<tr valign="bottom" height="17px">
+				<td colspan="3">
+					<div id="statusBar" style="height:17px;background-color:white;background-image:url(images/playerbg.gif)">
+						<img id="statusIcon" width="16" height="16" align="absmiddle" style="unselectable;margin:0px 5px" src="images/empty.gif">
+						<span id="statusText" unselectable style="cursor:default"></span>
+					</div>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>

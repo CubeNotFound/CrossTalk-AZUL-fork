@@ -1,0 +1,45 @@
+body {
+	font-family: Arial, sans-serif;
+	text-align: center;
+	position: relative;
+}
+
+a {
+	text-decoration: none;
+}
+
+.headtext {
+	font-size: 22px;
+}
+
+.datetext {
+	text-align: right;
+	padding: 0;
+	margin: 0;
+}
+
+.header {
+	width: 100%;
+	height: 50px;
+	position: relative;
+}
+
+.svclogo {
+	float: left;
+	padding-left: 15px;
+	line-height: 25px;
+}
+
+.date {
+	float: right;
+	padding-right: 15px;
+	line-height: 25px;
+}
+
+.content {
+	margin-top: 70px;
+}
+
+.content p {
+	color: gray;
+}

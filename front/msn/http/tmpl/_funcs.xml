@@ -1,0 +1,242 @@
+{% macro contact_entry(ab_id, ctc, detail, now) %}
+	<contactId>{{ ctc.head.uuid }}</contactId>
+	<contactInfo>
+		{% if ctc.detail.personal_email or ctc.detail.work_phone or ctc.detail.im_email or ctc.detail.other_email %}
+			<emails>
+				{% if ctc.detail.work_email %}
+					{{ email_entry('ContactEmailBusiness', ctc.detail.work_email) }}
+				{% endif %}
+				{% if ctc.detail.im_email %}
+					{{ email_entry('ContactEmailMessenger', ctc.detail.im_email) }}
+				{% endif %}
+				{% if ctc.detail.other_email %}
+					{{ email_entry('ContactEmailOther', ctc.detail.other_email) }}
+				{% endif %}
+				{% if ctc.detail.personal_email %}
+					{{ email_entry('ContactEmailPersonal', ctc.detail.personal_email) }}
+				{% endif %}
+			</emails>
+		{% endif %}
+		{% if ctc.detail.home_phone or ctc.detail.work_phone or ctc.detail.fax_phone or ctc.detail.pager_phone or ctc.detail.mobile_phone or ctc.detail.other_phone %}
+			<phones>
+				{% if ctc.detail.work_phone %}
+					{{ phone_entry('ContactPhoneBusiness', contact.work_phone) }}
+				{% endif %}
+				{% if ctc.detail.fax_phone %}
+					{{ phone_entry('ContactPhoneFax', ctc.detail.fax_phone) }}
+				{% endif %}
+				{% if ctc.detail.pager_phone %}
+					{{ phone_entry('ContactPhonePager', ctc.detail.pager_phone) }}
+				{% endif %}
+				{% if ctc.detail.mobile_phone %}
+					{{ phone_entry('ContactPhoneMobile', ctc.detail.mobile_phone) }}
+				{% endif %}
+				{% if ctc.detail.other_phone %}
+					{{ phone_entry('ContactPhoneOther', ctc.detail.other_phone) }}
+				{% endif %}
+				{% if ctc.detail.home_phone %}
+					{{ phone_entry('ContactPhonePersonal', ctc.detail.home_phone) }}
+				{% endif %}
+			</phones>
+		{% endif %}
+		{% if ctc.detail.locations %}
+			<locations>
+				{% for location in ctc.detail.locations.values() %}
+					{% if location.street or location.city or location.state or location.country or location.zip_code %}
+						<ContactLocation>
+							<contactLocationType>{{ location.type }}</contactLocationType>
+							{% if location.street %}
+								<street>{{ location.street }}</street>
+							{% endif %}
+							{% if location.city %}
+								<city>{{ location.city }}</city>
+							{% endif %}
+							{% if location.state %}
+								<state>{{ location.state }}</state>
+							{% endif %}
+							{% if location.country %}
+								<country>{{ location.country }}</country>
+							{% endif %}
+							{% if location.zip_code %}
+								<postalCode>{{ location.zip_code }}</postalCode>
+							{% endif %}
+						</ContactLocation>
+					{% endif %}
+				{% endfor %}
+			</locations>
+		{% endif %}
+		{% if ctc.detail.personal_website or ctc.detail.business_website %}
+			<webSites>
+				{% if ctc.detail.business_website %}
+					{{ website_entry('ContactWebSiteBusiness', ctc.detail.business_website) }}
+				{% endif %}
+				{% if ctc.detail.personal_website %}
+					{{ website_entry('ContactWebSitePersonal', ctc.detail.personal_website) }}
+				{% endif %}
+			</webSites>
+		{% endif %}
+		{% if ctc.detail.nickname %}
+			<annotations>
+				{{ annotation('AB.NickName', ctc.detail.nickname) }}
+			</annotations>
+		{% endif %}
+		<contactType>Regular</contactType>
+		<quickName>{{ ctc.status.name }}</quickName>
+		{% if ctc.detail.first_name %}
+			<firstName>{{ ctc.detail.first_name }}</firstName>
+		{% endif %}
+		{% if ctc.detail.middle_name %}
+			<MiddleName>{{ ctc.detail.middle_name }}</MiddleName>
+		{% endif %}
+		{% if ctc.detail.last_name %}
+			<lastName>{{ ctc.detail.last_name }}</lastName>
+		{% endif %}
+		<passportName>{{ ctc.head.email }}</passportName>
+		<IsPassportNameHidden>false</IsPassportNameHidden>
+		<displayName>{{ ctc.status.name }}</displayName>
+		<puid>{{ puid_format(ctc.head.uuid) }}</puid>
+		{% if ctc._groups %}
+			<groupIds>
+			{% for group in ctc._groups.copy() %}
+				<guid>{{ group.uuid }}</guid>
+			{% endfor %}
+			</groupIds>
+		{% endif %}
+		<CID>{{ cid_format(ctc.head.uuid, decimal = True) }}</CID>
+		<IsNotMobileVisible>false</IsNotMobileVisible>
+		<isMobileIMEnabled>false</isMobileIMEnabled>
+		<isMessengerUser>{{ bool_to_str(ctc.is_messenger_user) }}</isMessengerUser>
+		<isFavorite>{% if ab_id == '00000000-0000-0000-0000-000000000000' %}{{ bool_to_str(contact_is_favorite(detail, ctc)) }}{% else %}false{% endif %}</isFavorite>
+		<isSmtp>false</isSmtp>
+		<hasSpace>false</hasSpace>
+		<spotWatchState>NoDevice</spotWatchState>
+		<birthdate>{% if ctc.detail.birthdate %}{{ date_format(ctc.detail.birthdate) }}{% else %}0001-01-01T00:00:00{% endif %}</birthdate>
+		{% if ctc.detail.anniversary %}
+			<Anniversary>{{ ctc.detail.anniversary.strftime('%Y/%m/%d') }}</Anniversary>
+		{% endif %}
+		{% if ctc.detail.notes %}
+			<comment>{{ ctc.detail.notes }}</comment>
+		{% endif %}
+		<primaryEmailType>{% if ctc.detail.primary_email_type %}{{ ctc.detail.primary_email_type }}{% else %}ContactEmailPersonal{% endif %}</primaryEmailType>
+		<PrimaryLocation>ContactLocationPersonal</PrimaryLocation>
+		<PrimaryPhone>ContactPhonePersonal</PrimaryPhone>
+		<IsPrivate>false</IsPrivate>
+		<Gender>Unspecified</Gender>
+		<TimeZone>None</TimeZone>
+	</contactInfo>
+	<propertiesChanged />
+	<fDeleted>false</fDeleted>
+	<lastChange>{{ now }}</lastChange>
+{% endmacro %}
+
+{% macro phone_entry(type, phone) %}
+	<ContactPhone>
+		<contactPhoneType>{{ type }}</contactPhoneType>
+		<number>{{ phone }}</number>
+		<isMessengerEnabled>false</isMessengerEnabled>
+	</ContactPhone>
+{% endmacro %}
+
+{% macro email_entry(type, email) %}
+	<ContactEmail>
+		<contactEmailType>{{ type }}</contactEmailType>
+		<email>{{ email }}</email>
+		<isMessengerEnabled>false</isMessengerEnabled>
+		<Capability>0</Capability>
+		<MessengerEnabledExternally>false</MessengerEnabledExternally>
+	</ContactEmail>
+{% endmacro %}
+
+{% macro website_entry(type, url) %}
+	<ContactWebSite>
+		<contactWebSiteType>{{ type }}</contactWebSiteType>
+		<webURL>{{ url }}</webURL>
+	</ContactWebSite>
+{% endmacro %}
+
+{% macro annotation(name, value) %}
+	<Annotation>
+		<Name>{{ name }}</Name>
+		<Value>{{ value }}</Value>
+	</Annotation>
+{% endmacro %}
+
+{% macro generate_me_entry(user, now) %}
+	<Contact>
+		<contactId>{{ user.uuid }}</contactId>
+		<contactInfo>
+			<annotations>
+				<Annotation>
+					<Name>MSN.IM.MBEA</Name>
+					<Value>0</Value>
+				</Annotation>
+				<Annotation>
+					<Name>MSN.IM.GTC</Name>
+					<Value>{% if user.settings.get('GTC') == 'A' %}1{% elif user.settings.get('GTC') == 'N' %}2{% else %}0{% endif %}</Value>
+				</Annotation>
+				<Annotation>
+					<Name>MSN.IM.BLP</Name>
+					<Value>{% if user.settings.get('BLP') == 'AL' %}1{% elif user.settings.get('BLP') == 'BL' %}2{% else %}0{% endif %}</Value>
+				</Annotation>
+				{% if user.settings.get('MPOP') %}
+					<Annotation>
+						<Name>MSN.IM.MPOP</Name>
+						<Value>{{ user.settings.get('MPOP') }}</Value>
+					</Annotation>
+				{% endif %}
+				{% if user.settings.get('RLP') %}
+					<Annotation>
+						<Name>MSN.IM.RoamLiveProperties</Name>
+						<Value>{{ user.settings.get('RLP') }}</Value>
+					</Annotation>
+				{% endif %}
+			</annotations>
+			<contactType>Me</contactType>
+			<quickName>{{ user.status.name }}</quickName>
+			<passportName>{{ user.email }}</passportName>
+			<IsPassportNameHidden>false</IsPassportNameHidden>
+			<displayName>{{ user.status.name }}</displayName>
+			<puid>{{ puid_format(user.uuid) }}</puid>
+			<CID>{{ cid_format(user.uuid, decimal = True) }}</CID>
+			<IsNotMobileVisible>false</IsNotMobileVisible>
+			<isMobileIMEnabled>false</isMobileIMEnabled>
+			<isMessengerUser>false</isMessengerUser>
+			<isFavorite>false</isFavorite>
+			<isSmtp>false</isSmtp>
+			<hasSpace>false</hasSpace>
+			<spotWatchState>NoDevice</spotWatchState>
+			<birthdate>0001-01-01T00:00:00</birthdate>
+			<primaryEmailType>ContactEmailPersonal</primaryEmailType>
+			<PrimaryLocation>ContactLocationPersonal</PrimaryLocation>
+			<PrimaryPhone>ContactPhonePersonal</PrimaryPhone>
+			<IsPrivate>false</IsPrivate>
+			<Gender>Unspecified</Gender>
+			<TimeZone>None</TimeZone>
+		</contactInfo>
+		<propertiesChanged />
+		<fDeleted>false</fDeleted>
+		<lastChange>{{ now }}</lastChange>
+	</Contact>
+{% endmacro %}
+
+{% macro group_entry(group, now) %}
+	<Group>
+		<groupId>{{ group.uuid }}</groupId>
+		<groupInfo>
+			<annotations>
+				<Annotation>
+					<Name>MSN.IM.Display</Name>
+					<Value>1</Value>
+				</Annotation>
+			</annotations>
+			<groupType>c8529ce2-6ead-434d-881f-341e17db3ff8</groupType>
+			<name>{{ group.name }}</name>
+			<IsNotMobileVisible>false</IsNotMobileVisible>
+			<IsPrivate>false</IsPrivate>
+			<IsFavorite>{{ bool_to_str(group.is_favorite) }}</IsFavorite>
+		</groupInfo>
+		<propertiesChanged />
+		<fDeleted>false</fDeleted>
+		<lastChange>{{ now }}</lastChange>
+	</Group>
+{% endmacro %}

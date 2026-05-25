@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<confirmDraw>Tem a certeza que quer empatar o jogo?</confirmDraw>
+	<confirmRemoteWantsRestart>{0} quer recomeçar o jogo, está de acordo?</confirmRemoteWantsRestart>
+	<confirmRemoteWantsTie>{0} quer empatar o jogo, está de acordo?</confirmRemoteWantsTie>
+	<confirmResign>Tem a certeza que quer desistir?</confirmResign>
+	<confirmRestart>Tem a certeza que quer recomeçar?</confirmRestart>
+	<connectionDirect>directo</connectionDirect>
+	<connectionDisconnected>desconectar</connectionDisconnected>
+	<connectionIndirect>indirecto</connectionIndirect>
+	<cmdDraw>Empatar</cmdDraw>
+	<cmdHelp>Ajuda</cmdHelp>
+	<cmdMute>Silenciar</cmdMute>
+	<cmdResign>Desistir</cmdResign>
+	<cmdRestart>Recomeçar</cmdRestart>
+	<errorDataSend>Erro de comunicação. Jogo parado.</errorDataSend>
+	<errorDisconnected>Desconectar.</errorDisconnected>
+	<errorUserLeft>{0} saiu. O jogo acabou.</errorUserLeft>
+	<lblBroughtToYouBy>Produzido por {0}</lblBroughtToYouBy>
+	<lblConnectionType>Tipo de ligação</lblConnectionType>
+	<lblVersion>Xadrez {0}</lblVersion>
+	<lblPromote>Promova o seu peão</lblPromote>
+	<infoClickToPlayAgain>Clique em 'Recomeçar' para jogar de novo.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} não quer recomeçar o jogo.</infoRestartDenied>
+	<infoTieDenied>{0} não quer empatar.</infoTieDenied>
+	<infoYouResigned>Você desistiu, perdendo o jogo.</infoYouResigned>
+	<stateCheck>Cheque</stateCheck>
+	<stateCheckmate>Cheque-mate, você perdeu.</stateCheckmate>
+	<stateInitializing>Iniciando o jogo...</stateInitializing>
+	<stateMyTurn>É a sua vez.</stateMyTurn>
+	<stateOpponentCheck>Adversário em cheque</stateOpponentCheck>
+	<stateOpponentResigned>O seu adversário desistiu, você ganhou!</stateOpponentResigned>
+	<stateRemoteCheckmate>Cheque-mate ao adversário, você ganhou!</stateRemoteCheckmate>
+	<stateRemoteTurn>À espera que {0} jogue.</stateRemoteTurn>
+	<stateStalemate>Rei afogado, jogo empatado.</stateStalemate>
+	<stateStartMyTurn>Jogo começado, é a sua vez.</stateStartMyTurn>
+	<stateStartRemoteTurn>Jogo começado, à espera que {0} jogue.</stateStartRemoteTurn>
+	<stateTie>Jogo empatado.</stateTie>
+	<stateWaitForApproval>À espera da autorização do seu adversário.</stateWaitForApproval>
+</words>
+

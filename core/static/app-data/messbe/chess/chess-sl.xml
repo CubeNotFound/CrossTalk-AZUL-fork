@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<confirmDraw>Si prepričan da želiš neodločeno igro?</confirmDraw>
+	<confirmRemoteWantsRestart>{0} bi rad resetiral igro, se strinjaš?</confirmRemoteWantsRestart>
+	<confirmRemoteWantsTie>{0} ponuja neodločeno igro, se strinjaš?</confirmRemoteWantsTie>
+	<confirmResign>Si preprirčan, da želiš odstopiti?</confirmResign>
+	<confirmRestart>Si prepričan, da želiš resetirati igro?</confirmRestart>
+	<connectionDirect>posredno</connectionDirect>
+	<connectionDisconnected>prekinjeno</connectionDisconnected>
+	<connectionIndirect>neposredno</connectionIndirect>
+	<cmdDraw>Neodločeno</cmdDraw>
+	<cmdHelp>Pomoč</cmdHelp>
+	<cmdMute>Tiho</cmdMute>
+	<cmdResign>Predaja</cmdResign>
+	<cmdRestart>Reset</cmdRestart>
+	<errorDataSend>Podatkovna napaka; pošiljanje podatkov ni možno. Igra ustavljena.</errorDataSend>
+	<errorDisconnected>Prekinjeno.</errorDisconnected>
+	<errorUserLeft>{0} je zapustil igro. Igra je končana.</errorUserLeft>
+	<lblBroughtToYouBy>Vam na uslugo: {0}</lblBroughtToYouBy>
+	<lblConnectionType>Vrsta povezave</lblConnectionType>
+	<lblVersion>Šah {0}</lblVersion>
+	<lblPromote>Izberi figuro</lblPromote>
+	<infoClickToPlayAgain>Klikni 'Reset' za novo igro.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} ne želi resetirati te igre.</infoRestartDenied>
+	<infoTieDenied>{0} ne sprejme neodločene igre.</infoTieDenied>
+	<infoYouResigned>Predal si se, izgubil si.</infoYouResigned>
+	<stateCheck>Šah</stateCheck>
+	<stateCheckmate>Šah-mat, izgubil si.</stateCheckmate>
+	<stateInitializing>Nalagam igro...</stateInitializing>
+	<stateMyTurn>Ti si na potezi.</stateMyTurn>
+	<stateOpponentCheck>Nasprotnik v šahu</stateOpponentCheck>
+	<stateOpponentResigned>Nasprotnik se je predal, ti si zmagal.</stateOpponentResigned>
+	<stateRemoteCheckmate>Šah-mat, ti si zmagal.</stateRemoteCheckmate>
+	<stateRemoteTurn>Čakaš, da {0} napravi potezo.</stateRemoteTurn>
+	<stateStalemate>Pat, igra je neodločena.</stateStalemate>
+	<stateStartMyTurn>Igra se je pričela, ti si na vrsti.</stateStartMyTurn>
+	<stateStartRemoteTurn>Igra se je pričela, čakaš, da {0} napravi potezo.</stateStartRemoteTurn>
+	<stateTie>Predaja.</stateTie>
+	<stateWaitForApproval>Čakaš na nasprotnkovo odobritev..</stateWaitForApproval>
+</words>
+

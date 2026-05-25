@@ -1,0 +1,1836 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LocalizedConfig xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Market="en-US">
+	<OfferText>
+		<ViewProfile>View Profile</ViewProfile>
+		<ViewPhotos>View Photos</ViewPhotos>
+		<SendPrivateMessage>Send a message</SendPrivateMessage>
+	</OfferText>
+	<Applications>
+		<App DomainId="25">
+			<AppId>1208073512</AppId>
+			<ThumbNailUrl>http://public.sn2.livefilestore.com/y1pIcpnVyt7o7i-N8FmSXi1Xlx46HOxjQo334DHTYIyxajGN_5RNFhwVRWCwEKESCS18hptjwbrFTUzyuyUqDsPDQ?psid=1</ThumbNailUrl>
+			<MiniPhotoUrl>http://public.sn2.livefilestore.com/y1pIcpnVyt7o7i-N8FmSXi1XqZolpA87W_QvLFL1yDjDSCFpYWIZ6wxWEcsDdr9raueR9w4KBkY65pqndrK3Ingyw?psid=1</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>11870.com</WebDomain>
+			<Name>11870.com</Name>
+			<Summary>Discover, keep track, and share services throughout the world.</Summary>
+			<SiteUrl>http://11870.com</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="19">
+			<AppId>1073750531</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/FLKRActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/FLKRActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>flickr.com</EmailDomain>
+			<WebDomain>flickr.com</WebDomain>
+			<Name>Flickr</Name>
+			<Summary>Share your photos and watch the world.</Summary>
+			<SiteUrl>http://flickr.com/</SiteUrl>
+			<PSARank>12</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="26">
+			<AppId>1208112978</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/4TRAVActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/4TRAVActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>4travel.jp</EmailDomain>
+			<WebDomain>4travel.jp</WebDomain>
+			<Name>4travel</Name>
+			<Summary>Create your travelogue that shows your travel information.</Summary>
+			<SiteUrl>http://4travel.jp/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="92">
+			<AppId>1208150049</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/ALOCNActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/ALOCNActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>allocine.fr</EmailDomain>
+			<WebDomain>allocine.fr</WebDomain>
+			<Name>AlloCiné</Name>
+			<Summary>Share your passion for movies and TV series with your friends</Summary>
+			<SiteUrl>http://www.allocine.fr/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="27">
+			<AppId>1140907061</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/ARTOActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/ARTOActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>artomail.com</EmailDomain>
+			<WebDomain>arto.com</WebDomain>
+			<Name>Arto</Name>
+			<Summary>Share your world on Arto with your friends on Windows Live.</Summary>
+			<SiteUrl>http://www.arto.com/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="28">
+			<AppId>1208112976</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/AZBUZActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/AZBUZActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>azbuz.com</EmailDomain>
+			<WebDomain>azbuz.com</WebDomain>
+			<Name>Azbuz</Name>
+			<Summary>Create your blog in a minute and start blogging "write" away!</Summary>
+			<SiteUrl>http://www.azbuz.com/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="29">
+			<AppId>1073887812</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/BKINGActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/BKINGActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>baby-kingdom.com</WebDomain>
+			<Name>Baby Kingdom</Name>
+			<Summary>Share your hot topics in the Baby Kingdom with your Windows Live friends.</Summary>
+			<SiteUrl>http://www.baby-kingdom.com/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Terminated</State>
+				<Date>2011-05-12T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="30">
+			<AppId>1208112981</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/BIIPNActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/BIIPNActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>biip.no</WebDomain>
+			<Name>Biip.no Community</Name>
+			<Summary>Get the latest news about your friends on Biip.no.</Summary>
+			<SiteUrl>http://www.biip.no/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="31">
+			<AppId>1140904485</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/BLDBKActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/BLDBKActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>bilddagboken.se</EmailDomain>
+			<WebDomain>bilddagboken.se</WebDomain>
+			<Name>Bilddagboken</Name>
+			<Summary>Share a daily photo.</Summary>
+			<SiteUrl>http://bilddagboken.se/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="32">
+			<AppId>1275169083</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/BLINGActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/BLINGActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>blingee.com</EmailDomain>
+			<WebDomain>blingee.com</WebDomain>
+			<Name>Blingee</Name>
+			<Summary>Express yourself and share your animated Blingees!</Summary>
+			<SiteUrl>http://blingee.com/</SiteUrl>
+			<PSARank>32</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="113">
+			<AppId>1141037568</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/BLGRActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/BLGRActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>blogger.com</WebDomain>
+			<Name>Blogger</Name>
+			<Summary>Blogger: Free blogging platform from Google.</Summary>
+			<SiteUrl>http://www.blogger.com/</SiteUrl>
+			<PSARank>5</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="33">
+			<AppId>1140994628</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/BREAKActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/BREAKActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>breakmedia.zendesk.com</EmailDomain>
+			<WebDomain>break.com</WebDomain>
+			<Name>Break.com</Name>
+			<Summary>Share your funny videos with the world.</Summary>
+			<SiteUrl>http://www.break.com/</SiteUrl>
+			<PSARank>9</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="34">
+			<AppId>1275168156</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/BUDTVActive.jpg</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/BUDTVActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>buddytv.com</WebDomain>
+			<Name>BuddyTV.com</Name>
+			<Summary>The world's largest and best online TV community.</Summary>
+			<SiteUrl>http://www.buddytv.com</SiteUrl>
+			<PSARank>18</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="35">
+			<AppId>1073890357</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/BUSCPActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/BUSCPActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>buscape.com</WebDomain>
+			<Name>BuscaPé</Name>
+			<Summary>Reviews posted by your friends in BuscaPé, comparison shop site.</Summary>
+			<SiteUrl>http://parceiro.buscape.com.br/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="36">
+			<AppId>1140994629</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/CNETActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/CNETActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>noreply.cnet.com</EmailDomain>
+			<WebDomain>cnet.com</WebDomain>
+			<Name>CNET</Name>
+			<Summary>Share your CNET activities with your friends in Windows Live.</Summary>
+			<SiteUrl>http://www.cnet.com/</SiteUrl>
+			<PSARank>11</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="37">
+			<AppId>1073888317</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/CPDVTActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/CPDVTActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>b.copainsdavant.com</EmailDomain>
+			<WebDomain>copainsdavant.linternaute.com</WebDomain>
+			<Name>L'Internaute Copains</Name>
+			<Summary>Discover what your old friends are doing now, keep in touch with all your friends.</Summary>
+			<SiteUrl>http://copainsdavant.linternaute.com/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="38">
+			<AppId>1140855815</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/CBLOGActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/CBLOGActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain />
+			<Name>Blog RSS Feed</Name>
+			<Summary>Add an RSS or ATOM feed for a blog to your profile.</Summary>
+			<SiteUrl />
+			<PSARank>38</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers>RecentActivity.Publish</Offers>
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="39">
+			<AppId>1140905009</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/DADAActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/DADAActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>dada.net</EmailDomain>
+			<WebDomain>dada.net</WebDomain>
+			<Name>Dada</Name>
+			<Summary>Share your favorite music artists from Dada.</Summary>
+			<SiteUrl>http://www.dada.net/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="40">
+			<AppId>1073788711</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/DMOTNActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/DMOTNActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>dailymotion.com</WebDomain>
+			<Name>Dailymotion</Name>
+			<Summary>Share and engage your world through the power of online video.</Summary>
+			<SiteUrl>http://www.dailymotion.com/</SiteUrl>
+			<PSARank>14</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="41">
+			<AppId>1207961345</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/DAUMActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/DAUMActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>daum.net</WebDomain>
+			<Name>Daum</Name>
+			<Summary>Add a feed from your blog on Daum to your profile.</Summary>
+			<SiteUrl>http://daum.net</SiteUrl>
+			<PSARank>21</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="42">
+			<AppId>1140889698</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/DIGGActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/DIGGActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>e.digg.com</EmailDomain>
+			<WebDomain>digg.com</WebDomain>
+			<Name>Digg</Name>
+			<Summary>Discover and share content from anywhere on the web.</Summary>
+			<SiteUrl>http://digg.com/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Terminated</State>
+				<Date>2011-05-05T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="43">
+			<AppId>1275169811</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/DKBNActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/DKBNActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>dkbn.dk</EmailDomain>
+			<WebDomain>dkbn.dk</WebDomain>
+			<Name>dkbn</Name>
+			<Summary>Share your dkbn with your friends on Windows Live</Summary>
+			<SiteUrl>http://dkbn.dk</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="44">
+			<AppId>1208112977</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/DTSMOActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/DTSMOActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>doctissimo.fr</WebDomain>
+			<Name>Doctissimo Community</Name>
+			<Summary>Get new friends, and share messages, photos &amp; videos.</Summary>
+			<SiteUrl>http://www.doctissimo.fr</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="13">
+			<AppId>1140860673</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/FLXTActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/FLXTActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>flixster.com</EmailDomain>
+			<WebDomain>flixster.com</WebDomain>
+			<Name>Flixster</Name>
+			<Summary>Watch, rate, and review your favorite movies.</Summary>
+			<SiteUrl>http://www.flixster.com/</SiteUrl>
+			<PSARank>26</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="45">
+			<AppId>1275115817</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/FOTLGActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/FOTLGActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>fotolog.com</EmailDomain>
+			<WebDomain>fotolog.com</WebDomain>
+			<Name>Fotolog</Name>
+			<Summary>What does your world look like today?</Summary>
+			<SiteUrl>http://www.fotolog.com/</SiteUrl>
+			<PSARank>33</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="94">
+			<AppId>1275216644</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/FRTVActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/FRTVActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>tlmvpsp.france2.fr</WebDomain>
+			<Name>Hold On To Your Seat Online on France2.fr</Name>
+			<Summary>Six contestants competing for the champion's seat</Summary>
+			<SiteUrl>http://tlmvpsp.france2.fr</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="46">
+			<AppId>1208073513</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/GDRDSActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/GDRDSActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>mail.goodreads.com</EmailDomain>
+			<WebDomain>goodreads.com</WebDomain>
+			<Name>Goodreads</Name>
+			<Summary>Goodreads is a place where you see what your friends are reading.</Summary>
+			<SiteUrl>http://www.goodreads.com/</SiteUrl>
+			<PSARank>20</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="47">
+			<AppId>1140901673</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/HEVREActive.jpg</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/HEVREActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>hevre.co.il</WebDomain>
+			<Name>Hevre</Name>
+			<Summary>Write and share blogs.</Summary>
+			<SiteUrl>http://www.hevre.co.il/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Terminated</State>
+				<Date>2010-04-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="48">
+			<AppId>1275167434</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/HULUActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/HULUActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>hulu.com</EmailDomain>
+			<WebDomain>hulu.com</WebDomain>
+			<Name>Hulu</Name>
+			<Summary>Hulu is an online video service that offers hit TV shows and movies for free.</Summary>
+			<SiteUrl>http://www.hulu.com/</SiteUrl>
+			<PSARank>7</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="14">
+			<AppId>1073773142</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/HYVESActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/HYVESActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>hyves.nl</EmailDomain>
+			<WebDomain>hyves.nl</WebDomain>
+			<Name>Hyves</Name>
+			<Summary>Always in touch with your friends.</Summary>
+			<SiteUrl>http://www.hyves.nl/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="50">
+			<AppId>1073746947</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/ILIKEActive.jpg</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/ILIKEActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>ilike.com</EmailDomain>
+			<WebDomain>ilike.com</WebDomain>
+			<Name>iLike</Name>
+			<Summary>Recommend music, share playlists, and stay up-to-date on concerts.</Summary>
+			<SiteUrl>http://www.ilike.com/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Terminated</State>
+				<Date>2011-04-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="95">
+			<AppId>1208148514</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/IMGSHActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/IMGSHActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>imageshack.us</WebDomain>
+			<Name>ImageShack</Name>
+			<Summary>Store and share your photos and videos online.</Summary>
+			<SiteUrl>http://www.imageshack.us/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="51">
+			<AppId>1073891387</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/IRCGLActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/IRCGLActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>irc-galleria.net</EmailDomain>
+			<WebDomain>irc-galleria.net</WebDomain>
+			<Name>IRC-Galleria</Name>
+			<Summary>Community site for Finnish users to share their life with pictures and blogs.</Summary>
+			<SiteUrl>http://irc-galleria.net/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="52">
+			<AppId>1208073057</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/JUDYBActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/JUDYBActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>judysbook.com</EmailDomain>
+			<WebDomain>judysbook.com</WebDomain>
+			<Name>Judy's Book</Name>
+			<Summary>Your book of local secrets, reviews and deals.</Summary>
+			<SiteUrl>http://www.judysbook.com</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="53">
+			<AppId>1208019279</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/LSTFMActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/LSTFMActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>mailer.last.fm</EmailDomain>
+			<WebDomain>last.fm</WebDomain>
+			<Name>Last.fm</Name>
+			<Summary>The social music revolution.</Summary>
+			<SiteUrl>http://www.last.fm/</SiteUrl>
+			<PSARank>16</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="54">
+			<AppId>1275116060</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/LIBCMActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/LIBCMActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>libero.it</EmailDomain>
+			<WebDomain>digiland.libero.it</WebDomain>
+			<Name>Libero Community</Name>
+			<Summary>Meet new friends and show who you are with photos, videos, blogs, websites</Summary>
+			<SiteUrl>http://digiland.libero.it/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="55">
+			<AppId>1073888315</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/LBSTIActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/LBSTIActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>libimseti.cz</EmailDomain>
+			<WebDomain>libimseti.cz</WebDomain>
+			<Name>Libimseti.cz</Name>
+			<Summary>A top social-networking website for young people.</Summary>
+			<SiteUrl>http://libimseti.cz/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="56">
+			<AppId>1073844531</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/LIMAOActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/LIMAOActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>mailer1.limao.com.br</EmailDomain>
+			<WebDomain>limao.com.br</WebDomain>
+			<Name>MiniBlog</Name>
+			<Summary>Tell your friends what you´re doing at MiniBlog.</Summary>
+			<SiteUrl>http://home.limao.com.br/home/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="57">
+			<AppId>1140907062</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/LJRNLActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/LJRNLActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>livejournal.com</EmailDomain>
+			<WebDomain>livejournal.com</WebDomain>
+			<Name>LiveJournal</Name>
+			<Summary>Express yourself, share your life, connect with friends online.</Summary>
+			<SiteUrl>http://www.livejournal.com</SiteUrl>
+			<PSARank>15</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="58">
+			<AppId>1140996148</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/LKLSNActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/LKLSNActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>lokalisten.de</EmailDomain>
+			<WebDomain>lokalisten.de</WebDomain>
+			<Name>lokalisten.de</Name>
+			<Summary>Keeping in touch with your friends.</Summary>
+			<SiteUrl>http://www.lokalisten.de/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="59">
+			<AppId>1275169086</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/MAILRActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/MAILRActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>mail.ru</WebDomain>
+			<Name>Blogs@Mail.Ru</Name>
+			<Summary> Blogs@Mail.Ru - the leading blogging service. Read and write comments, participate in communities, create your own communities.</Summary>
+			<SiteUrl>http://mail.ru</SiteUrl>
+			<PSARank>24</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="60">
+			<AppId>1140905528</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/MCLUBActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/MCLUBActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>club.msn.cn</WebDomain>
+			<Name>MClub</Name>
+			<Summary>Play games and share the joy with your friends.</Summary>
+			<SiteUrl>http://club.msn.cn</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Terminated</State>
+				<Date>2011-04-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="61">
+			<AppId>1275098630</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/MFLOGActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/MFLOGActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>metroflog.com</EmailDomain>
+			<WebDomain>metroflog.com</WebDomain>
+			<Name>metroFLOG</Name>
+			<Summary>Share a daily photo.</Summary>
+			<SiteUrl>http://metroflog.com</SiteUrl>
+			<PSARank>23</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="63">
+			<AppId>1073891381</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/MTPLYActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/MTPLYActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>multiply.com</EmailDomain>
+			<WebDomain>multiply.com</WebDomain>
+			<Name>Multiply</Name>
+			<Summary>Share. Store. Create. Your one place for doing more with your media.</Summary>
+			<SiteUrl>http://multiply.com/</SiteUrl>
+			<PSARank>31</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="64">
+			<AppId>1073888313</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/MYVIPActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/MYVIPActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>mx10.myvip.com</EmailDomain>
+			<WebDomain>myvip.com</WebDomain>
+			<Name>myVIP</Name>
+			<Summary>myVIP is the most vivid community site of Hungary.</Summary>
+			<SiteUrl>http://myvip.com/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Terminated</State>
+				<Date>2011-05-12T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="96">
+			<AppId>1208148515</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/NAVERActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/NAVERActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>naver.com</WebDomain>
+			<Name>NAVER</Name>
+			<Summary>Blog your life and share with friends.</Summary>
+			<SiteUrl>http://blog.naver.com/</SiteUrl>
+			<PSARank>34</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="65">
+			<AppId>1140996660</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/NEOGNActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/NEOGNActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>neogen.ro</EmailDomain>
+			<WebDomain>neogen.ro</WebDomain>
+			<Name>Neogen.ro</Name>
+			<Summary>Neogen keeps you close to your friends!</Summary>
+			<SiteUrl>http://www.neogen.ro</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="114">
+			<AppId>1275227489</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/NTLOGActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/NTLOGActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>netlog.com</WebDomain>
+			<Name>Netlog</Name>
+			<Summary>Community to keep in touch with and extend your social network.</Summary>
+			<SiteUrl>http://www.netlog.com</SiteUrl>
+			<PSARank>36</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="66">
+			<AppId>1275167197</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/NWSVNActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/NWSVNActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>adm.newsvine.com</EmailDomain>
+			<WebDomain>newsvine.com</WebDomain>
+			<Name>Newsvine</Name>
+			<Summary>A news site run by you and the worldwide news community</Summary>
+			<SiteUrl>http://www.newsvine.com</SiteUrl>
+			<PSARank>22</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="67">
+			<AppId>1275167198</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/NICODActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/NICODActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>nicovideo.jp</WebDomain>
+			<Name>Nico Nico Douga</Name>
+			<Summary>Add activities of adding My List or uploading videos in Nico Nico Douga to your profile.</Summary>
+			<SiteUrl>http://www.nicovideo.jp</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Terminated</State>
+				<Date>2011-04-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="68">
+			<AppId>1208071138</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/OLEOLActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/OLEOLActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>oleole.com</EmailDomain>
+			<WebDomain>oleole.com</WebDomain>
+			<Name>OleOle</Name>
+			<Summary>The leading social media website for football/soccer fans.</Summary>
+			<SiteUrl>http://www.oleole.com</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="69">
+			<AppId>1208018253</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/OVRBLActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/OVRBLActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>over-blog.com</EmailDomain>
+			<WebDomain>over-blog.com</WebDomain>
+			<Name>Overblog</Name>
+			<Summary>Start a blog. Attract readers. Earn revenue.</Summary>
+			<SiteUrl>http://www.over-blog.com/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="70">
+			<AppId>1275069968</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/PNDRAActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/PNDRAActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>pandora.com</EmailDomain>
+			<WebDomain>pandora.com</WebDomain>
+			<Name>Pandora</Name>
+			<Summary>Create radio stations that play the music you like.</Summary>
+			<SiteUrl>http://pandora.com/</SiteUrl>
+			<PSARank>6</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="71">
+			<AppId>1207963392</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/PHTOBActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/PHTOBActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>photobucket.com</EmailDomain>
+			<WebDomain>photobucket.com</WebDomain>
+			<Name>Photobucket</Name>
+			<Summary>Manage and share your photos and videos online.</Summary>
+			<SiteUrl>http://www.photobucket.com</SiteUrl>
+			<PSARank>8</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="72">
+			<AppId>1140956750</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/PHTOZActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/PHTOZActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>photozou.jp</EmailDomain>
+			<WebDomain>photozou.jp</WebDomain>
+			<Name>Photozou</Name>
+			<Summary>A photo sharing service in Japan.</Summary>
+			<SiteUrl>http://photozou.jp</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="120">
+			<AppId>1275171076</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/PCASAActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/PCASAActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>picasaweb.google.com,picasa.google.com</WebDomain>
+			<Name>Picasa</Name>
+			<Summary>Show your photos at their best.</Summary>
+			<SiteUrl>http://picasaweb.google.com</SiteUrl>
+			<PSARank>13</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="91">
+			<AppId>1208112979</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/PXNETActive.jpg</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/PXNETActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>pixnet.tw</EmailDomain>
+			<WebDomain>pixnet.net, pixnet.tw</WebDomain>
+			<Name>PIXNET</Name>
+			<Summary>Share your life with your friends through your album and blog.</Summary>
+			<SiteUrl>http://www.pixnet.net</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="73">
+			<AppId>1208071139</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/PLYHDActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/PLYHDActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>playahead.se</WebDomain>
+			<Name>Playahead</Name>
+			<Summary>Find new friends, flirt, chat and have fun!</Summary>
+			<SiteUrl>http://www.playahead.se/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Terminated</State>
+				<Date>2010-04-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="98">
+			<AppId>1073944071</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/PSIFXActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/PSIFXActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>psicofxp.info</EmailDomain>
+			<WebDomain>psicofxp.com</WebDomain>
+			<Name>psicofxp.com</Name>
+			<Summary>Create and answer the topics that you are interested in one place. It´s quick and easy!</Summary>
+			<SiteUrl>http://www.psicofxp.com</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="74">
+			<AppId>1275168616</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/QIKActive.jpg</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/QIKActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>qik.me</EmailDomain>
+			<WebDomain>qik.com</WebDomain>
+			<Name>Qik</Name>
+			<Summary>Share live video from mobile phones</Summary>
+			<SiteUrl>http://qik.com</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="75">
+			<AppId>1073887811</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/QYPEActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/QYPEActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>qype.com</EmailDomain>
+			<WebDomain>qype.com, qype.es, qype.co.uk, qype.it, qype.com.br, qype.pl, qype.fr, qype.at, qype.ch</WebDomain>
+			<Name>Qype</Name>
+			<Summary>Share your Qype reviews on Windows Live.</Summary>
+			<SiteUrl>http://www.qype.com</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="76">
+			<AppId>1208070642</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/SCLBMActive.jpg</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/SCLBMActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>sayclub.com</WebDomain>
+			<Name>SayClubme</Name>
+			<Summary>Share your life with your friends</Summary>
+			<SiteUrl>http://www.sayclub.com/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="99">
+			<AppId>1073944072</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/SVNLDActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/SVNLDActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>sevenload.com</EmailDomain>
+			<WebDomain>sevenload.com</WebDomain>
+			<Name>sevenload</Name>
+			<Summary>Show your friends the videos and photos that move you most on sevenload.</Summary>
+			<SiteUrl>http://sevenload.com</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="77">
+			<AppId>1208070643</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/SKYRKActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/SKYRKActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>skyrock.com</WebDomain>
+			<Name>Skyrock</Name>
+			<Summary>Skyrock, Free People Network!</Summary>
+			<SiteUrl>http://www.skyrock.com/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="78">
+			<AppId>1208072560</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/SLDSHActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/SLDSHActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>slidesharemailer.com</EmailDomain>
+			<WebDomain>slideshare.net</WebDomain>
+			<Name>SlideShare</Name>
+			<Summary>SlideShare feed for user activities, including favorites, contacts and comments.</Summary>
+			<SiteUrl>http://www.slideshare.net/</SiteUrl>
+			<PSARank>29</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="79">
+			<AppId>1140905008</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/SMGMGActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/SMGMGActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>smugmug.com</EmailDomain>
+			<WebDomain>smugmug.com</WebDomain>
+			<Name>SmugMug</Name>
+			<Summary>The ultimate photo sharing site.</Summary>
+			<SiteUrl>http://www.smugmug.com</SiteUrl>
+			<PSARank>25</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="80">
+			<AppId>1207961860</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/STMBLActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/STMBLActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>stumbleupon.com</EmailDomain>
+			<WebDomain>stumbleupon.com</WebDomain>
+			<Name>StumbleUpon</Name>
+			<Summary>Explore the web based on the things that you like.</Summary>
+			<SiteUrl>http://www.stumbleupon.com/</SiteUrl>
+			<PSARank>30</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="81">
+			<AppId>1208073058</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/TABLGActive.jpg</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/TABLGActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>tabelog.com</EmailDomain>
+			<WebDomain>tabelog.com</WebDomain>
+			<Name>Tabelog</Name>
+			<Summary>Share your restaurant reviews.</Summary>
+			<SiteUrl>http://tabelog.com</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="101">
+			<AppId>1073943560</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/TLCCOActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/TLCCOActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>telecinco.es</WebDomain>
+			<Name>Telecinco.es</Name>
+			<Summary>Share Telecinco.es</Summary>
+			<SiteUrl>http://www.telecinco.es</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="82">
+			<AppId>1275168869</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/TSTRYActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/TSTRYActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>tistory.com</WebDomain>
+			<Name>TISTORY</Name>
+			<Summary>Express your real identity with a blog.</Summary>
+			<SiteUrl>http://www.tistory.com/</SiteUrl>
+			<PSARank>37</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="83">
+			<AppId>1073750532</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/TRPITActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/TRPITActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>tripit.com</EmailDomain>
+			<WebDomain>tripit.com</WebDomain>
+			<Name>TripIt</Name>
+			<Summary>Organize all the details of your next trip in one place.</Summary>
+			<SiteUrl>http://www.tripit.com/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="84">
+			<AppId>1140888696</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/TYPPDActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/TYPPDActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>typepad.com</WebDomain>
+			<Name>TypePad</Name>
+			<Summary>Blog about your passions.</Summary>
+			<SiteUrl>http://typepad.com</SiteUrl>
+			<PSARank>19</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="85">
+			<AppId>1275168870</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/VIADOActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/VIADOActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>mailviadeo.com</EmailDomain>
+			<WebDomain>viadeo.com</WebDomain>
+			<Name>Viadeo</Name>
+			<Summary>Professional networking and career management</Summary>
+			<SiteUrl>http://www.viadeo.com</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="102">
+			<AppId>1073944073</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/VTNTSActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/VTNTSActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>virtualnights.com</EmailDomain>
+			<WebDomain>virtualnights.com</WebDomain>
+			<Name>virtualnights</Name>
+			<Summary>virtualnights is a community for events, locations and parties.</Summary>
+			<SiteUrl>http://www.virtualnights.com/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="86">
+			<AppId>1140995638</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/WATTVActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/WATTVActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>wat.tv</EmailDomain>
+			<WebDomain>wat.tv</WebDomain>
+			<Name>Wat.tv</Name>
+			<Summary>Videos, buzz &amp; you! Discover and share the best videos on the web.  Simply wicked!</Summary>
+			<SiteUrl>http://www.wat.tv/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="87">
+			<AppId>1073746946</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/WORDPActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/WORDPActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>wordpress.com</EmailDomain>
+			<WebDomain>wordpress.com</WebDomain>
+			<Name>WordPress</Name>
+			<Summary>Express yourself with a blog.</Summary>
+			<SiteUrl>http://www.wordpress.com/</SiteUrl>
+			<PSARank>10</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers>RecentActivity.Publish</Offers>
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="103">
+			<AppId>1141029636</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/XINGActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/XINGActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>xing.com</EmailDomain>
+			<WebDomain>xing.com</WebDomain>
+			<Name>XING</Name>
+			<Summary>XING.com - The leading European Social Network for Business Professionals</Summary>
+			<SiteUrl>http://www.xing.com</SiteUrl>
+			<PSARank>35</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="90">
+			<AppId>1208083615</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/YTUBEActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/YTUBEActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>YouTube.com</EmailDomain>
+			<WebDomain>YouTube.com</WebDomain>
+			<Name>YouTube</Name>
+			<Summary>Broadcast yourself.</Summary>
+			<SiteUrl>http://www.YouTube.com/</SiteUrl>
+			<PSARank>4</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="88">
+			<AppId>1140906030</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/YNDEXActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/YNDEXActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>yandex.ru</WebDomain>
+			<Name>wow.ya.ru</Name>
+			<Summary>Store and share photos, blog, and keep up-to-date with your friends.</Summary>
+			<SiteUrl>http://wow.ya.ru/</SiteUrl>
+			<PSARank>28</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="89">
+			<AppId>1140855044</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/YELPActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/YELPActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain>yelp.com</EmailDomain>
+			<WebDomain>yelp.com</WebDomain>
+			<Name>Yelp</Name>
+			<Summary>Real people posting real reviews.</Summary>
+			<SiteUrl>http://www.yelp.com/</SiteUrl>
+			<PSARank>17</PSARank>
+			<Connected>false</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>0001-01-01T00:00:00</Date>
+			</AppState>
+			<Offers>RecentActivity.Publish</Offers>
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="49">
+			<AppId>1275114792</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/ZOOGRActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/ZOOGRActive.gif</MiniPhotoUrl>
+			<Domain />
+			<EmailDomain />
+			<WebDomain>zoo.gr</WebDomain>
+			<Name>Zoo</Name>
+			<Summary>Share your photos and posts.</Summary>
+			<SiteUrl>http://www.zoo.gr/</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>false</Connected>
+			<AppState>
+				<State>Terminated</State>
+				<Date>2011-05-05T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile />
+			<ViewPhotos />
+			<SendPrivateMessage />
+			<ReportAbuse />
+		</App>
+		<App DomainId="70">
+			<AppId>1140906031</AppId>
+			<ThumbNailUrl>https://{{ settings.USERSTORAGE_HOST }}/static/social/ugnetthumb.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://{{ settings.USERSTORAGE_HOST }}/static/social/mini.gif</MiniPhotoUrl>
+			<Domain>^https?://.*\.hiden\.cc/.*$</Domain>
+			<EmailDomain>mail.ugnet.gay</EmailDomain>
+			<WebDomain>ugnet.gay</WebDomain>
+			<Name>the undergr0und</Name>
+			<Summary>Making the internet fun again.</Summary>
+			<SiteUrl>http://ugnet.gay/</SiteUrl>
+			<PSARank>1</PSARank>
+			<Connected>true</Connected>
+			<AppState>
+				<State>Active</State>
+				<Date>2008-04-29T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile>http://www.facebook.com/profile.php?id={0}</ViewProfile>
+			<ViewPhotos>http://www.facebook.com/photos.php?id={0}</ViewPhotos>
+			<SendPrivateMessage>http://www.facebook.com/messages/{0}</SendPrivateMessage>
+			<ReportAbuse>http://www.facebook.com/profile.php?id={0}</ReportAbuse>
+		</App>
+		<App DomainId="9">
+			<AppId>1140860417</AppId>
+			<ThumbNailUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaMedium/MYSPActive.gif</ThumbNailUrl>
+			<MiniPhotoUrl>https://secure.wlxrs.com/$live.controls.images/sn/PsaSmall/MYSPActive.gif</MiniPhotoUrl>
+			<Domain>^http(s)?://.*\.myspace\.com/.*</Domain>
+			<EmailDomain>message.myspace.com</EmailDomain>
+			<WebDomain>myspace.com</WebDomain>
+			<Name>MySpace</Name>
+			<Summary>MySpace is a technology company connecting people through personal expression, content, and culture.</Summary>
+			<SiteUrl>http://www.myspace.com</SiteUrl>
+			<PSARank xsi:nil="true" />
+			<Connected>true</Connected>
+			<AppState>
+				<State>Terminated</State>
+				<Date>2012-04-25T00:00:00</Date>
+			</AppState>
+			<Offers />
+			<ViewProfile>http://profile.myspace.com/index.cfm?fuseaction=user.viewprofile&amp;friendID={0}</ViewProfile>
+			<ViewPhotos>http://viewmorepics.myspace.com/index.cfm?fuseaction=user.viewAlbums&amp;friendID={0}</ViewPhotos>
+			<SendPrivateMessage>http://messaging.myspace.com/index.cfm?fuseaction=mail.messageV3&amp;friendID={0}</SendPrivateMessage>
+			<ReportAbuse>http://www.myspace.com/index.cfm?fuseaction=help.reportabuse&amp;abusetype=profile&amp;ProfileContentID={0}</ReportAbuse>
+		</App>
+	</Applications>
+</LocalizedConfig>

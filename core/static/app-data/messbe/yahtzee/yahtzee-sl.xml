@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<cmdHelp>Pomoč</cmdHelp>
+	<cmdHideScores>Skrij lestvico</cmdHideScores>
+	<cmdRestart>Resetiraj igro</cmdRestart>
+	<cmdRollStep1>Vrži kocke (prvič)</cmdRollStep1>
+	<cmdRollStep2>Vrži kocke (drugič)</cmdRollStep2>
+	<cmdRollStep3>Vrži kocke (zadnjič)</cmdRollStep3>
+	<cmdShowScores>Pokaži lestvico</cmdShowScores>
+	<confirmRemoteWantsRestart>{0} želi resetirati to igro, se strinjaš?</confirmRemoteWantsRestart>
+	<confirmZeroOut>Si prepričan da želiš vstaviti ničlo na {0}?</confirmZeroOut>
+	<connectionDirect>posredno</connectionDirect>
+	<connectionDisconnected>prekinjeno</connectionDisconnected>
+	<connectionIndirect>neposredno</connectionIndirect>
+	<errorDataSend>Podatkovna napaka; pošiljanje podatkov ni možno. Igra ustavljena.</errorDataSend>
+	<errorDisconnected>Prekinjeno.</errorDisconnected>
+	<errorUserLeft>{0} je zapustil igro. Igra je končana.</errorUserLeft>
+	<infoClickToPlayAgain>Klikni 'Resetiraj igro' za novo igro.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} ne želi resetirati te igre.</infoRestartDenied>
+	<infoMyTurnStep1>Ti si na vrsti, vrži kocke.</infoMyTurnStep1>
+	<infoMyTurnStep2>Izberi kocke, ki jih želiš odstraniti in jih ponovno vrži ali pa izberi rezultat.</infoMyTurnStep2>
+	<infoMyTurnStep3>Izberi kocke, ki jih želiš odstraniti in jih vrži zadnjič ali pa izberi rezultat.</infoMyTurnStep3>
+	<infoMyTurnStep4>Izberi rezultat na tabli.</infoMyTurnStep4>
+	<infoRemoteTurn>Prosim počakaj na nasprotnika...</infoRemoteTurn>
+	<infoSelectDice>Potrebno je izbrati vsaj eno kocko, če želiš še enkrat metati.</infoSelectDice>
+	<lblBroughtToYouBy>Vam na uslugo: {0}</lblBroughtToYouBy>
+	<lblConnectionType>Vrsta povezave</lblConnectionType>
+	<lblOpponent>Nasprotnik</lblOpponent>
+	<lblTopTotal>Skupno zgoraj</lblTopTotal>
+	<lblVersion>Yahtzee {0}</lblVersion>
+	<lblYou>Ti</lblYou>
+	<lblOnes>Enke</lblOnes>
+	<lblTwos>Dvojke</lblTwos>
+	<lblThrees>Trojke</lblThrees>
+	<lblFours>Štirke</lblFours>
+	<lblFives>Petke</lblFives>
+	<lblSixes>Šestke</lblSixes>
+	<lblBonus>Dodatek</lblBonus>
+	<lblTopTotal>Skupno zgoraj</lblTopTotal>
+	<lblThreeOfAKind>Tri enake</lblThreeOfAKind>
+	<lblFourOfAKind>Štiri enake</lblFourOfAKind>
+	<lblFullHouse>Full House</lblFullHouse>
+	<lblSmallStraight>Mala lestvica</lblSmallStraight>
+	<lblLargeStraight>Velika lestvica</lblLargeStraight>
+	<lblYahtzee>Yahtzee</lblYahtzee>
+	<lblChance>Priložnost</lblChance>
+	<lblBottomTotal>Skupno spodaj</lblBottomTotal>
+	<lblGameTotal>Skupno v igri</lblGameTotal>
+	<lblOverallTotal>Seštevek</lblOverallTotal>
+	<lblGamesWon>Zmage</lblGamesWon>
+	<stateDraw>Neodločeno!</stateDraw>
+	<stateFinishedMyTurn>{0} je končal, ponovno si na vrsti.</stateFinishedMyTurn>
+	<stateFinishedRemoteTurn>Končal si, {0} ponovno meče.</stateFinishedRemoteTurn>
+	<stateInitializing>Nalagam igro...</stateInitializing>
+	<stateLost>Škoda, izgubil si.</stateLost>
+	<stateMyTurn>Ti si na vrsti.</stateMyTurn>
+	<stateRemoteTurn>Čakam da {0} naredi potezo.</stateRemoteTurn>
+	<stateStartMyTurn>Igra se je pričela, ti si na vrsti.</stateStartMyTurn>
+	<stateStartRemoteTurn>Igra se je pričela, čakam da {0} naredi potezo.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Čakam na nasprotnika da se pridruži</stateWaitOnJoin>
+	<stateWon>Čestitam, zmagal si!</stateWon>
+</words>
+

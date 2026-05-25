@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<cmdHelp>Ayuda</cmdHelp>
+	<cmdHideScores>Ocultar mejores puntuaciones</cmdHideScores>
+	<cmdRestart>Reiniciar juego</cmdRestart>
+	<cmdRollStep1>Tira el dado (primera vez)</cmdRollStep1>
+	<cmdRollStep2>Tira el dado (segunda vez)</cmdRollStep2>
+	<cmdRollStep3>Tira el dado (ultima vez)</cmdRollStep3>
+	<cmdShowScores>Mostrar mejores puntuaciones</cmdShowScores>
+	<confirmRemoteWantsRestart>{0} quiere reiniciar el juego, ¿estás de acuerdo?</confirmRemoteWantsRestart>
+	<confirmZeroOut>¿Are you sure you want to zero out {0}?</confirmZeroOut>
+	<connectionDirect>directa</connectionDirect>
+	<connectionDisconnected>desconectado</connectionDisconnected>
+	<connectionIndirect>indirecta</connectionIndirect>
+	<errorDataSend>Se ha producido un error; imposible enviar datos. El juego se ha interrumpido.</errorDataSend>
+	<errorDisconnected>Desconectado.</errorDisconnected>
+	<errorUserLeft>{0} ha abandonado el juego. La partida ha finalizado.</errorUserLeft>
+	<infoClickToPlayAgain>Clic 'Reiniciar juego' para jugar de nuevo.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} no quiere reiciar la partida.</infoRestartDenied>
+	<infoMyTurnStep1>Es tu turno, tira el dado.</infoMyTurnStep1>
+	<infoMyTurnStep2>Elige el dado que deseas quitar y tirar de nuevo o selecciona una puntuación.</infoMyTurnStep2>
+	<infoMyTurnStep3>Elige el dado que deseas quitar y tirar de nuevo por última vez o selecciona una puntuación.</infoMyTurnStep3>
+	<infoMyTurnStep4>Selecciona una puntuación de la tabla de puntuaciones.</infoMyTurnStep4>
+	<infoRemoteTurn>Por favor, espera a tu oponente...</infoRemoteTurn>
+	<infoSelectDice>Selecciona uno o más dados para volver a tirar.</infoSelectDice>
+	<lblBroughtToYouBy>Juego patrocinado por {0}</lblBroughtToYouBy>
+	<lblConnectionType>Tipo de conexión</lblConnectionType>
+	<lblOpponent>Oponente</lblOpponent>
+	<lblTopTotal>Top total</lblTopTotal>
+	<lblVersion>Yahtzee {0}</lblVersion>
+	<lblYou>Tu</lblYou>
+	<lblOnes>Unos</lblOnes>
+	<lblTwos>Doses</lblTwos>
+	<lblThrees>Treses</lblThrees>
+	<lblFours>Cuatros</lblFours>
+	<lblFives>Cincos</lblFives>
+	<lblSixes>Seises</lblSixes>
+	<lblBonus>Bonus</lblBonus>
+	<lblTopTotal>Top Total</lblTopTotal>
+	<lblThreeOfAKind>Three of a Kind</lblThreeOfAKind>
+	<lblFourOfAKind>Four of a Kind</lblFourOfAKind>
+	<lblFullHouse>Full House</lblFullHouse>
+	<lblSmallStraight>Small Straight</lblSmallStraight>
+	<lblLargeStraight>Large Straight</lblLargeStraight>
+	<lblYahtzee>Yahtzee</lblYahtzee>
+	<lblChance>Chance</lblChance>
+	<lblBottomTotal>Bottom Total</lblBottomTotal>
+	<lblGameTotal>Game Total</lblGameTotal>
+	<lblOverallTotal>Overall Total</lblOverallTotal>
+	<lblGamesWon>Ganador de la partida</lblGamesWon>
+	<stateDraw>Empate</stateDraw>
+	<stateFinishedMyTurn>{0} is finished, it's your turn again.</stateFinishedMyTurn>
+	<stateFinishedRemoteTurn>Tu turno ha finalizado, es el turno de {0}.</stateFinishedRemoteTurn>
+	<stateInitializing>Iniciando juego...</stateInitializing>
+	<stateLost>Has perdido.</stateLost>
+	<stateMyTurn>Es tu turno.</stateMyTurn>
+	<stateRemoteTurn>Esperando a que {0} haga un movimiento.</stateRemoteTurn>
+	<stateStartMyTurn>Comienza el juego, es tu turno.</stateStartMyTurn>
+	<stateStartRemoteTurn>Comienza el juego, esperando a que {0} mueva.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Esperando a que se una tu oponente</stateWaitOnJoin>
+	<stateWon>Enhorabuena, has ganado</stateWon>
+</words>

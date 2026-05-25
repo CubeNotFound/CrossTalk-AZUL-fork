@@ -1,0 +1,978 @@
+<html>
+<!--
+	Copyright by Koen, 2003,2004,2005
+	http://games.mess.be
+-->
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7">
+		<title>Yahtzee</title>
+		<style type="text/css">
+		.btn{font-family:Tahoma;font-size:8pt;border-style:none;background-image:url(images/playerbg.gif);height:17px}
+		.score{height:17px;background-image:url(images/headerbg.gif)}
+		.scoreTotal{font-weight:bold;height:17px;background-image:url(images/playerbg.gif)}
+		table{font-family:Tahoma;font-size:8pt}
+		</style>
+		<!--script language="JScript.Encode" src="../common/score.js"></script-->
+		<script language="javascript" src="../common/common.js"></script>
+		<script language="javascript">
+var VERSION			= "v2.0";
+
+/// GAME_STATE
+var GS_INITIALIZING	= 0;
+var GS_WAITFORJOIN	= 1;
+var GS_MYTURN		= 2;
+var GS_REMOTETURN	= 3;
+var GS_GAMEOVER		= 4;
+var GS_ERROR		= 5;
+
+/// Data commands
+var CMD_RESTART		= "res";
+var CMD_NORESTART	= "nor";
+var CMD_RESTARTOK	= "rok";
+
+/// YAHTZEE_SCORE
+var YS_1			= 1;
+var YS_2			= 2;
+var YS_3			= 3;
+var YS_4			= 4;
+var YS_5			= 5;
+var YS_6			= 6;
+var YS_3KIND		= 7;
+var YS_4KIND		= 8;
+var YS_FULLHOUSE	= 9;
+var YS_SMALLST		= 10;
+var YS_LARGEST		= 11;
+var YS_YAHTZEE		= 12;
+var YS_CHANGE		= 13;
+
+var m_remoteUserName;
+var m_gameState = GS_INITIALIZING;
+var m_requestRestart = false;
+var m_appID			= 10301359;
+var m_isInitialized	= false;
+
+/// Game specific variables
+var m_lastTd		= null;
+var m_rollCount		= 1;
+var m_dices			= new Array(5);
+var m_scoreMe		= new Array(14);
+var m_scoreRemote	= new Array(14);
+var m_totalMe		= 0;
+var m_totalRemote	= 0;
+var m_gamesMe		= 0;
+var m_gamesRemote	= 0;
+var m_iStart;
+
+var m_preloadDone = false;
+var m_remoteLoaded = false;
+
+///
+/// Global event handlers
+///
+function OnLoad(){
+	// load language
+	loadLanguage("yahtzee");
+	applyLanguage();
+
+	m_remoteUserName = getRemoteUserName();
+	
+	updateGameState(GS_INITIALIZING, getWord("stateInitializing"));
+	updateConnectionType();
+
+	nameMe.innerText = window.external.Users.Me.Name;
+	nameRemote.innerText = m_remoteUserName;
+
+	m_iStart = iAmInviter();
+	
+	m_isInitialized = true;
+	window.external.Channel.Initialize();
+	
+	preloadImages(new Array("1.gif", "2.gif", "3.gif", "4.gif", "5.gif", "6.gif",
+		"bg-yellow-dark.gif", "bigbg.gif", "ct_direct.gif", "ct_disconnected.gif", "ct_indirect.gif",
+		"dice1.gif", "dice2.gif", "dice3.gif", "dice4.gif", "dice5.gif", "dice6.gif", "dices.jpg",
+		"empty.gif", "headerbg.gif", "help.gif", "playerbg.gif", "dice1-fade.gif", "dice2-fade.gif",
+		"dice3-fade.gif", "dice4-fade.gif", "dice5-fade.gif", "dice6-fade.gif"), OnPreloadProgress,
+		OnPreloadComplete);
+}
+
+function OnUnload(){
+}
+
+///
+/// Preloading stuff
+///
+function OnPreloadProgress(progress){
+	divProgress.style.width = progress + "%";
+}
+
+function OnPreloadComplete(){
+	m_preloadDone = true;
+	initialize();
+}
+
+function initialize(){
+	if (m_preloadDone && m_remoteLoaded){
+		tblPreload.style.display = "none";
+		tblGame.style.display = "";
+
+		startGame();
+	}
+}
+
+function applyLanguage(){
+	lblBy.innerHTML = getWord("lblBroughtToYouBy", "<b>games.mess.be</b>");
+	lblVersion.innerText = getWord("lblVersion", VERSION);
+	btnHelp.title = getWord("cmdHelp");
+	btnHideScores.innerText = getWord("cmdHideScores");
+	btnRestart.innerText = getWord("cmdRestart");
+	btnRoll.innerText = getWord("cmdRollStep1");
+	btnShowScores.innerText = getWord("cmdShowScores");
+	
+	nameMe.innerText = getWord("lblYou");
+	nameRemote.innerText = getWord("lblOpponent");
+	
+	lblOnes.innerText = getWord("lblOnes");
+	lblTwos.innerText = getWord("lblTwos");
+	lblThrees.innerText = getWord("lblThrees");
+	lblFours.innerText = getWord("lblFours");
+	lblFives.innerText = getWord("lblFives");
+	lblSixes.innerText = getWord("lblSixes");
+	lblBonus.innerText = getWord("lblBonus");
+	lblTopTotal.innerText = getWord("lblTopTotal");
+	lblThreeOfAKind.innerText = getWord("lblThreeOfAKind");
+	lblFourOfAKind.innerText = getWord("lblFourOfAKind");
+	lblFullHouse.innerText = getWord("lblFullHouse");
+	lblSmallStraight.innerText = getWord("lblSmallStraight");
+	lblLargeStraight.innerText = getWord("lblLargeStraight");
+	lblYahtzee.innerText = getWord("lblYahtzee");
+	lblChance.innerText = getWord("lblChance");
+	lblBottomTotal.innerText = getWord("lblBottomTotal");
+	lblGameTotal.innerText = getWord("lblGameTotal");
+	lblOverallTotal.innerText = getWord("lblOverallTotal");
+	lblGamesWon.innerText = getWord("lblGamesWon");
+}
+
+///
+/// Channel event handlers
+///
+
+///
+/// Occurs when the remote user closes the application, the conversation window or signs out of Messenger.
+///
+function Channel_OnAppClose(){
+	m_remoteLoaded = false;
+	updateGameState(GS_ERROR, getWord("errorUserLeft", getDisplayName(m_remoteUserName)));
+}
+
+///
+/// Occurs when a data send has failed, inspect Channel.Error for details.
+///
+function Channel_OnDataError(){
+	updateGameState(GS_ERROR, getWord("errorDataSend"));
+}
+
+///
+/// Occurs when new data has been received. The data is available in window.external.Channel.Data.
+///
+function Channel_OnDataReceived(){
+	var data = window.external.Channel.Data;
+	
+	if (data == CMD_RESTART){
+		if (m_gameState == GS_MYTURN || m_gameState == GS_REMOTETURN){
+			var restart = confirm(getWord("confirmRemoteWantsRestart", getDisplayName(m_remoteUserName)));
+			var cmd = restart ? CMD_RESTARTOK : CMD_NORESTART;
+			window.external.Channel.SendData(cmd);
+			
+			if (restart)
+				startGame();
+		}
+		else if (m_gameState == GS_WAITFORJOIN){
+			window.external.Channel.SendData(CMD_RESTARTOK);		//confirm
+			startGame();
+		}
+	}
+	else if (data == CMD_RESTARTOK){
+		m_requestRestart = false;
+		startGame();
+	}
+	else if (data == CMD_NORESTART){
+		m_requestRestart = false;
+		alert(getWord("infoRestartDenied", getDisplayName(m_remoteUserName)));
+	}
+	else if (data.substr(0, 1) == "S"){
+		if (m_gameState == GS_REMOTETURN)
+			setScore(new scoreSet(data), false);
+		else if (m_gameState == GS_GAMEOVER){
+			//?
+		}
+	}
+	else{
+		updateDices(new diceList(data));
+	}
+}
+
+///
+/// Occurs when the remote user closes the window that contains the app.
+///
+function Channel_OnRemoteAppClosed(){
+	m_remoteLoaded = false;
+	updateGameState(GS_ERROR, getWord("errorUserLeft", getDisplayName(m_remoteUserName)));
+}
+
+///
+/// Occurs when the remote app has been initialized. Both apps are now initialized.
+///
+function Channel_OnRemoteAppLoaded(){
+	m_remoteLoaded = true;
+	initialize();
+}
+
+///
+/// Occurs when the connection between conversants changes from direct to indirect or disconnected.
+/// The type is available in window.external.Channel.Type
+///
+function Channel_OnTypeChanged(){
+	updateConnectionType();
+}
+
+///
+/// Helpers functions
+///
+function updateConnectionType(){
+	var icon, descr;
+	
+	switch(window.external.Channel.Type){
+		case CT_DIRECT:
+			icon = "ct_direct.gif"
+			descr = getWord("connectionDirect");
+			break;
+		case CT_DISCONNECTED:
+			icon = "ct_disconnected.gif"
+			descr = getWord("connectionDisconnected");
+			
+			if (m_isInitialized)
+				updateGameState(GS_ERROR, getWord("errorDisconnected"));
+			else
+				updateGameState(GS_INITIALIZING, getWord("stateInitializing"));
+
+			break;
+		case CT_INDIRECT:
+			icon = "ct_indirect.gif"
+			descr = getWord("connectionIndirect");
+			break;
+	}
+
+	statusIcon.src = "images/" + icon;
+	statusIcon.title = getWord("lblConnectionType") + ": " + descr;
+}
+
+///
+/// Game specific objects
+///
+function dice(){
+	if (arguments.length == 1){
+		var args = arguments[0].split(",");
+		this.nr = parseInt(args[0]);
+		this.reroll = (parseInt(args[1]) == 1) ? true : false;
+	}
+	else{
+		this.nr = arguments[0];
+		this.reroll = arguments[1];
+	}
+}
+dice.prototype.toString = function(){
+	return this.nr + "," + ((this.reroll) ? "1" : "0");
+}
+
+function scoreSet(){
+	if (arguments.length == 1){
+		var args = arguments[0].substr(1).split(",");
+		this.score = parseInt(args[0]);
+		this.points = parseInt(args[1]);
+	}
+	else{
+		this.score = arguments[0];
+		this.points = arguments[1];
+	}
+}
+scoreSet.prototype.toString = function(){
+	return "S" + this.score + "," + this.points;
+}
+
+function diceList(){
+	if (arguments.length == 1){
+		var args = arguments[0].split("|");
+		this.d0 = new dice(args[0]);
+		this.d1 = new dice(args[1]);
+		this.d2 = new dice(args[2]);
+		this.d3 = new dice(args[3]);
+		this.d4 = new dice(args[4]);
+	}
+	else{
+		this.d0 = arguments[0];
+		this.d1 = arguments[1];
+		this.d2 = arguments[2];
+		this.d3 = arguments[3];
+		this.d4 = arguments[4];
+	}
+}
+diceList.prototype.toString = function(){
+	return this.d0.toString() + "|" + this.d1.toString() + "|" + this.d2.toString() + "|" + this.d3.toString() + "|" + this.d4.toString();
+}
+
+///
+/// Game specific functions
+///
+function startGame(){
+	document.body.disabled = false;
+
+	resetRemoteIndicator();
+
+	for(var i = 0; i < 14; i++){
+		m_scoreMe[i] = -1;
+		m_scoreRemote[i] = -1;
+		
+		if (i < 13){
+			eval("scoreMe_" + (i + 1) + ".innerHTML = '&nbsp;';");
+			eval("scoreRemote_" + (i + 1) + ".innerHTML = '&nbsp;';");
+		}
+	}
+	//Clear scoreboard
+	bonusMe.innerHTML = "&nbsp;";
+	bonusRemote.innerHTML = "&nbsp;";
+	topTotalMe.innerText = "0";
+	topTotalRemote.innerText = "0";
+	bottomTotalMe.innerText = "0";
+	bottomTotalRemote.innerText = "0";
+	totalMe.innerText = "0";
+	totalRemote.innerText = "0";
+	totalOverallMe.innerText = m_totalMe;
+	totalOverallRemote.innerText = m_totalRemote;
+	gamesMe.innerText = m_gamesMe;
+	gamesRemote.innerText = m_gamesRemote;
+
+	if (m_iStart)
+		updateGameState(GS_MYTURN, getWord("stateStartMyTurn"));
+	else
+		updateGameState(GS_REMOTETURN, getWord("stateStartRemoteTurn", getDisplayName(m_remoteUserName)));
+}
+
+function updateGameState(gameState, msg){
+	if (gameState == GS_ERROR && m_gameState != GS_ERROR){
+		document.body.disabled = true;
+	}
+
+	if (gameState == GS_MYTURN || gameState == GS_REMOTETURN){
+		// set hand cursor
+		for(var i = 1; i < 14; i++){
+			var cursor = (gameState == GS_MYTURN && (m_scoreMe[i] == -1 || (i == YS_YAHTZEE && m_scoreMe[i] > 0))) ? "hand" : "default";
+			eval("scoreMe_" + i + ".style.cursor = '" + cursor + "';");
+		}
+		// reset dices
+		for(var i = 0; i < 5; i++){
+			m_dices[i] = new dice(-1, true);
+			eval("dice" + i + ".src = 'images/empty.gif'");
+		}
+	}
+	
+	rowDices.style.cursor = "default";
+	btnRoll.style.visibility = (gameState == GS_MYTURN) ? "visible" : "hidden";
+	
+	m_rollCount = 1;
+	m_gameState = gameState;
+	statusText.innerText = msg;
+	updateRollState();
+}
+
+function updateRollState(){
+	var msg;
+	if (m_gameState == GS_MYTURN){
+		var time;
+		var step = 4;
+		
+		if(m_rollCount > 0 && m_rollCount < 4)
+			step = m_rollCount;
+		
+		rowDices.style.cursor = (m_rollCount > 1 && m_rollCount < 4) ? "hand" : "default";
+
+		msg = getWord("infoMyTurnStep" + step);
+
+		btnRoll.value = getWord("cmdRollStep" + step);
+		btnRoll.style.visibility = (m_rollCount > 3) ? "hidden" : "visible";
+	}
+	else{
+		if (m_gameState == GS_REMOTETURN)
+			msg = getWord("infoRemoteTurn", getDisplayName(m_remoteUserName));
+		else
+			msg = "";
+	}
+	lblInfo.innerText = msg;
+}
+
+function updateScoreBoard(){
+	var topMe = 0;
+	var topRemote = 0;
+	var bottomMe = 0;
+	var bottomRemote = 0;
+	
+	for(var i = 1; i < 7; i++){
+		topMe += (m_scoreMe[i] == -1) ? 0 : m_scoreMe[i];
+		topRemote += (m_scoreRemote[i] == -1) ? 0 : m_scoreRemote[i];
+	}
+	for(var i = 7; i < 14; i++){
+		bottomMe += (m_scoreMe[i] == -1) ? 0 : m_scoreMe[i];
+		bottomRemote += (m_scoreRemote[i] == -1) ? 0 : m_scoreRemote[i];
+	}
+	
+	if (topMe >= 63){
+		topMe += 35;
+		bonusMe.innerText = 35;
+	}
+	if (topRemote >= 63){
+		topRemote += 35;
+		bonusRemote.innerText = 35;
+	}
+	
+	topTotalMe.innerText = topMe;
+	topTotalRemote.innerText = topRemote;
+	
+	bottomTotalMe.innerText = bottomMe;
+	bottomTotalRemote.innerText = bottomRemote;
+	
+	totalMe.innerText = topMe + bottomMe;
+	totalRemote.innerText = topRemote + bottomRemote;
+	
+	totalOverallMe.innerText = m_totalMe + topMe + bottomMe;
+	totalOverallRemote.innerText = m_totalRemote + topRemote + bottomRemote;
+}
+
+function getPoints(score){
+	switch(score){
+		case YS_1:
+		case YS_2:
+		case YS_3:
+		case YS_4:
+		case YS_5:
+		case YS_6:
+			var p = 0;
+			for(var i = 0; i < 5; i++){
+				if (m_dices[i].nr == score)
+					p += score;
+			}
+			return p;
+
+		case YS_3KIND:
+			return getOfAKind(3);
+		case YS_4KIND:
+			return getOfAKind(4);
+		case YS_FULLHOUSE:
+			var p = getDicesCount();
+			var two = three = false;
+			for(var i = 0; i < 6; i++){
+				if (p[i] == 2)
+					two = true;
+				else if(p[i] == 3)
+					three = true;
+			}
+			return (two && three) ? 25 : 0;
+			break;
+		case YS_SMALLST:
+			var p = getDicesCount();
+			return ((p[0] >= 1 && p[1] >= 1 && p[2] >= 1 && p[3] >= 1) ||
+				(p[1] >= 1 && p[2] >= 1 && p[3] >= 1 && p[4] >= 1) ||
+				(p[2] >= 1 && p[3] >= 1 && p[4] >= 1 && p[5] >= 1)) ? 30 : 0;
+			break;
+		case YS_LARGEST:
+			var p = getDicesCount();
+			return ((p[0] == 1 && p[1] == 1 && p[2] == 1 && p[3] == 1 && p[4] == 1) ||
+				(p[1] == 1 && p[2] == 1 && p[3] == 1 && p[4] == 1 && p[5] == 1)) ? 40 : 0;
+			break;
+		case YS_YAHTZEE:
+			var s = m_dices[0].nr;
+			for(var i = 1; i < 5; i++)
+				if (m_dices[i].nr != s || s == -1)
+					return 0;
+			return 50;
+		case YS_CHANGE:
+			return getDicesTotal();
+	}
+	return 0;
+}
+function getOfAKind(nr){
+	var p = getDicesCount()
+	for(var i = 0; i < 6; i++)
+		if (p[i] >= nr)
+			return getDicesTotal();
+	return 0;
+}
+
+function getDicesCount(){
+	var p = new Array(0, 0, 0, 0, 0, 0);
+	for(var i = 0; i < 5; i++)
+		p[m_dices[i].nr - 1] += 1;
+	return p;
+}
+
+function getDicesTotal(){
+	var p = 0;
+	for(var i = 0; i < 5; i++)
+		p += m_dices[i].nr;
+	return p;
+}
+
+function getScoreDescr(score){
+	switch(score){
+		case YS_1: return getWord("lblOnes");
+		case YS_2: return getWord("lblTwos");
+		case YS_3: return getWord("lblThrees");
+		case YS_4: return getWord("lblFours");
+		case YS_5: return getWord("lblFives");;
+		case YS_6: return getWord("lblSixes");
+		case YS_3KIND: return getWord("lblThreeOfAKind");;
+		case YS_4KIND: return getWord("lblFourOfAKind");
+		case YS_FULLHOUSE: return getWord("lblFullHouse");
+		case YS_SMALLST: return getWord("lblSmallStraight");
+		case YS_LARGEST: return getWord("lblLargeStraight");
+		case YS_YAHTZEE: return getWord("lblYahtzee");
+		case YS_CHANGE: return getWord("lblChance");
+	}
+}
+
+function setScore(scoreResult, isMe){
+	if (isMe){
+		if (scoreResult.score == YS_YAHTZEE && m_scoreMe[scoreResult.score] != -1)
+			m_scoreMe[scoreResult.score] += scoreResult.points;
+		else
+			m_scoreMe[scoreResult.score] = scoreResult.points
+
+		eval("scoreMe_" + scoreResult.score + ".innerText = '" + m_scoreMe[scoreResult.score] + "';");
+		if (scoreResult.score != YS_YAHTZEE)
+			eval("scoreMe_" + scoreResult.score + ".style.cursor = 'default';");
+	}
+	else{
+		if (scoreResult.score == YS_YAHTZEE && m_scoreRemote[scoreResult.score] != -1)
+			m_scoreRemote[scoreResult.score] += scoreResult.points;
+		else
+			m_scoreRemote[scoreResult.score] = scoreResult.points
+			
+		m_lastTd = eval("scoreRemote_" + scoreResult.score);
+		m_lastTd.innerText = m_scoreRemote[scoreResult.score];
+		m_lastTd.style.backgroundImage = "url(images/bg-yellow-dark.gif)";
+		//eval("scoreRemote_" + scoreResult.score + ".innerText = '" + m_scoreRemote[scoreResult.score] + "';");
+	}
+
+	updateScoreBoard();
+	m_rollCount = 1;
+
+	if (isGameOver()){
+		var totalMe = 0;
+		var totalRemote = 0;
+		var msg;
+		for(var i = 1; i < 14; i++){
+			if (i == 7){
+				if (totalMe >= 63)
+					totalMe += 35;
+				if (totalRemote >= 63)
+					totalRemote += 35;
+			}
+			totalMe += m_scoreMe[i];
+			totalRemote += m_scoreRemote[i];
+		}
+		if (totalMe < totalRemote){
+			msg = getWord("stateLost");
+			m_iStart = false;
+			m_gamesRemote++;
+		}
+		else if (totalMe > totalRemote){
+			msg = getWord("stateWon");
+			m_iStart = true;
+			m_gamesMe++;
+		}
+		else
+			msg = getWord("stateDraw");
+
+		updateGameState(GS_GAMEOVER, msg + " " + getWord("infoClickToPlayAgain"));
+		
+		m_totalMe += totalMe;
+		m_totalRemote += totalRemote;
+		
+		totalOverallMe.innerText = m_totalMe;
+		totalOverallRemote.innerText = m_totalRemote;
+		gamesMe.innerText = m_gamesMe;
+		gamesRemote.innerText = m_gamesRemote;
+		lblInfo.innerText = msg;
+		
+		//comment out until there can be some sort of replacement leaderboard created
+		//saveScore(m_appID, totalMe, totalRemote);
+	}
+	else if (m_gameState == GS_MYTURN){
+		if (isFinished(false))
+			updateGameState(GS_MYTURN, getWord("stateFinishedMyTurn", getDisplayName(m_remoteUserName)));
+		else
+			updateGameState(GS_REMOTETURN, getWord("stateRemoteTurn", getDisplayName(m_remoteUserName)));
+	}
+	else if (m_gameState == GS_REMOTETURN){
+		if (isFinished(true))
+			updateGameState(GS_REMOTETURN, getWord("stateFinishedRemoteTurn", getDisplayName(m_remoteUserName)));
+		else
+			updateGameState(GS_MYTURN, getWord("stateMyTurn"));
+	}
+}
+
+function isGameOver(){
+	return isFinished(true) && isFinished(false);
+}
+
+function isFinished(me){
+	var s = m_scoreRemote;
+	if (me)
+		s = m_scoreMe;
+	
+	for(var i = 1; i < 14; i++){
+		if (s[i] == -1)
+			return false;
+	}
+			
+	return true;
+}
+
+function updateDices(dices){
+	for(var i = 0; i < 5; i++){
+		var d = eval("dices.d" + i);
+		var diceImg = eval("dice" + i);
+		
+		diceImg.src = "images/dice" + d.nr + (d.reroll ? "-fade" : "") + ".gif";
+	}
+}
+
+function sendDices(){
+	var d = new diceList(m_dices[0], m_dices[1], m_dices[2], m_dices[3], m_dices[4]);
+	window.external.Channel.SendData(d.toString());
+}
+
+function resetRemoteIndicator(){
+	if (m_lastTd != null){
+		// reset yellow indicator
+		m_lastTd.style.backgroundImage = "";
+		m_lastTd = null;
+	}
+}
+
+///
+/// GUI event handlers
+///
+function btnRoll_onclick(){
+	if (m_gameState == GS_MYTURN && m_rollCount < 4){
+		resetRemoteIndicator();
+	
+		var rollCount = 0;
+		for(var i = 0; i < m_dices.length; i++){
+			var d = m_dices[i];
+			if (d.reroll){
+				d = new dice(Math.floor(Math.random() * 6 + 1), false);
+				
+				// set the image
+				eval("dice" + i + ".src = 'images/dice" + d.nr + ".gif';");
+				
+				m_dices[i] = d;
+				rollCount++;
+			}
+		}
+		if (rollCount == 0)
+			alert(getWord("infoSelectDice"));
+		else{
+			m_rollCount++;
+			updateRollState();
+			
+			sendDices();
+		}
+	}
+}
+
+function dice_onclick(){
+	if (m_gameState == GS_MYTURN && m_rollCount < 4){
+		if (event.srcElement.tagName == "IMG"){
+			var img = event.srcElement;
+			for(var i = 0; i < 5; i++){
+				if (img.id == "dice" + i){
+					var d = m_dices[i];
+					if (d.nr != -1){
+						d.reroll = !d.reroll;
+						img.src = "images/dice" + d.nr + (d.reroll ? "-fade" : "") + ".gif";
+					
+						sendDices();
+					}
+					break;
+				}
+			}
+		}
+	}
+}
+
+function tblScore_onclick(){
+	if (m_gameState == GS_MYTURN && m_rollCount > 1){
+		var score = -1;
+		for(var i = 1; i < 14; i++){
+			if (event.srcElement.id == "scoreMe_" + i){
+				score = i;
+				break;
+			}
+		}
+		var p = getPoints(score);
+		if (score != -1 && (m_scoreMe[score] == -1 || (score == YS_YAHTZEE && m_scoreMe[score] > 0 && p == 50))){
+			if (p == 0)
+				if (!confirm(getWord("confirmZeroOut", getScoreDescr(score))))
+					return;
+					
+			if (score == YS_YAHTZEE && m_scoreMe[score] > 0 && p == 50)
+				p = 100;
+
+			var s = new scoreSet(score, p);
+			window.external.Channel.SendData(s.toString());
+			setScore(s, true);
+		}
+	}
+}
+
+function btnRestart_onclick(){
+	if (m_gameState == GS_GAMEOVER){
+		updateGameState(GS_WAITFORJOIN, getWord("stateWaitOnJoin"));
+		window.external.Channel.SendData(CMD_RESTART);
+	}
+	else if ((m_gameState == GS_MYTURN || m_gameState == GS_REMOTETURN) && !m_requestRestart){
+		m_requestRestart = true;
+		window.external.Channel.SendData(CMD_RESTART);
+	}
+}
+function btnShowScores_onclick(){
+	tdScores.innerHTML = "<iframe ALLOWTRANSPARENCY src='" + getBuddyScoreUrl(m_appID) + "' style='width:100%;height:100%'></iframe>";
+	
+	tblScores.style.display = "";
+	tblGame.style.display = "none";
+}
+function btnHideScores_onclick(){
+	tblScores.style.display = "none";
+	tblGame.style.display = "";
+}
+function help_onclick(){
+	showHelpFile("help/yahtzee-help.htm");
+}
+		</script>
+	</head>
+	<body onload="OnLoad();" onunload="OnUnload();" style="margin:0" scroll="no" style="background-color:#516CA1">
+		<xml id="words"></xml>
+		<table id="tblPreload" width="100%" height="100%">
+			<tr height="20%">
+				<td>&nbsp;</td>
+			</tr>
+			<tr height="40%">
+				<td align="center"><img src="images/yahtzee-logo.jpg"><div id="lblBy" style="color:#D4DEF4"></div>
+				</td>
+			</tr>
+			<tr valign="top" height="30%">
+				<td align="center"><div align="left" style="width:100px;height:16px;color:#D4DEF4;border-style:solid;border-width:1px"><div id="divProgress" style="background-color:#D4DEF4;width:0%;height:100%"></div>
+					</div>
+				</td>
+			</tr>
+		</table>
+		<table id="tblScores" width="100%" height="100%" style="display:none">
+			<tr>
+				<td align="center"><img src="images/yahtzee-logo.jpg"></td>
+			</tr>
+			<tr height="90%">
+				<td id="tdScores"></td>
+			</tr>
+			<tr height="10%">
+				<td align="center"><button id="btnHideScores" onclick="btnHideScores_onclick();" class="btn"></button></td>
+			</tr>
+		</table>
+		<table id="tblGame" width="100%" height="100%" style="display:none;font-family:Tahoma;font-size:8pt">
+			<tr valign="top">
+				<td colspan="2">
+					<table id="tblCtrl" width="190" style="table-layout:fixed">
+						<tr valign="top" height="50px">
+							<td id="lblInfo" colspan="5" style="background-image:url(images/bigbg.gif);border-style:solid;border-width:1px;border-color:black;padding:2px">&nbsp;</td>
+						</tr>
+						<tr id="rowDices" height="50px" onclick="dice_onclick();">
+							<td><img id="dice0" width="30" height="30" src="images/empty.gif"></td>
+							<td><img id="dice1" width="30" height="30" src="images/empty.gif"></td>
+							<td><img id="dice2" width="30" height="30" src="images/empty.gif"></td>
+							<td><img id="dice3" width="30" height="30" src="images/empty.gif"></td>
+							<td><img id="dice4" width="30" height="30" src="images/empty.gif"></td>
+						</tr>
+						<tr>
+							<td colspan="5" align="center">
+								<button id="btnRoll" class="btn" onclick="btnRoll_onclick();" style="width:100%"></button>
+							</td>
+						</tr>
+						<tr height="200" valign="bottom">
+							<td colspan="5" align="center">
+								<img src="images/dices.jpg">
+							</td>
+						</tr>
+					</table>
+				</td>
+				<td align="right">
+					<table id="tblScore" onclick="tblScore_onclick();" border="1" borderColorDark="black" borderColorLight="black" cellpadding="0" cellspacing="0" style="border-collapse:collapse;table-layout:fixed">
+						<col width="100px" align="left" style="padding-left:2px"></col>
+						<col width="65px" align="right" style="padding-right:2px"></col>
+						<col width="65px" align="right" style="padding-right:2px"></col>
+						<tr class="scoreTotal">
+							<td>&nbsp;</td>
+							<td id="nameMe" align="center"></td>
+							<td id="nameRemote" align="center"></td>
+						</tr>
+						<tr class="score">
+							<td><table width="100%" cellpadding="0" cellspacing="0">
+									<tr>
+										<td id="lblOnes"></td>
+										<td align="right"><img src="images/1.gif">&nbsp;</td>
+									</tr>
+								</table>
+							</td>
+							<td id="scoreMe_1">&nbsp;</td>
+							<td id="scoreRemote_1">&nbsp;</td>
+						</tr>
+						<tr class="score">
+							<td><table width="100%" cellpadding="0" cellspacing="0">
+									<tr>
+										<td id="lblTwos"></td>
+										<td align="right"><img src="images/2.gif">&nbsp;</td>
+									</tr>
+								</table>
+							</td>
+							<td id="scoreMe_2">&nbsp;</td>
+							<td id="scoreRemote_2">&nbsp;</td>
+						</tr>
+						<tr class="score">
+							<td><table width="100%" cellpadding="0" cellspacing="0">
+									<tr>
+										<td id="lblThrees"></td>
+										<td align="right"><img src="images/3.gif">&nbsp;</td>
+									</tr>
+								</table>
+							</td>
+							<td id="scoreMe_3">&nbsp;</td>
+							<td id="scoreRemote_3">&nbsp;</td>
+						</tr>
+						<tr class="score">
+							<td><table width="100%" cellpadding="0" cellspacing="0">
+									<tr>
+										<td id="lblFours"></td>
+										<td align="right"><img src="images/4.gif">&nbsp;</td>
+									</tr>
+								</table>
+							</td>
+							<td id="scoreMe_4">&nbsp;</td>
+							<td id="scoreRemote_4">&nbsp;</td>
+						</tr>
+						<tr class="score">
+							<td><table width="100%" cellpadding="0" cellspacing="0">
+									<tr>
+										<td id="lblFives"></td>
+										<td align="right"><img src="images/5.gif">&nbsp;</td>
+									</tr>
+								</table>
+							</td>
+							<td id="scoreMe_5">&nbsp;</td>
+							<td id="scoreRemote_5">&nbsp;</td>
+						</tr>
+						<tr class="score">
+							<td><table width="100%" cellpadding="0" cellspacing="0">
+									<tr>
+										<td id="lblSixes"></td>
+										<td align="right"><img src="images/6.gif">&nbsp;</td>
+									</tr>
+								</table>
+							</td>
+							<td id="scoreMe_6">&nbsp;</td>
+							<td id="scoreRemote_6">&nbsp;</td>
+						</tr>
+						<tr class="score">
+							<td id="lblBonus"></td>
+							<td id="bonusMe">&nbsp;</td>
+							<td id="bonusRemote">&nbsp;</td>
+						</tr>
+						<tr class="scoreTotal">
+							<td id="lblTopTotal"></td>
+							<td id="topTotalMe">0</td>
+							<td id="topTotalRemote">0</td>
+						</tr>
+						<tr class="score">
+							<td id="lblThreeOfAKind"></td>
+							<td id="scoreMe_7">&nbsp;</td>
+							<td id="scoreRemote_7">&nbsp;</td>
+						</tr>
+						<tr class="score">
+							<td id="lblFourOfAKind"></td>
+							<td id="scoreMe_8">&nbsp;</td>
+							<td id="scoreRemote_8">&nbsp;</td>
+						</tr>
+						<tr class="score">
+							<td id="lblFullHouse"></td>
+							<td id="scoreMe_9">&nbsp;</td>
+							<td id="scoreRemote_9">&nbsp;</td>
+						</tr>
+						<tr class="score">
+							<td id="lblSmallStraight"></td>
+							<td id="scoreMe_10">&nbsp;</td>
+							<td id="scoreRemote_10">&nbsp;</td>
+						</tr>
+						<tr class="score">
+							<td id="lblLargeStraight"></td>
+							<td id="scoreMe_11">&nbsp;</td>
+							<td id="scoreRemote_11">&nbsp;</td>
+						</tr>
+						<tr class="score">
+							<td id="lblYahtzee"></td>
+							<td id="scoreMe_12">&nbsp;</td>
+							<td id="scoreRemote_12">&nbsp;</td>
+						</tr>
+						<tr class="score">
+							<td id="lblChance"></td>
+							<td id="scoreMe_13">&nbsp;</td>
+							<td id="scoreRemote_13">&nbsp;</td>
+						</tr>
+						<tr class="scoreTotal">
+							<td id="lblBottomTotal"></td>
+							<td id="bottomTotalMe">0</td>
+							<td id="bottomTotalRemote">0</td>
+						</tr>
+						<tr class="scoreTotal">
+							<td id="lblGameTotal"></td>
+							<td id="totalMe">0</td>
+							<td id="totalRemote">0</td>
+						</tr>
+						<tr class="scoreTotal">
+							<td id="lblOverallTotal"></td>
+							<td id="totalOverallMe">0</td>
+							<td id="totalOverallRemote">0</td>
+						</tr>
+						<tr class="scoreTotal">
+							<td id="lblGamesWon"></td>
+							<td id="gamesMe">0</td>
+							<td id="gamesRemote">0</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="3" align="center">
+					<button id="btnRestart" onclick="btnRestart_onclick();" class="btn"></button>&nbsp;&nbsp;
+					<button id="btnShowScores" onclick="btnShowScores_onclick();" class="btn" disabled></button>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="3" align="right" style="font-size:7pt"><a id="lblVersion" href="http://games.mess.be" target="_blank" style="color:white"></a> <a href="javascript:help_onclick();"><img id="btnHelp" align="absmiddle" border="0" src="images/help.gif"></a></td>
+			</tr>
+			<tr valign="bottom" height="17px">
+				<td colspan="3">
+					<div id="statusBar" style="border-style:solid;border-width:0px;border-color:buttonface;height:17px;background-image:url(images/playerbg.gif)">
+						<img id="statusIcon" width="16" height="16" align="absmiddle" style="unselectable;margin:0px 5px" src="images/empty.gif">
+						<span id="statusText" unselectable style="cursor:default"></span>
+					</div>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>

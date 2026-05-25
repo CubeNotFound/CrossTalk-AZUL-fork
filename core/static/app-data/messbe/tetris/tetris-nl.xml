@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<cmdHelp>Help</cmdHelp>
+	<cmdMute>Zet geluid aan of uit</cmdMute>
+	<cmdStart>Start</cmdStart>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>verbroken</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<errorDataSend>Data fout; kan geen gegevens versturen. Het spel is gestopt.</errorDataSend>
+	<errorDisconnected>Verbroken.</errorDisconnected>
+	<errorUserLeft>{0} heeft het spel verlaten. Het spel is gestopt.</errorUserLeft>
+	<lblBroughtToYouBy>Aangeboden door {0}</lblBroughtToYouBy>
+	<lblConnectionType>Connectie type</lblConnectionType>
+	<lblGameLevel>Niveau</lblGameLevel>
+	<lblGameLines>Lijnen</lblGameLines>
+	<lblGameScore>Score</lblGameScore>
+	<lblPlayers>Spelers</lblPlayers>
+	<lblVersion>Tetris {0}</lblVersion>
+	<stateInitializing>Spel wordt geïnitialiseerd...</stateInitializing>
+	<stateGameOverCalc>Spel over, bezig met berekenen van de score..</stateGameOverCalc>
+	<stateGameOverDraw>Spel over, het is gelijkspel! Klik 'start' om opnieuw te spelen.</stateGameOverDraw>
+	<stateGameOverLost>Spel over, je hebt verloren! Klik 'start' om opnieuw te spelen.</stateGameOverLost>
+	<stateGameOverWon>Spel over, je hebt gewonnen! Klik 'start' om opnieuw te spelen.</stateGameOverWon>
+	<statePlaying>Spel gestart</statePlaying>
+	<stateWaitOnJoin>Wacht op de tegenstander om mee te doen</stateWaitOnJoin>
+	<stateWaitForStart>Klik 'Start' om te beginnen.</stateWaitForStart>
+</words>

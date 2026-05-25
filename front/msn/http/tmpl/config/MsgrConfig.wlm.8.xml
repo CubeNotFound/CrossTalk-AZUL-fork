@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<MsgrConfig>
+	<Simple>
+		<Config>
+			<ExpiresInDays>0</ExpiresInDays>
+		</Config>
+		<DisablePhoneDialer>0</DisablePhoneDialer>
+		<GetItemVersionForUnknown>false</GetItemVersionForUnknown>
+		<MinFlashPlayer BuildNumber="28" MajorVersion="9" MinorVersion="0"/>
+		<Relay>
+			<Enabled>0</Enabled>
+			<MaxCallLength>0</MaxCallLength>
+		</Relay>
+		<TrustedDomains>
+			<domain name="hiden.cc"/>
+			<domain name="ugnet.gay"/>
+			<domain name="crosstalk.im"/>
+			<domain name="ctsrv.gay"/>
+		</TrustedDomains>
+		<ErrorResponseTable>
+			<Feature type="0" name="Login">
+				<Entry hr="0x80072EE7" action="3"/>
+				<Entry hr="0x81000306" action="3"/>
+				<Entry hr="0x80072EFD" action="3"/>
+				<Entry hr="0x81000362" action="3"/>
+				<Entry hr="0x8100030E" action="3"/>
+				<Entry hr="0x80072745" action="3"/>
+				<Entry hr="0x800701F7" action="3"/>
+				<Entry hr="0x80072EFF" action="3"/>
+				<Entry hr="0x81000363" action="3"/>
+				<Entry hr="0x81000395" action="3"/>
+				<Entry hr="0x800B0001" action="3"/>
+				<Entry hr="0x81000323" action="3"/>
+				<Entry hr="0x80072F19" action="3"/>
+				<Entry hr="0x800701F8" action="3"/>
+				<Entry hr="0x80072746" action="3"/>
+				<Entry hr="0x800701F6" action="3"/>
+				<Entry hr="0x81000377" action="3"/>
+				<Entry hr="0x81000314" action="3"/>
+				<Entry hr="0x81000378" action="3"/>
+				<Entry hr="0x80072EFF" action="3"/>
+				<Entry hr="0x80070190" action="3"/>
+				<Entry hr="0x80070197" action="3"/>
+				<Entry hr="0x80048820" action="3"/>
+				<Entry hr="0x80048829" action="3"/>
+				<Entry hr="0x80048834" action="3"/>
+				<Entry hr="0x80048852" action="3"/>
+				<Entry hr="0x8004886a" action="3"/>
+				<Entry hr="0x8004886b" action="3"/>
+			</Feature>
+			<Feature type="2" name="MapFile">
+				<Entry hr="0x810003F0" action="3"/>
+				<Entry hr="0x810003F1" action="3"/>
+				<Entry hr="0x810003F2" action="3"/>
+				<Entry hr="0x810003F3" action="3"/>
+				<Entry hr="0x810003F4" action="3"/>
+				<Entry hr="0x810003F5" action="3"/>
+				<Entry hr="0x810003F6" action="3"/>
+				<Entry hr="0x810003F7" action="3"/>
+			</Feature>
+			<Feature type="3" name="P2P">
+				<Entry hr="0x82000012" action="3"/>
+				<Entry hr="0x82000013" action="3"/>
+				<Entry hr="0x82000016" action="3"/>
+				<Entry hr="0x82000017" action="3"/>
+				<Entry hr="0x82000018" action="3"/>
+				<Entry hr="0x82000019" action="3"/>
+			</Feature>
+		</ErrorResponseTable>
+	</Simple>
+	<TabConfig>
+{tabs}
+	</TabConfig>
+	<AbchCfg>
+		<abchconfig>
+			<url>https://{{ settings.ADDRESSBOOK_HOST }}/abservice.asmx</url>
+		</abchconfig>
+	</AbchCfg>
+	<LocalizedConfig Market="en-US">
+		<AdMainConfig>
+			<TextAdRefresh>1</TextAdRefresh>
+			<TextAdServer>http://{{ settings.AD_HOST }}/ads/txt</TextAdServer>
+			<AdBanner20URL Refresh="300">http://{{ settings.AD_HOST }}/ads/banner</AdBanner20URL>
+			<StdAd AdVisible="60" VideoVisible="120" VideoDldIntvl="0">
+				<VideoFeeds FeedsListURL="http://{{ settings.AD_HOST }}/svcs/msn-video-feeds/"/>
+			</StdAd>
+		</AdMainConfig>
+		<AppDirConfig>
+			<AppDirPageURL>http://{{ settings.APPDIR_HOST }}/AppDirectory/Directory.aspx?L=en-us</AppDirPageURL>
+			<AppDirSeviceURL>http://{{ settings.APPDIR_HOST }}/AppDirectory/AppDirectory.asmx</AppDirSeviceURL>
+			<AppDirVersionURL>http://{{ settings.APPDIR_HOST }}/AppDirectory/GetAppdirVersion.aspx</AppDirVersionURL>
+		</AppDirConfig>
+		<Contacts>
+			<ABPendingRequests>
+				<url>http://{{ settings.SOCIAL_HOST }}/PendingRequests.aspx?mkt=en-us&amp;partner=Messenger</url>
+				<siteid>73625</siteid>
+				<height>672</height>
+				<width>808</width>
+			</ABPendingRequests>
+			<BuddysSocialNetwork>
+				<url>http://{{ settings.SOCIAL_HOST }}/NetworkExplorer.aspx?mkt=en-us&amp;partner=Messenger&amp;cid=%1</url>
+				<siteid>73625</siteid>
+				<height>674</height>
+				<width>808</width>
+			</BuddysSocialNetwork>
+			<EditMyLiveContactProfile>
+				<url>http://{{ settings.SOCIAL_HOST }}/profile.aspx?action=edit&amp;mode=activecontacts&amp;mkt=en-us&amp;partner=Messenger</url>
+				<siteid>73625</siteid>
+			</EditMyLiveContactProfile>
+			<EditMyProfile>
+				<url>http://{{ settings.SOCIAL_HOST }}/profile.aspx?action=edit&amp;partner=Messenger&amp;mkt=en-us</url>
+				<siteid>73625</siteid>
+			</EditMyProfile>
+			<Profile>
+				<url>http://{{ settings.SOCIAL_HOST }}/Profile.aspx?partner=Messenger&amp;mkt=en-us&amp;mem=%ls</url>
+				<urlcid>http://{{ settings.SOCIAL_HOST }}/Profile.aspx?partner=Messenger&amp;mkt=en-us&amp;cid=%ls</urlcid>
+				<siteid>73625</siteid>
+			</Profile>
+			<SocialNetwork>
+				<url>http://{{ settings.SOCIAL_HOST }}/NetworkSetup.aspx?mkt=en-us&amp;partner=Messenger</url>
+				<siteid>73625</siteid>
+				<height>674</height>
+				<width>808</width>
+			</SocialNetwork>
+			<ViewMapEnabled>false</ViewMapEnabled>
+		</Contacts>
+		<ContactCard>
+			<AddToMySpaceSiteId>45930</AddToMySpaceSiteId>
+			<AddToMySpaceUrl>http://{{ settings.SOCIAL_HOST }}/?addblogentry=true&amp;mkt=nl-nl</AddToMySpaceUrl>
+			<ContactCardDisabled>false</ContactCardDisabled>
+			<CreateSpaceSiteId>45930</CreateSpaceSiteId>
+			<CreateSpaceUrl>http://{{ settings.SOCIAL_HOST }}/signup.aspx?mkt=nl-nl</CreateSpaceUrl>
+			<GetItemVerUrl>http://storage.msn.com/storageservice/schematizedstore.asmx</GetItemVerUrl>
+			<GetXmlFeedUrl>http://services.{{ settings.SOCIAL_HOST }}/contactcard/contactcardservice.asmx</GetXmlFeedUrl>
+			<MySpaceSiteId>45930</MySpaceSiteId>
+			<MySpaceUrl>http://{{ settings.SOCIAL_HOST }}/homepage.aspx</MySpaceUrl>
+			<SpaceBaseSiteId>45930</SpaceBaseSiteId>
+			<SpaceBaseUrl>http://{{ settings.SOCIAL_HOST }}</SpaceBaseUrl>
+			<SpaceIntegrationEnabled>true</SpaceIntegrationEnabled>
+		</ContactCard>
+		<FlashUpgradeURL>http://{{ settings.STORAGE_HOST }}/crosstalk-dist/client/all/tools/flashplayer_10_3r183_48_winax.exe</FlashUpgradeURL>
+		<GLinkMarket v="en_us"/>
+		<MessengerBlogURL>https://{{ settings.WEBSITE_HOST }}/blog</MessengerBlogURL>
+		<MSNSearch>
+			<ImagesURL>https://searx.ugnet.gay/searxng/search?q=$QUERY$&amp;ia=images</ImagesURL>
+			<NewsURL>https://searx.ugnet.gay/searxng/search?q=$QUERY$+news&amp;ia=news</NewsURL>
+			<SearchURL>https://searx.ugnet.gay/searxng/search?q=$QUERY$&amp;ia=web</SearchURL>
+			<SharedSearchURL>https://searx.ugnet.gay/searxng/search?q=$QUERY$&amp;ia=web</SharedSearchURL>
+			<SharedSearchURL2>https://searx.ugnet.gay/searxng/search?q=$QUERY$&amp;ia=web</SharedSearchURL2>
+		</MSNSearch>
+		<MsnTodayConfig>
+			<MsnTodaySiteID>6528</MsnTodaySiteID>
+			<MsnTodayURL>http://{{ settings.TODAY_HOST }}/start?wlm=1</MsnTodayURL>
+			<Flags>2</Flags>
+		</MsnTodayConfig>
+		<MusicIntegration URL="https://www.last.fm/search/tracks?q=$ARTIST$+$TITLE$"/>
+		<OneCare Enabled="0"/>
+		<PSTNOut Hidden="1"/>
+		<ReportAbuse>
+			<ReportAbuseSID/>
+			<ReportAbuseURL>https://{{ settings.WEBSITE_HOST }}/report</ReportAbuseURL>
+		</ReportAbuse>
+		<RL>
+			<ViewProfileURL>https://{{ settings.WEBSITE_HOST }}/account/settings</ViewProfileURL>
+		</RL>
+		<SDrive Enabled="true"/>
+		<TermsOfUse>
+			<TermsOfUseSID>956</TermsOfUseSID>
+			<TermsOfUseURL>https://{{ settings.WEBSITE_HOST }}/tos</TermsOfUseURL>
+		</TermsOfUse>
+		<VoiceClip Hidden="0"/>
+		<VoiceVideo>
+			<DisableSipProxyInviteTest>0</DisableSipProxyInviteTest>
+			<DisableSipProxyCapability>0</DisableSipProxyCapability>
+			<DisableSipProxyInvite>0</DisableSipProxyInvite>
+			<DisableSipProxyCapability2>0</DisableSipProxyCapability2>
+			<DisableSipProxyInvite2>0</DisableSipProxyInvite2>
+		</VoiceVideo>
+	</LocalizedConfig>
+</MsgrConfig>

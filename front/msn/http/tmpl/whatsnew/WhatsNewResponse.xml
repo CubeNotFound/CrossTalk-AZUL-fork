@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<soap:Header>
+		<WNServiceHeader xmlns="http://www.msn.com/webservices/AddressBook">
+			<Version>15.1.1216.0</Version>
+		</WNServiceHeader>
+	</soap:Header>
+	<soap:Body>
+		<GetContactsRecentActivityResponse xmlns="http://www.msn.com/webservices/AddressBook">
+			<GetContactsRecentActivityResult>
+				<Activities>
+					<ActivityDetails>
+						<OwnerCID>0</OwnerCID>
+						<ObjectId>Fri, 08 Jan 2025 4:59:43 CDT</ObjectId>
+						<ApplicationId>420</ApplicationId>
+						<ChangeType>20</ChangeType>
+						<PublishDate>{date}</PublishDate>
+						<TemplateVariables>
+							<TemplateVariable xsi:type="TextTemplateVariable">
+								<Name>Name</Name>
+								<Value>{title}</Value>
+							</TemplateVariable>
+				<TemplateVariable xsi:type="HlinkTemplateVariable">
+								<Name>Url</Name>
+								<Value>{url}</Value>
+				</TemplateVariable>
+						</TemplateVariables>
+					</ActivityDetails>
+				</Activities>
+				<Templates>
+					<RecentActivityTemplateContainer>
+						<ApplicationId>420</ApplicationId>
+						<ApplicationName>{appName}</ApplicationName>
+						<MiniIconSizeX>0</MiniIconSizeX>
+						<MiniIconSizeY>0</MiniIconSizeY>
+						<ChangeType>20</ChangeType>
+						<Locale>en-us</Locale>
+						<RequestedLocales>
+							<string>en-US</string>
+						</RequestedLocales>
+						<TemplateRevision>1</TemplateRevision>
+						<Templates>
+							<RecentActivityTemplate>
+								<Cardinality>One</Cardinality>
+								<Data>CrossTalk News</Data>
+								<Title>{content}</Title>
+							</RecentActivityTemplate>
+						</Templates>
+						<ActivityType>
+							<string>blog</string>
+						</ActivityType>
+						<CanMergeItemsWithSameObjectID>false</CanMergeItemsWithSameObjectID>
+					</RecentActivityTemplateContainer>
+				</Templates>
+				<FeedUrl>http://{{ settings.WEBSITE_HOST }}</FeedUrl>
+			</GetContactsRecentActivityResult>
+		</GetContactsRecentActivityResponse>
+	</soap:Body>
+</soap:Envelope>

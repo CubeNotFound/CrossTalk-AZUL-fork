@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<cmdHelp>Help</cmdHelp>
+	<cmdRestart>Restart</cmdRestart>
+	<confirmRemoteWantsRestart>{0} wants to restart this game, are you ok with that?</confirmRemoteWantsRestart>
+	<connectionDirect>direct</connectionDirect>
+	<connectionDisconnected>disconnected</connectionDisconnected>
+	<connectionIndirect>indirect</connectionIndirect>
+	<errorDataSend>Data error; unable to send data. Game stopped.</errorDataSend>
+	<errorDisconnected>Disconnected.</errorDisconnected>
+	<errorUserLeft>{0} has left the game. The game is over.</errorUserLeft>
+	<infoRestartDenied>{0} doesn't want to restart this game.</infoRestartDenied>
+	<infoClickToPlayAgain>Click 'Restart' to play again.</infoClickToPlayAgain>
+	<lblBroughtToYouBy>Brought to you by {0}</lblBroughtToYouBy>
+	<lblConnectionType>Connection type</lblConnectionType>
+	<lblPlayers>Players</lblPlayers>
+	<lblColor>Color</lblColor>
+	<lblGamePoints>Game points</lblGamePoints>
+	<lblGameTotalPoints>Total points</lblGameTotalPoints>
+	<lblGamesWon>Games won</lblGamesWon>
+	<lblRed>red</lblRed>
+	<lblVersion>Reversi {0}</lblVersion>
+	<lblWhite>white</lblWhite>
+	<stateAnotherMyTurn>{0} can't move, it's your turn again.</stateAnotherMyTurn>
+	<stateAnotherRemoteTurn>You are stuck, {0} gets to move again.</stateAnotherRemoteTurn>
+	<stateInitializing>Initializing game...</stateInitializing>
+	<stateGameOverDraw>Game over, it's a draw!</stateGameOverDraw>
+	<stateGameOverLost>Game over, you have lost!</stateGameOverLost>
+	<stateGameOverWon>Game over, you have won!</stateGameOverWon>
+	<stateMyTurn>It's your turn.</stateMyTurn>
+	<stateRemoteTurn>Waiting for {0} to make a move.</stateRemoteTurn>
+	<stateStartMyTurn>Game started, it's your turn.</stateStartMyTurn>
+	<stateStartRemoteTurn>Game started, waiting for {0} to make a move.</stateStartRemoteTurn>
+</words>

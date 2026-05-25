@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<boat0>Flygplans bärare</boat0>
+	<boat1>Stridsskepp</boat1>
+	<boat2>Stridsbåt</boat2>
+	<boat3>Ubåt</boat3>
+	<boat4>Förstörare</boat4>
+	<cmdDone>Klart</cmdDone>
+	<cmdHelp>Hjälp</cmdHelp>
+	<cmdPlaceRandomly>Placera skeppen slumpmässigt</cmdPlaceRandomly>
+	<cmdRestart>Starta om</cmdRestart>
+	<confirmRemoteWantsRestart>{0} vill starta om den här omgången, är det ok?</confirmRemoteWantsRestart>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>anslutning bruten</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<errorDataSend>Data fel; omöjligt att skicka data. Spelet har stoppats.</errorDataSend>
+	<errorDisconnected>Anslutning bruten.</errorDisconnected>
+	<errorUserLeft>{0} har lämnat spelet. Spelet är slut.</errorUserLeft>
+	<infoHit>En träff!</infoHit>
+	<infoMiss>En miss.</infoMiss>
+	<infoLostBoat>Du förlorade {0}.</infoLostBoat>
+	<infoNoRestart>Ingen omstart.</infoNoRestart>
+	<infoPlaceShips>Placera skeppen genom att klicka på knappen "Placera skeppen slumpmässigt". Om du inte är nöjd med positionerna på din flotta klicka igen. Klicka på 'Klart' för att börja spela.</infoPlaceShips>
+	<infoRequestRestart>Begär omstart..</infoRequestRestart>
+	<infoRemoteTurn>Väntar på att motståndaren ska göra sitt drag.</infoRemoteTurn>
+	<infoRestartDenied>{0} vill inte starta om omgången.</infoRestartDenied>
+	<infoSunkBoat>Du sänkte {0}.</infoSunkBoat>
+	<infoWaitPlacing>Väntar på att motståndaren ska bli klar med att placera ut sin flotta.</infoWaitPlacing>
+	<infoYourTurn>Det är din tur. Klicka på en ledig ruta på moståndarens bräda för att försöka sänka hans skepp.</infoYourTurn>
+	<lblBroughtToYouBy>Framtaget till dig av {0}</lblBroughtToYouBy>
+	<lblConnectionType>Anslutnings typ</lblConnectionType>
+	<lblEnemyNavy>Fiendens flotta</lblEnemyNavy>
+	<lblVersion>Stridsskepp {0}</lblVersion>
+	<lblYourNavy>Din flotta</lblYourNavy>
+	<stateGameOverLost>Spelet slut, du har förlorat!</stateGameOverLost>
+	<stateGameOverWon>Spelet slut, du har vunnit!</stateGameOverWon>
+	<stateInitializing>Påbörjar spelet...</stateInitializing>
+	<stateMyTurn>Det är din tur.</stateMyTurn>
+	<statePlacingShips>Placera dina skepp</statePlacingShips>
+	<stateRemoteTurn>Väntar på att {0} ska göra sitt drag.</stateRemoteTurn>
+	<stateStartMyTurn>Spelet har startat, det är din tur.</stateStartMyTurn>
+	<stateStartRemoteTurn>Spelet har startat, väntar på att {0} ska göra sitt drag.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Väntar på att din motståndare ska ansluta</stateWaitOnJoin>
+	<stateWaitOnPlacing>Väntar på din motståndare...</stateWaitOnPlacing>
+</words>
+
+

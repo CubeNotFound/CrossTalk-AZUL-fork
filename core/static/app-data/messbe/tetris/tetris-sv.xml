@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<cmdHelp>Hjälp</cmdHelp>
+	<cmdMute>Gör ljudlöst</cmdMute>
+	<cmdStart>Starta</cmdStart>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>Anslutning bruten</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<errorDataSend>Data fel; omöjligt att skicka data. Spelet har stoppats.</errorDataSend>
+	<errorDisconnected>Anslutning bruten.</errorDisconnected>
+	<errorUserLeft>{0} har lämnat spelet. Spelet är slut.</errorUserLeft>
+	<lblBroughtToYouBy>Framtaget till dig av {0}</lblBroughtToYouBy>
+	<lblConnectionType>Anslutnings typ</lblConnectionType>
+	<lblGameLevel>Nivå</lblGameLevel>
+	<lblGameLines>Linjer</lblGameLines>
+	<lblGameScore>Poäng</lblGameScore>
+	<lblPlayers>Spelare</lblPlayers>
+	<lblVersion>Tetris {0}</lblVersion>
+	<stateInitializing>Påbörjar spel...</stateInitializing>
+	<stateGameOverCalc>Spelet över, räknar ihop poäng..</stateGameOverCalc>
+	<stateGameOverDraw>Spelet över, det blev lika! Tryck på 'starta' för att spela igen.</stateGameOverDraw>
+	<stateGameOverLost>Spelet över, du har förlorat! Tryck på 'starta' för att spela igen.</stateGameOverLost>
+	<stateGameOverWon>Spelet över, du har vunnit! Tryck på 'starta' för att spela igen.</stateGameOverWon>
+	<statePlaying>Spelar</statePlaying>
+	<stateWaitOnJoin>Väntar på att motståndaren ska ansluta</stateWaitOnJoin>
+	<stateWaitForStart>Tryck på 'Starta' för att börja.</stateWaitForStart>
+</words>
+
+

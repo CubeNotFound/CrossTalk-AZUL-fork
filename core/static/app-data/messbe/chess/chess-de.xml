@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<confirmDraw>Möchten Sie wirklich ein Remis anbieten?</confirmDraw>
+	<confirmRemoteWantsRestart>{0} möchte das Spiel neu starten, geht das in Ordnung?</confirmRemoteWantsRestart>
+	<confirmRemoteWantsTie>{0} bietet ein Unentschieden an, geht das in Ordnung?</confirmRemoteWantsTie>
+	<confirmResign>Möchten Sie wirklich aufgeben?</confirmResign>
+	<confirmRestart>Möchten Sie das Spiel wirklich neu starten?</confirmRestart>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>getrennt</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<cmdDraw>Remis</cmdDraw>
+	<cmdHelp>Hilfe</cmdHelp>
+	<cmdMute>Stumm schalten</cmdMute>
+	<cmdResign>Aufgeben</cmdResign>
+	<cmdRestart>Neustart</cmdRestart>
+	<errorDataSend>Datenfehler; Die Daten können nicht gesendet werden. Spiel gestoppt.</errorDataSend>
+	<errorDisconnected>Getrennt.</errorDisconnected>
+	<errorUserLeft>{0} hat das Spiel verlassen. Das Spiel wurde beendet.</errorUserLeft>
+	<lblBroughtToYouBy>Wird Ihnen präsentiert von {0}</lblBroughtToYouBy>
+	<lblConnectionType>Verbindungsart</lblConnectionType>
+	<lblVersion>Schach {0}</lblVersion>
+	<lblPromote>Befördern Sie Ihren Bauern!</lblPromote>
+	<infoClickToPlayAgain>Klicken Sie auf 'Neustart' für ein neues Spiel.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} möchte das Spiel nicht neu starten.</infoRestartDenied>
+	<infoTieDenied>{0} möchte kein Unentschieden.</infoTieDenied>
+	<infoYouResigned>Sie haben aufgegeben.</infoYouResigned>
+	<stateCheck>Schach!</stateCheck>
+	<stateCheckmate>Schachmatt! Sie haben verloren.</stateCheckmate>
+	<stateInitializing>Starte Spiel...</stateInitializing>
+	<stateMyTurn>Sie sind dran.</stateMyTurn>
+	<stateOpponentCheck>Gegner im Schach</stateOpponentCheck>
+	<stateOpponentResigned>Ihr Gegner hat aufgegeben, Sie haben gewonnen.</stateOpponentResigned>
+	<stateRemoteCheckmate>Ihr Gegner ist schachmatt, Sie haben gewonnen.</stateRemoteCheckmate>
+	<stateRemoteTurn>Bitte warten Sie bis {0} einen Zug gemacht hat.</stateRemoteTurn>
+	<stateStalemate>Patt! Es ist ein Unentschieden.</stateStalemate>
+	<stateStartMyTurn>Spiel gestartet. Sie sind dran.</stateStartMyTurn>
+	<stateStartRemoteTurn>Spiel gestartet. Bitte warten Sie bis {0} einen Zug gemacht hat.</stateStartRemoteTurn>
+	<stateTie>Es ist ein Unentschieden.</stateTie>
+	<stateWaitForApproval>Bitte warten Sie auf die Zustimmung Ihres Gegners..</stateWaitForApproval>
+</words>
+

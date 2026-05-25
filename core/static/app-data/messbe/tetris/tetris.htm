@@ -1,0 +1,1110 @@
+<html>
+<!--
+	Copyright by Koen, 2003,2004,2005
+	http://games.mess.be
+-->
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7">
+		<title>Tetris</title>
+		<style type="text/css">
+.btn{font-family:Tahoma;font-size:8pt;border-style:none;height:17px;width:70px;background-image:url(images/playerbg.gif)}
+.board{background-color:#324264;background-image:url(images/boardbg.gif);background-position:50% 50%;background-repeat:no-repeat;table-layout:fixed}
+table{font-family:Tahoma;font-size:8pt;background-color:#516CA1}
+</style>
+		<script language="javascript" src="../common/common.js"></script>
+		<script language="javascript">
+var VERSION				= "v2.0";
+
+/// GAME_STATE
+var GS_INITIALIZING		= 0;
+var GS_WAITFORSTART		= 1;
+var GS_WAITFORREMOTE	= 2;
+var GS_RUNNING			= 3;
+var GS_GAMEOVER			= 4;
+var GS_GAMEOVERCONFIRM	= 5;
+var GS_ERROR			= 6;
+
+var m_remoteUserName;
+var m_gameState = GS_INITIALIZING;
+var m_isInitialized	= false;
+var m_muted			= false;
+
+/// Game specific variables
+var WIDTH			= 10;
+var HEIGHT			= 21;
+var PIECE_SIZE		= 4;
+
+var CL_EMPTY		= 0;
+var CL_BLUE			= 1;
+var CL_GREEN		= 2;
+var CL_ORANGE		= 3;
+var CL_PURPLE		= 4;
+var CL_RED			= 5;
+var CL_WHITE		= 6;
+var CL_YELLOW		= 7;
+var CL_ATTACK		= 8;
+var CL_DEFENSE		= 9;
+
+var DR_LEFT			= 0;
+var DR_RIGHT		= 1;
+var DR_DOWN			= 2;
+var DR_DROP			= 3;
+
+var KEY_ROTATE		= 12;
+var KEY_LEFT		= 37;
+var KEY_UP			= 38;
+var KEY_RIGHT		= 39;
+var KEY_DOWN		= 40;
+var KEY_NUM_LEFT	= 100;
+var KEY_NUM_ROTATE	= 101;
+var KEY_NUM_RIGHT	= 102;
+var KEY_NUM_UP		= 104;
+var KEY_NUM_DOWN	= 98;
+var KEY_NUM_SOUND	= 83;
+var KEY_CTRL_LEFT	= 17;
+var KEY_SPACE		= 32;
+var KEY_ATTACK		= 65;
+var KEY_DEFENSE		= 68;
+
+var ROTATION = new Array();
+ROTATION[CL_BLUE]	= new Array(-2, 0,-1, 0, 0, 0, 1, 0, 0,-1, 0, 0, 0, 1, 0, 2,-2, 0,-1, 0, 0, 0, 1, 0, 0,-1, 0, 0, 0, 1, 0, 2);
+ROTATION[CL_GREEN]	= new Array(-1, 1,-1, 0, 0, 0, 1, 0, 0,-1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1,-1, 1,-1,-1, 0,-1, 0, 0, 0, 1);
+ROTATION[CL_ORANGE]	= new Array(-1, 0, 0, 0, 1, 0, 0, 1, 0,-1, 0, 0, 1, 0, 0, 1,-1, 1, 0, 1, 0, 0, 1, 1, 0,-1, 0, 0,-1, 0, 0, 1);
+ROTATION[CL_PURPLE]	= new Array(-1, 0, 0, 0, 0, 1, 1, 1, 1,-1, 1, 0, 0, 0, 0, 1,-1, 0, 0, 0, 0, 1, 1, 1, 1,-1, 1, 0, 0, 0, 0, 1);
+ROTATION[CL_RED]	= new Array( 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1);
+ROTATION[CL_WHITE]	= new Array(-1, 1, 0, 1, 0, 0, 1, 0, 0,-1, 0, 0, 1, 0, 1, 1,-1, 1, 0, 1, 0, 0, 1, 0, 0,-1, 0, 0, 1, 0, 1, 1);
+ROTATION[CL_YELLOW]	= new Array(-1, 0, 0, 0, 1, 0, 1, 1, 1,-1, 0,-1, 0, 0, 0, 1,-1, 0,-1, 1, 0, 1, 1, 1, 0,-1, 0, 0, 0, 1,-1, 1);
+
+var m_myBoard = new Array(HEIGHT);
+var m_remoteBoard = new Array(HEIGHT);
+var m_myPiece = null;
+var m_remotePiece = null;
+var m_myNextColor = CL_EMPTY;
+var m_remoteStarted = false;
+var m_myLevel = 1;
+var m_myfullLines = 0;
+var m_myScore = 0;
+var m_remoteLevel = 1;
+var m_remoteFullLines = 0;
+var m_remoteScore = 0;
+var m_myPowers = new Array();
+var m_remotePowers = new Array();
+
+var m_sendDataCache = new Array();
+
+/// Data commands
+var CMD_PING		= "pin";
+var CMD_PONG		= "pon";
+var CMD_START		= "stt";
+var CMD_NEXTPIECE	= "nxp";
+var CMD_NEWPIECE	= "nwp";
+var CMD_SETPIECE	= "stp";
+var CMD_CLEARLINES	= "cll";
+var CMD_GAMEOVER	= "gor";
+var CMD_SCORE		= "scr";
+var CMD_ADDLINE		= "adl";
+var CMD_ADDPOWER	= "adp";
+var CMD_USEPOWER	= "usp";
+var CMD_SHOWPOWER	= "shp";
+
+var m_preloadDone = false;
+var m_remoteLoaded = false;
+var m_moveTimerID;
+var m_pingTime;
+var m_pingTimerID;
+var m_ping = 0;
+
+///
+/// Global event handlers
+///
+function OnLoad(){
+	// load language
+	loadLanguage("tetris");
+	applyLanguage();
+
+	m_remoteUserName = getRemoteUserName();
+	
+	nameMe.innerText = getDisplayName(window.external.Users.Me.Name);
+	nameMe.title = window.external.Users.Me.Name;
+	nameMeScore.innerText = nameMe.innerText;
+	nameMeScore.title = nameMe.title;
+	nameRemote.innerText = getDisplayName(m_remoteUserName);
+	nameRemote.title = m_remoteUserName;
+	nameRemoteScore.innerText = nameRemote.innerText;
+	nameRemoteScore.title = m_remoteUserName;
+	
+	updateGameState(GS_INITIALIZING, getWord("stateInitializing"));
+	updateConnectionType();
+
+	var users = window.external.Users;
+	
+	m_isInitialized = true;
+	window.external.Channel.Initialize();
+	
+	preloadImages(new Array("blue.gif", "boardbg.gif", "bottom.gif", "ct_direct.gif", "ct_disconnected.gif",
+		"ct_indirect.gif", "empty.gif", "green.gif", "help.gif", "icon.gif", "nextbg.jpg", "orange.gif", "piece_blue.gif",
+		"piece_green.gif", "piece_orange.gif", "piece_purple.gif", "piece_red.gif", "piece_white.gif", "piece_yellow.gif",
+		"playerbg.gif",	"purple.gif", "red.gif", "snd-off.gif", "snd-on.gif", "top.gif", "vs.gif", "white.gif", "yellow.gif",
+		"attack.gif", "defense.gif", "piece_attack.gif", "piece_defense.gif"),
+		OnPreloadProgress, OnPreloadComplete);
+}
+
+function OnUnload(){
+}
+
+String.prototype.startsWith = function(s){
+	return (this.substr(0, s.length) == s);
+}
+
+///
+/// Preloading stuff
+///
+function OnPreloadProgress(progress){
+	divProgress.style.width = progress + "%";
+}
+
+function OnPreloadComplete(){
+	m_preloadDone = true;
+	initialize();
+}
+
+function initialize(){
+	if (m_preloadDone && m_remoteLoaded){
+		initBoard(true);
+		initBoard(false);
+
+		tblPreload.style.display = "none";
+		tblGame.style.display = "";
+		
+		// do ping every 10 sec.
+		doPing();
+		
+		updateGameState(GS_WAITFORSTART, getWord("stateWaitForStart"));
+	}
+}
+
+function applyLanguage(){
+	lblBy.innerHTML = getWord("lblBroughtToYouBy", "<b>games.mess.be</b>");
+	lblVersion.innerText = getWord("lblVersion", VERSION);
+	btnHelp.title = getWord("cmdHelp");
+	btnMute.title = getWord("cmdMute");
+	btnStart.innerText = getWord("cmdStart");
+	lblPlayers.innerText = getWord("lblPlayers");
+	lblGameLevel.innerText = getWord("lblGameLevel");
+	lblGameLines.innerText = getWord("lblGameLines");
+	lblGameScore.innerText = getWord("lblGameScore");
+}
+
+///
+/// Channel event handlers
+///
+
+///
+/// Occurs when the remote user closes the application, the conversation window or signs out of Messenger.
+///
+function Channel_OnAppClose(){
+	m_remoteLoaded = false;
+	updateGameState(GS_ERROR, getWord("errorUserLeft", getDisplayName(m_remoteUserName)));
+}
+
+///
+/// Occurs when a data send has failed, inspect Channel.Error for details.
+///
+function Channel_OnDataError(){
+	updateGameState(GS_ERROR, getWord("errorDataSend"));
+}
+
+///
+/// Occurs when new data has been received. The data is available in window.external.Channel.Data.
+///
+function Channel_OnDataReceived(){
+	var dataArr = window.external.Channel.Data.split("@");
+	//cmd's can be bulk send
+	
+	for(var i = 0; i < dataArr.length; i++){
+		var data = dataArr[i];
+	
+		if (data == CMD_PING){
+			safeSend(CMD_PONG);
+		}
+		else if (data == CMD_PONG){
+			m_ping = new Date().getTime() - m_pingTime;
+			updateConnectionType();
+			
+			// next ping in 10 sec
+			m_pingTimerID = setTimeout(doPing, 10000);
+		}
+		else if (data == CMD_START){
+			m_remoteStarted = true;
+			if (m_gameState == GS_WAITFORREMOTE)
+				startGame();
+		}
+		else if (data == CMD_GAMEOVER){
+			if (m_gameState == GS_RUNNING){
+				clearTimeout(m_moveTimerID);
+				safeSend(CMD_GAMEOVER);
+
+				fillBoard(false);
+			}
+			
+			if (m_myScore < m_remoteScore)
+				updateGameState(GS_GAMEOVER, getWord("stateGameOverLost"));
+			else if (m_myScore > m_remoteScore)
+				updateGameState(GS_GAMEOVER, getWord("stateGameOverWon"));
+			else
+				updateGameState(GS_GAMEOVER, getWord("stateGameOverDraw"));
+		}
+		else if (data.startsWith(CMD_NEXTPIECE)){
+			remoteNextImg.src = "images/" + pieceUrlFromColor(parseInt(data.substr(3, 1)));
+		}
+		else if (data.startsWith(CMD_NEWPIECE)){
+			m_remotePiece = new piece(data.substr(3));
+		}
+		else if (data.startsWith(CMD_SETPIECE)){
+			if (m_remotePiece != null)
+				m_remotePiece.show(false);
+			m_remotePiece = new piece(data.substr(3));
+		}
+		else if (data.startsWith(CMD_CLEARLINES)){
+			if (m_gameState == GS_RUNNING)
+				clearLines(false, data.substr(3).split(","), false);
+		}
+		else if (data.startsWith(CMD_ADDLINE)){
+			if (m_gameState == GS_RUNNING)
+				addLine(false, data.substr(3).split(","));
+		}
+		else if (data.startsWith(CMD_SCORE)){
+			updateScore(false, new score(data.substr(3)));
+		}
+		else if (data.startsWith(CMD_SHOWPOWER)){
+			if (m_gameState == GS_RUNNING)
+				setSquare(false, new point(data.substr(4)), parseInt(data.substr(3, 1)));
+		}
+		else if (data.startsWith(CMD_ADDPOWER)){
+			if (m_gameState == GS_RUNNING)
+				addPowerUp(false, parseInt(data.substr(3)));
+		}
+		else if (data.startsWith(CMD_USEPOWER)){
+			if (m_gameState == GS_RUNNING){
+				var power = parseInt(data.substr(3));
+				removePowerUp(false, power);
+
+				if (power == CL_ATTACK){
+					var line = new Array(WIDTH);
+					for(var x = 0; x < WIDTH; x++)
+						line[x] = getRandomInt(0, 7);
+					
+					for(var j = 0; j < 4; j++)
+						line[getRandomInt(0, 7)] = CL_EMPTY;
+
+					addLine(true, line);
+					safeSend(CMD_ADDLINE + line.toString());
+				}
+				else{
+					var lines = new Array();
+					lines[HEIGHT - 1] = true;
+					clearLines(false, lines, true);
+				}
+			}
+		}
+	}
+}
+
+///
+/// Occurs when the remote user closes the window that contains the app.
+///
+function Channel_OnRemoteAppClosed(){
+	m_remoteLoaded = false;
+	updateGameState(GS_ERROR, getWord("errorUserLeft", getDisplayName(m_remoteUserName)));
+}
+
+///
+/// Occurs when the remote app has been initialized. Both apps are now initialized.
+///
+function Channel_OnRemoteAppLoaded(){
+	m_remoteLoaded = true;
+	initialize();
+}
+
+///
+/// Occurs when the connection between conversants changes from direct to indirect or disconnected.
+/// The type is available in window.external.Channel.Type
+///
+function Channel_OnTypeChanged(){
+	updateConnectionType();
+}
+
+///
+/// Helpers functions
+///
+function updateConnectionType(){
+	var icon, descr;
+	
+	switch(window.external.Channel.Type){
+		case CT_DIRECT:
+			icon = "ct_direct.gif"
+			descr = getWord("connectionDirect");
+			break;
+		case CT_DISCONNECTED:
+			icon = "ct_disconnected.gif"
+			descr = getWord("connectionDisconnected");
+
+			if (m_isInitialized)
+				updateGameState(GS_ERROR, getWord("errorDisconnected"));
+			else
+				updateGameState(GS_INITIALIZING, getWord("stateInitializing"));
+			
+			break;
+		case CT_INDIRECT:
+			icon = "ct_indirect.gif"
+			descr = getWord("connectionIndirect");
+			break;
+	}
+
+	if (statusIcon.src != "images/" + icon)
+		statusIcon.src = "images/" + icon;
+	statusIcon.title = getWord("lblConnectionType") + ": " + descr + ", ping: " + m_ping + "ms";
+}
+
+function safeSend(data){
+	try{
+		m_sendDataCache.push(data);
+
+		if (window.external.Channel.Type == CT_DIRECT || !(data.startsWith(CMD_SETPIECE) || data.startsWith(CMD_CLEARLINES) || data.startsWith(CMD_ADDLINE))){
+			window.external.Channel.SendData(m_sendDataCache.join("@"));
+			m_sendDataCache = new Array();
+		}
+	}
+	catch(e){}
+}
+
+function playSound(soundFile){
+	if (!m_muted)
+		snd.src = soundFile;
+}
+
+function doPing(){
+	m_pingTime = new Date().getTime();
+	safeSend(CMD_PING);
+}
+///
+/// Game specific objects
+///
+function point(){
+	if (arguments.length == 1){
+		var args = arguments[0].split(",");
+		this.x = parseInt(args[0]);
+		this.y = parseInt(args[1]);
+	}
+	else{
+		this.x = arguments[0];
+		this.y = arguments[1];
+	}
+}
+point.prototype.copy = function(){
+	return new point(this.x, this.y);
+}
+point.prototype.equals = function(p){
+	return this.x == p.x && this.y == p.y;
+}
+point.prototype.toString = function(){
+	return this.x + "," + this.y;
+}
+
+function piece(){
+	if (arguments.length == 1){
+		var args = arguments[0].split(":");
+		this.me = false;
+		this.color = parseInt(args[0]);
+		this.position = new point(args[1]);
+		this.rotation = parseInt(args[2]);
+	}
+	else{
+		this.me = true;
+		this.color = arguments[0];
+		this.position = arguments[1];
+		this.rotation = arguments[2];
+	}
+	this.setSquares(this.calcSquares(this.position, this.rotation));
+}
+piece.prototype.rotate = function(){
+	var newRotation = this.rotation + 1;
+	if (newRotation == 4)
+		newRotation = 0;
+
+	var newSquares = this.calcSquares(this.position, newRotation);
+
+	if (newSquares != null){
+		this.rotation = newRotation;
+		this.setSquares(newSquares);
+		
+		safeSend(CMD_SETPIECE + this);
+	}
+}
+piece.prototype.move = function(direction){
+	var newPosition = this.position.copy();
+
+	switch(direction){
+		case DR_LEFT: newPosition.x -= 1; break;
+		case DR_RIGHT: newPosition.x += 1; break;
+		case DR_DOWN: newPosition.y += 1; break;
+		case DR_DROP:
+			var squares;
+			do{
+				newPosition.y += 1;
+				squares = this.calcSquares(newPosition, this.rotation);
+			}
+			while(squares != null);
+			newPosition.y -= 1;
+			break;
+	}
+	var newSquares = this.calcSquares(newPosition, this.rotation);
+
+	if (newSquares != null){
+		this.position = newPosition;
+		this.setSquares(newSquares);
+		
+		safeSend(CMD_SETPIECE + this);
+
+		return true;
+	}
+	else
+		return false;
+}
+piece.prototype.calcSquares = function(position, rotation){
+	var squares = new Array(PIECE_SIZE)
+	var rotationInfo = ROTATION[this.color];
+
+	for(var i = 0; i < PIECE_SIZE; i++){
+		var p = new point(position.x + rotationInfo[rotation * 8 + i * 2], position.y + rotationInfo[rotation * 8 + i * 2 + 1]);
+	
+		if (this.me){		//only validate my own pieces
+			if (p.x < 0 || p.x >= WIDTH || p.y < 0 || p.y >= HEIGHT || (m_myBoard[p.y][p.x] != CL_EMPTY && !this.contains(p)))
+				return null;
+		}
+			
+		squares[i] = p;
+	}
+	return squares;
+}
+piece.prototype.setSquares = function(squares){
+	this.show(false);
+	this.squares = squares;
+	this.show(true);
+}
+piece.prototype.show = function(show){
+	if (this.squares){
+		for(var i = 0; i < PIECE_SIZE; i++)
+			setSquare(this.me, this.squares[i], (show) ? this.color : CL_EMPTY);
+	}
+}
+piece.prototype.contains = function(p){
+	if (this.squares){
+		for(var i = 0; i < PIECE_SIZE; i++)
+			if (p.equals(this.squares[i]))
+				return true;
+	}
+	return false;
+}
+piece.prototype.toString = function(){
+	return this.color + ":" + this.position + ":" + this.rotation;
+}
+
+function score(){
+	if (arguments.length == 1){
+		var args = arguments[0].split(":");
+		this.lines = parseInt(args[0]);
+		this.score = parseInt(args[1]);
+		this.level = parseInt(args[2]);
+	}
+	else{
+		this.lines = arguments[0];
+		this.score = arguments[1];
+		this.level = arguments[2];
+	}
+}
+score.prototype.toString = function(){
+	return this.lines + ":" + this.score + ":" + this.level;
+}
+
+///
+/// Game specific functions
+///
+function startGame(){
+	updateGameState(GS_RUNNING, getWord("statePlaying"));
+
+	initBoard(true);
+	initBoard(false);
+	
+	m_myfullLines = 0;
+	m_myScore = 0;
+	m_myLevel = 1;
+	m_remoteFullLines = 0;
+	m_remoteScore = 0;
+	m_remoteLevel = 1;
+	
+	m_myPowers = new Array();
+	m_remotePowers = new Array();
+	
+	showPowerUps(true);
+	showPowerUps(false);
+	
+	updateScore(true, new score(0, 0, 0));
+	
+	setNewPiece();
+	m_moveTimerID = setTimeout("moveDown();", 400);
+}
+
+function moveDown(){
+	if (!m_myPiece.move(DR_DOWN)){
+		// Check if one or more full lines are covered, if so remove and shift
+		var fullLines = getFullLinesFromPiece(m_myPiece);
+		var s = clearLines(true, fullLines, false);
+		
+		if (fullLines.length > 0){
+			safeSend(CMD_CLEARLINES + fullLines.join(","));
+			
+			var newPower = false;
+			var minY = 0;
+			var lineCount = 0;
+			for(var i = fullLines.length - 1; i >= 0; i--){
+				if (fullLines[i]){
+					minY = i;
+					lineCount++;
+					
+					if ((m_myfullLines + lineCount) % 4 == 0)
+						newPower = true;
+				}
+			}
+
+			if (newPower){
+				var p = new point(getRandomInt(0, 7), getRandomInt(minY, HEIGHT - 1))
+				var power = getRandomInt(CL_ATTACK, CL_DEFENSE);
+				setSquare(true, p, power);
+				safeSend(CMD_SHOWPOWER + power + p);
+			}
+		}
+
+		// every piece down is a point * level
+		s.score += m_myLevel;
+
+		safeSend(CMD_SCORE + s.toString());
+	
+		updateScore(true, s);
+
+		setNewPiece();
+		
+		if (m_myPiece.squares == null){
+			updateGameState(GS_GAMEOVERCONFIRM, getWord("stateGameOverCalc"));
+			
+			clearTimeout(m_moveTimerID);
+			safeSend(CMD_GAMEOVER);
+
+			fillBoard(true);
+			return;
+		}
+	}
+	
+	var timeOut = Math.max(60, (440 - (m_myLevel * 40)));
+	
+	m_moveTimerID = setTimeout("moveDown();", timeOut);
+}
+
+function setNewPiece(){
+	if (m_myNextColor == CL_EMPTY)
+		m_myNextColor = getRandomInt(1, 7);
+
+	m_myPiece = new piece(m_myNextColor, new point(4, 0), 0);
+	m_myNextColor = getRandomInt(1, 7);
+	
+	safeSend(CMD_NEWPIECE + m_myPiece + "@" + CMD_NEXTPIECE + m_myNextColor);
+	
+	myNextImg.src = "images/" + pieceUrlFromColor(m_myNextColor);
+}
+
+function showPowerUps(me){
+	var powers = (me) ? m_myPowers : m_remotePowers;
+	var imgPrfx = (me) ? "mePwr" : "remotePwr";
+
+	for(var i = 0; i < 5; i++){
+		if (i < powers.length)
+			eval(imgPrfx + i + ".src = 'images/" + pieceUrlFromColor(powers[i]) + "'");
+		else
+			eval(imgPrfx + i + ".src = 'images/empty.gif'");
+	}
+}
+
+function addPowerUp(me, powerUp){
+	var powers = (me) ? m_myPowers : m_remotePowers;
+	if (powers.length < 5)
+		powers.push(powerUp);
+	showPowerUps(me);
+}
+
+function removePowerUp(me, powerUp){
+	var powers = (me) ? m_myPowers : m_remotePowers;
+	var retVal = false;
+	for(var i = 0; i < powers.length; i++){
+		if (powers[i] == powerUp){
+			powers.splice(i, 1);
+			retVal = true;
+			break;
+		}
+	}
+	showPowerUps(me);
+	return retVal;
+}
+
+function getFullLinesFromPiece(p){
+	var lines = new Array();
+	var fullLines = new Array();
+	
+	for(var i = 0; i < PIECE_SIZE; i++){
+		y = p.squares[i].y;
+
+		if (lines[y])
+			continue;		//dont handle lines twice
+
+		lines[y] = true;
+	
+		for(x = 0; x < WIDTH; x++){
+			if (m_myBoard[y][x] == CL_EMPTY)
+				break;
+
+			if (x == WIDTH - 1){
+				fullLines[y] = true;
+			}
+		}
+	}
+	
+	return fullLines;
+}
+
+function clearLines(me, lines, hidePiece){
+	var shift = 0;
+	var board = (me ? m_myBoard : m_remoteBoard);
+	var piece = (me ? m_myPiece : m_remotePiece);
+	var totalLineCount = (me ? m_myfullLines : m_remoteFullLines);
+	var totalLevel = (me ? m_myLevel : m_remoteLevel);
+	var lineCount = 0;
+	var incrLevel = 0;
+
+	if (lines.length > 0){
+		if (hidePiece)
+			piece.show(false);
+
+		for(var y = HEIGHT - 1; y >= 0; y--){
+			while(lines[y - shift]){
+				shift++;
+				lineCount++;
+				
+				if ((totalLineCount + lineCount) % 10 == 0)
+					incrLevel++;
+			}
+
+			for(var x = 0; x < WIDTH; x++){
+				var color = CL_EMPTY;
+				if (y - shift >= 0){
+					color = board[y - shift][x];
+				}
+
+				if (board[y][x] != color)	//optimization
+					setSquare(me, new point(x, y), color);
+			}
+		}
+		
+		if (hidePiece)
+			piece.show(true);
+	}
+	
+	return new score(lineCount, Math.pow(lineCount, 2) * (9 + totalLevel + incrLevel), incrLevel);
+}
+
+function addLine(me, line){
+	var board = (me ? m_myBoard : m_remoteBoard);
+	var piece = (me ? m_myPiece : m_remotePiece);
+
+	piece.show(false);
+
+	for(var y = 1; y < HEIGHT; y++){
+		for(var x = 0; x < WIDTH; x++){
+			var color = board[y][x];
+			if (board[y - 1][x] != color)	//optimization
+				setSquare(me, new point(x, y - 1), color);
+		}
+	}
+	for(var x = 0; x < WIDTH; x++){
+		setSquare(me, new point(x, HEIGHT - 1), parseInt("" + line[x]));
+	}
+
+	piece.show(true);
+}
+
+function doAttack(){
+	if (removePowerUp(true, CL_ATTACK)){
+		safeSend(CMD_USEPOWER + CL_ATTACK);
+	}
+}
+
+function doDefense(){
+	var defendable = false;
+	for(var i = 0; i < WIDTH; i++){
+		if (m_myBoard[HEIGHT - 1][i] != CL_EMPTY){
+			defendable = true;
+			break;
+		}
+	}
+	if (!defendable)
+		return;
+
+	if (removePowerUp(true, CL_DEFENSE)){
+		var lines = new Array();
+		lines[HEIGHT - 1] = true;
+		clearLines(true, lines, true);
+		safeSend(CMD_USEPOWER + CL_DEFENSE);
+	}
+}
+
+function initBoard(me){
+	var board = myBoard;
+	var boardArr = m_myBoard;
+
+	if (!me){
+		board = remoteBoard;
+		boardArr = m_remoteBoard;
+	}
+
+	if (board.rows.length != 0){
+		for(var i = 0; i < HEIGHT - 1; i++){
+			board.deleteRow(0);
+		}
+	}
+	
+	for(var i = 0; i < HEIGHT; i++){
+		boardArr[i] = new Array(WIDTH);
+		for(var j = 0; j < WIDTH; j++)
+			boardArr[i][j] = CL_EMPTY;
+	}
+	
+	for(var i = 0; i < HEIGHT - 1; i++){
+		var row = board.insertRow();
+		row.height = "16";
+		for(var j = 0; j < WIDTH; j++){
+			var cell = row.insertCell();
+			
+			cell.innerHTML = "<img src='images/empty.gif'>"
+			cell.width = "16";
+		}
+	}
+}
+
+function setSquare(me, square, color){
+	var board = myBoard;
+	var boardArr = m_myBoard;
+
+	if (!me){
+		board = remoteBoard;
+		boardArr = m_remoteBoard;
+	}
+
+	if (me){
+		var prevValue = boardArr[square.y][square.x];
+		if (prevValue == CL_ATTACK || prevValue == CL_DEFENSE){
+			addPowerUp(me, prevValue);
+			safeSend(CMD_ADDPOWER + prevValue);
+		}
+	}
+
+	boardArr[square.y][square.x] = color;
+	if (square.y - 1 >= 0)
+		board.rows[square.y - 1].cells[square.x].firstChild.src = "images/" + imgUrlFromColor(color);
+}
+
+function imgUrlFromColor(color){
+	switch(color){
+		case CL_BLUE:		return "blue.gif";
+		case CL_GREEN:		return "green.gif";
+		case CL_ORANGE:		return "orange.gif";
+		case CL_PURPLE:		return "purple.gif";
+		case CL_RED:		return "red.gif";
+		case CL_WHITE:		return "white.gif";
+		case CL_YELLOW:		return "yellow.gif";
+		case CL_ATTACK:		return "attack.gif";
+		case CL_DEFENSE:	return "defense.gif";
+		default:			return "empty.gif";
+	}
+}
+
+function pieceUrlFromColor(color){
+	switch(color){
+		case CL_BLUE:		return "piece_blue.gif";
+		case CL_GREEN:		return "piece_green.gif";
+		case CL_ORANGE:		return "piece_orange.gif";
+		case CL_PURPLE:		return "piece_purple.gif";
+		case CL_RED:		return "piece_red.gif";
+		case CL_WHITE:		return "piece_white.gif";
+		case CL_YELLOW:		return "piece_yellow.gif";
+		case CL_ATTACK:		return "piece_attack.gif";
+		case CL_DEFENSE:	return "piece_defense.gif";
+		default:		return "empty.gif";
+	}
+}
+
+function fillBoard(me){
+	var empty = false;
+	// fill board with color of last piece
+	for(var x = 0; x < WIDTH; x++)
+		for(var y = 0; y < HEIGHT; y++){
+			setSquare(me, new point(x, y), (empty) ? CL_EMPTY : getRandomInt(1, 7));
+			empty = !empty;
+		}
+}
+
+function updateScore(me, s){
+	if (me){
+		m_myScore += s.score;
+		m_myfullLines += s.lines;
+		m_myLevel += s.level;
+	}
+	else{
+		m_remoteScore += s.score;
+		m_remoteFullLines += s.lines;
+		m_remoteLevel += s.level;
+	}
+	
+	levelMe.innerText = m_myLevel;
+	linesMe.innerText = m_myfullLines;
+	scoreMe.innerText = m_myScore;
+	
+	levelRemote.innerText = m_remoteLevel;
+	linesRemote.innerText = m_remoteFullLines;
+	scoreRemote.innerText = m_remoteScore;
+}
+
+function updateGameState(gameState, msg){
+	if (gameState != GS_RUNNING)
+		clearTimeout(m_moveTimerID);
+		
+	if (gameState == GS_GAMEOVER)
+		m_remoteStarted = false;
+
+	if (gameState == GS_ERROR && m_gameState != GS_ERROR){
+		clearTimeout(m_pingTimerID);
+
+		// clear boards
+		initBoard(true);
+		initBoard(false);
+		document.body.disabled = true;
+	}
+	
+	btnStart.disabled = (gameState != GS_WAITFORSTART && gameState != GS_GAMEOVER);
+	
+	m_gameState = gameState;
+	statusText.innerText = msg;
+}
+
+///
+/// GUI event handlers
+///
+function body_onkeydown(){
+	if (m_gameState == GS_RUNNING){
+		switch(event.keyCode){
+			case KEY_LEFT:
+			case KEY_NUM_LEFT:
+				m_myPiece.move(DR_LEFT);
+				break;
+			case KEY_RIGHT:
+			case KEY_NUM_RIGHT:
+				m_myPiece.move(DR_RIGHT);
+				break;
+			case KEY_UP:
+			case KEY_NUM_UP:
+			case KEY_ROTATE:
+			case KEY_NUM_ROTATE:
+			case KEY_CTRL_LEFT:
+				m_myPiece.rotate();
+				break;
+			case KEY_DOWN:
+			case KEY_NUM_DOWN:
+				m_myPiece.move(DR_DOWN);
+				break;
+			case KEY_NUM_SOUND:
+				btnMute_onclick();
+				break;
+			case KEY_SPACE:
+				m_myPiece.move(DR_DROP);
+				break;
+			case KEY_ATTACK:
+				doAttack();
+				break;
+			case KEY_DEFENSE:
+				doDefense();
+				break;
+		}
+	}
+}
+
+function btnStart_onclick(){
+	if (m_gameState == GS_WAITFORSTART || m_gameState == GS_GAMEOVER){
+		safeSend(CMD_START);
+		if (m_remoteStarted)
+			startGame();
+		else
+			updateGameState(GS_WAITFORREMOTE, getWord("stateWaitOnJoin"));
+	}
+}
+
+function help_onclick(){
+	showHelpFile("help/tetris-help.htm");
+}
+
+function btnMute_onclick(){
+	m_muted = !m_muted;
+	if (m_muted)
+		btnMute.src="images/snd-off.gif";
+	else
+		btnMute.src="images/snd-on.gif";
+}
+		</script>
+	</head>
+	<body onload="OnLoad();" onunload="OnUnload();" style="margin:0" scroll="no" onkeydown="body_onkeydown();">
+		<xml id="words"></xml>
+		<table id="tblPreload" width="100%" height="100%">
+			<tr height="20%">
+				<td>&nbsp;</td>
+			</tr>
+			<tr height="40%">
+				<td align="center"><img src="images/tetris-logo.jpg"><div id="lblBy" style="color:#D4DEF4"></div>
+				</td>
+			</tr>
+			<tr valign="top" height="30%">
+				<td align="center"><div align="left" style="width:100px;height:16px;color:#D4DEF4;border-style:solid;border-width:1px"><div id="divProgress" style="background-color:#D4DEF4;width:0%;height:100%"></div>
+					</div>
+				</td>
+			</tr>
+		</table>
+		<table id="tblGame" width="100%" height="100%" style="display:none">
+			<tr valign="top">
+				<td align="center" colspan="2">
+					<table width="446px" cellpadding="0" cellspacing="0" style="table-layout:fixed">
+						<cols>
+							<col width="163px"></col>
+							<col width="120px"></col>
+							<col width="163px"></col>
+						</cols>
+						<tr>
+							<td colspan="3">
+								<table width="446px" height="27px" style="table-layout:fixed;background-image:url(images/top.gif)">
+									<tr>
+										<td id="nameMe" align="center" width="50%"></td>
+										<td id="nameRemote" align="center" width="50%"></td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+						<tr>
+							<td style="border-left-style:solid;border-left-width:2px;border-left-color:#C6CDDD;border-right-style:solid;border-right-width:1px;border-right-color:black">
+								<table id="myBoard" class="board" cellpadding="0" cellspacing="0">
+								</table>
+							</td>
+							<td>
+								<table cellpadding="0" cellspacing="0" width="100%" height="100%" style="table-layout:fixed">
+									<tr height="78px">
+										<td align="center" width="50%" style="background-image:url(images/nextbg.jpg)"><img id="myNextImg" src="images/empty.gif"></td>
+										<td align="center" width="50%" style="background-image:url(images/nextbg.jpg);border-left-style:solid;border-left-width:2px;border-left-color:#C7CFE2"><img id="remoteNextImg" src="images/empty.gif"></td>
+									</tr>
+									<tr height="242px" style="background-image:url(images/vs.gif)">
+										<td colspan="2">
+											<table width="100%" cellspacing="3" cellpadding="0" style="color:yellow;font-weight:bold;position:absolute;top:187px;background-color:transparent;">
+												<cols>
+													<col width="50%" align="center"></col>
+													<col width="50%" align="center" style="padding-left:8px"></col>
+												</cols>
+												<tr>
+													<td><img id="mePwr4" height="26px" src="images/empty.gif"></td>
+													<td><img id="remotePwr4" height="26px" src="images/empty.gif"></td>
+												</tr>
+												<tr>
+													<td><img id="mePwr3" height="26px" src="images/empty.gif"></td>
+													<td><img id="remotePwr3" height="26px" src="images/empty.gif"></td>
+												</tr>
+												<tr>
+													<td><img id="mePwr2" height="26px" src="images/empty.gif"></td>
+													<td><img id="remotePwr2" height="26px" src="images/empty.gif"></td>
+												</tr>
+												<tr>
+													<td><img id="mePwr1" height="26px" src="images/empty.gif"></td>
+													<td><img id="remotePwr1" height="26px" src="images/empty.gif"></td>
+												</tr>
+												<tr>
+													<td><img id="mePwr0" height="26px" src="images/empty.gif"></td>
+													<td><img id="remotePwr0" height="26px" src="images/empty.gif"></td>
+												</tr>
+											</table>
+										</td>
+									</tr>
+								</table>
+							</td>
+							<td style="border-left-style:solid;border-left-width:1px;border-left-color:black;border-right-style:solid;border-right-width:2px;border-right-color:#C6CDDD">
+								<table id="remoteBoard" class="board" cellpadding="0" cellspacing="0">
+								</table>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="3"><img src="images/bottom.gif"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2" align="center">
+					<button id="btnStart" onclick="btnStart_onclick();" class="btn" disabled></button>
+				</td>
+			</tr>
+			<tr>
+				<td><img id="btnMute" onclick="btnMute_onclick();" src="images/snd-on.gif" style="cursor:hand"></td>
+				<td align="right" style="font-size:7pt"><a id="lblVersion" href="http://games.mess.be" target="_blank" style="color:white"></a> <a href="javascript:help_onclick();"><img id="btnHelp" align="absmiddle" border="0" src="images/help.gif"></a></td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<div style="height:30px">
+						<table cellpadding="0" cellspacing="0" width="100%" style="font-family:Tahoma;font-size:8pt;background-color:white" ID="Table1">
+							<tr height="17" style="font-weight:bold;background-image:url(images/headerbg.gif)">
+								<td width="20px"><img src="images/leftcorner.jpg"></td>
+								<td id="lblPlayers" colspan="2"></td>
+								<td id="lblGameLevel" align="center"></td>
+								<td id="lblGameLines" align="center"></td>
+								<td id="lblGameScore" align="center"></td>
+								<td align="right"><img src="images/rightcorner.jpg"></td>
+							</tr>
+							<tr height="17" style="background-image:url(images/playerbg.gif)">
+								<td width="20px" colspan="2"><img src="images/star.jpg"</td>
+								<td id="nameMeScore">&nbsp;</td>
+								<td id="levelMe" align="center">0</td>
+								<td id="linesMe" align="center">0</td>
+								<td id="scoreMe" align="center" colspan="2">0</td>
+							</tr>
+							<tr height="17" style="background-image:url(images/playerbg.gif)">
+								<td width="20px" colspan="2">&nbsp;</td>
+								<td id="nameRemoteScore">&nbsp;</td>
+								<td id="levelRemote" align="center">0</td>
+								<td id="linesRemote" align="center">0</td>
+								<td id="scoreRemote" align="center" colspan="2">0</td>
+							</tr>
+						</table>
+					</div>
+				</td>
+			</tr>
+			<tr valign="bottom" height="17px">
+				<td colspan="2">
+					<div id="statusBar" style="height:17px;background-image:url(images/playerbg.gif)">
+						<img id="statusIcon" width="16" height="16" align="absmiddle" style="unselectable;margin:0px 5px">
+						<span id="statusText" unselectable style="cursor:default"></span>
+						<span id="statusPing" unselectable style="cursor:default"></span>
+					</div>
+				</td>
+			</tr>
+		</table>
+		<bgsound id="snd"></bgsound>
+	</body>
+</html>

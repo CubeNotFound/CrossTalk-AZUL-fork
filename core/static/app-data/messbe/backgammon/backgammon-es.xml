@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<colorBlue>Azul</colorBlue>
+	<colorWhite>Blanco</colorWhite>
+	<cmdHelp>Ayuda</cmdHelp>
+	<cmdRestart>Reiniciar</cmdRestart>
+	<cmdRoll>Tira el dado</cmdRoll>
+	<cmdSwitchTurn>Cambiar turno</cmdSwitchTurn>
+	<confirmRemoteWantsRestart>{0} quiere reiniciar el juego, ¿estás de acuerdo?</confirmRemoteWantsRestart>
+	<connectionDirect>directa</connectionDirect>
+	<connectionDisconnected>Desconectar</connectionDisconnected>
+	<connectionIndirect>indirecta</connectionIndirect>
+	<errorDataSend>Error; Imposible enviar datos. Se ha parado el juego.</errorDataSend>
+	<errorDisconnected>Desconectado.</errorDisconnected>
+	<errorUserLeft>{0} ha dejado el juego. El juego ha acabado.</errorUserLeft>
+	<infoBearOff>Todas tus fichas están en el tablero, comienza a sacar fichas.</infoBearOff>
+	<infoCheckerHit>Una ficha ha sido golpeada y colocada sobre la barra,</infoCheckerHit>
+	<infoFromBarFirst>Recuerda, debes limpiar la barra primero.</infoFromBarFirst>
+	<infoLastMove>Este es tu último movimiento.</infoLastMove>
+	<infoMovesLeft>Te quedan {0} movimientos.</infoMovesLeft>
+	<infoNoRestart>No reiniciar.</infoNoRestart>
+	<infoRequestRestart>Comenzando a reiniciar..</infoRequestRestart>
+	<infoRestartDenied>{0} no quiere reiniciar el juego.</infoRestartDenied>
+	<infoRoll>Tira el dado</infoRoll>
+	<infoSelectPiece>Selecciona la ficha con la que quieres jugar</infoSelectPiece>
+	<infoSelectTarget>Ahora selecciona tu objetivo o no selecciones haciendo clic sobre la ficha seleccionada.</infoSelectTarget>
+	<infoTurnLost>Has perdido tu turno.</infoTurnLost>
+	<infoTurnLostDetail>Has perdido tu turno, no te quedan movimientos validos. Haz clic en 'Cambiar turno' para continuar.</infoTurnLostDetail>
+	<lblBroughtToYouBy>Juego patrocinado por {0}</lblBroughtToYouBy>
+	<lblConnectionType>Tipo de conexión</lblConnectionType>
+	<lblVersion>Backgammon {0}</lblVersion>
+	<stateGameOver>Final del juego.</stateGameOver>
+	<stateGameOverWon>Enhorabuena, Has ganado! Haz clic en 'Reiniciar' para jugar de nuevo.</stateGameOverWon>
+	<stateGameOverLost>Has perdido.</stateGameOverLost>
+	<stateInitializing>Iniciando juego...</stateInitializing>
+	<stateMyTurn>Es tu turno.</stateMyTurn>
+	<stateRemoteTurn>Esperando por {0} para realizar movimiento.</stateRemoteTurn>
+	<stateStartMyTurn>El juego ha empezado, tu eres el color {0}. Es tu turno.</stateStartMyTurn>
+	<stateStartRemoteTurn>El juego ha empezado, tu eres el color {0}. Esperando por {1} para completar su turno.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Esperando a tu oponente</stateWaitOnJoin>
+</words>
+
+
+

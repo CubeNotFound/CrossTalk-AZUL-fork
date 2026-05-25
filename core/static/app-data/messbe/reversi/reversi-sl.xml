@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<cmdHelp>Pomoč</cmdHelp>
+	<cmdRestart>Reset</cmdRestart>
+	<confirmRemoteWantsRestart>{0} želi resetirati igro, se strinjaš?</confirmRemoteWantsRestart>
+	<connectionDirect>posredno</connectionDirect>
+	<connectionDisconnected>prekinjeno</connectionDisconnected>
+	<connectionIndirect>neposredno</connectionIndirect>
+	<errorDataSend>Podatkovna napaka; pošiljanje podatkov ni možno. Igra ustavljena.</errorDataSend>
+	<errorDisconnected>Prekinjeno.</errorDisconnected>
+	<errorUserLeft>{0} je zapustil igro. Igra je končana.</errorUserLeft>
+	<infoRestartDenied>{0} ne želi resetirati te igre.</infoRestartDenied>
+	<infoClickToPlayAgain>Klikni 'Reset' za novo igro.</infoClickToPlayAgain>
+	<lblBroughtToYouBy>Vam na uslugo: {0}</lblBroughtToYouBy>
+	<lblConnectionType>Vrsta povezave</lblConnectionType>
+	<lblPlayers>Igralci</lblPlayers>
+	<lblColor>Barva</lblColor>
+	<lblGamePoints>Točke v igri</lblGamePoints>
+	<lblGameTotalPoints>Skupne točke</lblGameTotalPoints>
+	<lblGamesWon>Zmage</lblGamesWon>
+	<lblRed>rdeč</lblRed>
+	<lblVersion>Reversi {0}</lblVersion>
+	<lblWhite>bel</lblWhite>
+	<stateAnotherMyTurn>{0} ne more napraviti poteze, ponovno si ti na potezi.</stateAnotherMyTurn>
+	<stateAnotherRemoteTurn>Obtičal si, {0} je ponovno na potezi.</stateAnotherRemoteTurn>
+	<stateInitializing>Nalagam igro...</stateInitializing>
+	<stateGameOverDraw>Igra je končana, neodločeno je!</stateGameOverDraw>
+	<stateGameOverLost>Igra je končana, izgubil si!</stateGameOverLost>
+	<stateGameOverWon>Igra je končana, zmagal si!</stateGameOverWon>
+	<stateMyTurn>Ti si na potezi.</stateMyTurn>
+	<stateRemoteTurn>Čakaš, da {0} naredi potezo.</stateRemoteTurn>
+	<stateStartMyTurn>Igra se je pričela, ti si na potezi.</stateStartMyTurn>
+	<stateStartRemoteTurn>Igra se je pričela, čakaš, da {0} naredi potezo.</stateStartRemoteTurn>
+</words>
+

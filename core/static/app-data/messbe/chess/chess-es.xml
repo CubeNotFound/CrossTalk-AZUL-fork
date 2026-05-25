@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<confirmDraw>¿Estás seguro de querer hacer ese movimiento?</confirmDraw>
+	<confirmRemoteWantsRestart>{0} quiere reiniciar la partida, ¿estás de acuerdo?</confirmRemoteWantsRestart>
+	<confirmRemoteWantsTie>{0} te ofrece tablas, ¿aceptas?</confirmRemoteWantsTie>
+	<confirmResign>¿Estás seguro de querer rendirte?</confirmResign>
+	<confirmRestart>¿Estás seguro de querer reiniciar la partida?</confirmRestart>
+	<connectionDirect>directa</connectionDirect>
+	<connectionDisconnected>desconectado</connectionDisconnected>
+	<connectionIndirect>indirecta</connectionIndirect>
+	<cmdDraw>Mover</cmdDraw>
+	<cmdHelp>Ayuda</cmdHelp>
+	<cmdMute>Silencio</cmdMute>
+	<cmdResign>Rendirte</cmdResign>
+	<cmdRestart>Reiniciar</cmdRestart>
+	<errorDataSend>Se ha producido un error; imposible enviar datos. El juego se ha interrumpido.</errorDataSend>
+	<errorDisconnected>Desconectado.</errorDisconnected>
+	<errorUserLeft>{0} ha abandonado la partida. El juego ha finalizado.</errorUserLeft>
+	<lblBroughtToYouBy>Ofrecido por {0}</lblBroughtToYouBy>
+	<lblConnectionType>Tipo de conexión</lblConnectionType>
+	<lblVersion>Ajedrez {0}</lblVersion>
+	<lblPromote>Promociona (corona) a tu peón</lblPromote>
+	<infoClickToPlayAgain>Pulsa 'Reiniciar' para jugar otra partida.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} no quiere reiniciar la partida.</infoRestartDenied>
+	<infoTieDenied>{0} no quiere mover.</infoTieDenied>
+	<infoYouResigned>Te has rendido, has pedido.</infoYouResigned>
+	<stateCheck>Jaque</stateCheck>
+	<stateCheckmate>Jaque mate, has perdido.</stateCheckmate>
+	<stateInitializing>Iniciando juego...</stateInitializing>
+	<stateMyTurn>Es tu turno.</stateMyTurn>
+	<stateOpponentCheck>Has hecho jaque</stateOpponentCheck>
+	<stateOpponentResigned>Tu oponente se ha rendido, has ganado.</stateOpponentResigned>
+	<stateRemoteCheckmate>Has hecho jaque mate a tu oponente, has ganado.</stateRemoteCheckmate>
+	<stateRemoteTurn>Esperando que {0} mueva.</stateRemoteTurn>
+	<stateStalemate>Tablas, se ha producido un empate.</stateStalemate>
+	<stateStartMyTurn>Comienza el juego, es tu turno.</stateStartMyTurn>
+	<stateStartRemoteTurn>Comienza el juego, esperando que {0} mueva.</stateStartRemoteTurn>
+	<stateTie>Empate.</stateTie>
+	<stateWaitForApproval>Esperando la aprobación de tu oponente..</stateWaitForApproval>
+</words>
+
+

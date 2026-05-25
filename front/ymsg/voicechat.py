@@ -1,0 +1,22 @@
+from typing import Optional
+import asyncio
+
+from core.backend import Backend
+
+def register(backend: Backend) -> None:
+	from util.misc import ProtocolRunner
+	
+	# TODO: Implement UDP ports
+	# https://wiki.imfreedom.org/index.php/Yahoo#Network
+	backend.add_runner(ProtocolRunner('0.0.0.0', 5000, ListenerVoiceChat, service = 'YMSG Voice'))
+	backend.add_runner(ProtocolRunner('0.0.0.0', 5001, ListenerVoiceChat, service = 'YMSG Voice'))
+
+class ListenerVoiceChat(asyncio.Protocol):
+	def connection_made(self, transport: asyncio.BaseTransport) -> None:
+		print("Voice chat connection_made")
+	
+	def connection_lost(self, exc: Optional[Exception]) -> None:
+		print("Voice chat connection_lost")
+	
+	def data_received(self, data: bytes) -> None:
+		print("Voice chat data_received", data)

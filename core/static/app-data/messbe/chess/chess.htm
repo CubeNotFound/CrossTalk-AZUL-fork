@@ -1,0 +1,1248 @@
+<html>
+<!--
+	Copyright by Koen, 2003,2004,2005
+	http://games.mess.be
+-->
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7">
+		<title>Chess</title>
+<style type="text/css">
+.btn{font-family:Tahoma;font-size:8pt;border-style:none;height:17px;width:70px;background-image:url(images/playerbg.gif)}
+table{font-family:Tahoma;font-size:8pt;background-color:#516CA1}
+</style>
+		<script language="javascript" src="../common/common.js"></script>
+		<script language="javascript">
+var VERSION			= "v2.0";
+		
+/// GAME_STATE
+var GS_INITIALIZING	= 0;
+var GS_MYTURN		= 1;
+var GS_REMOTETURN	= 2;
+var GS_GAMEOVER		= 3;
+var GS_ERROR		= 4;
+var GS_PROMOTEPAWN	= 5;
+
+var m_remoteUserName;
+var m_gameState = GS_INITIALIZING;
+var m_isInitialized	= false;
+var m_muted			= false;
+
+/// Game specific variables
+var PC_EMPTY		= 0;
+var PC_WHITE_PAWN	= 1;
+var PC_WHITE_ROOK	= 2;
+var PC_WHITE_BISHOP	= 3;
+var PC_WHITE_KNIGHT	= 4;
+var PC_WHITE_QUEEN	= 5;
+var PC_WHITE_KING	= 6;
+var PC_BLACK_PAWN	= 11;
+var PC_BLACK_ROOK	= 12;
+var PC_BLACK_BISHOP	= 13;
+var PC_BLACK_KNIGHT	= 14;
+var PC_BLACK_QUEEN	= 15;
+var PC_BLACK_KING	= 16;
+
+var CL_UNKNOWN		= -1;
+var CL_WHITE		= 0;
+var CL_BLACK		= 1;
+
+var IMG_REDSQUARE	= "url(images/redsquare.jpg)";
+var IMG_YLWSQUARE	= "url(images/yellowsquare.jpg)";
+
+// End game consts
+var EG_NONE			= 0;
+var EG_STALEMATE	= 1;
+var EG_CHECK		= 2;
+var EG_CHECKMATE	= 3;
+
+/// Data commands
+var CMD_RESTART		= "res";
+var CMD_RESTARTOK	= "rok";
+var CMD_NORESTART	= "nor";
+var CMD_SELPIECE	= "sel";
+var CMD_RESIGN		= "rsi";
+var CMD_DRAW		= "drw";
+var CMD_DRAWOK		= "dok";
+var CMD_NODRAW		= "nod";
+
+var m_firstMove;
+var m_iStart;
+var m_fields;
+var m_myColor;
+var m_remoteColor;
+var m_orgKingField;
+var m_orgRook1Field;
+var m_orgRook2Field;
+var m_myKingField;
+var m_remoteKingField;
+var m_requestRestart = false;
+var m_requestTie = false;
+var m_fromField = null;
+var m_fromFieldImg = null;
+var m_myKingInCheckImg = null;
+var m_remoteKingInCheckImg = null;
+var m_indicator = null;
+var m_enpassantPawn = null;
+var m_promoteMove = null;
+var m_lastRemoteMove = null;
+var m_preloadDone = false;
+var m_remoteLoaded = false;
+
+///
+/// Global event handlers
+///
+function OnLoad(){
+	// load language
+	
+	loadLanguage("chess");
+	applyLanguage();
+
+	m_remoteUserName = getRemoteUserName();
+	
+	nameMe.innerText = getDisplayName(window.external.Users.Me.Name);
+	nameMe.title = window.external.Users.Me.Name;
+	nameRemote.innerText = getDisplayName(m_remoteUserName);
+	nameRemote.title = m_remoteUserName;
+	
+	updateGameState(GS_INITIALIZING, getWord("stateInitializing"));
+	updateConnectionType();
+
+	m_iStart = iAmInviter();
+	m_isInitialized = true;
+
+	window.external.Channel.Initialize();
+	
+	preloadImages(new Array("blackbishop.gif", "blackking.gif", "blackknight.gif", "blackpawn.gif",
+		"blackqueen.gif", "blackrook.gif", "board.gif", "ct_direct.gif", "ct_disconnected.gif", "ct_indirect.gif",
+		"empty.gif", "help.gif", "playerbg.gif", "player-black.jpg", "player-white.jpg", "popup.gif",
+		"redsquare.jpg", "sidebar-vs.jpg", "snd-off.gif", "snd-on.gif", "whitebishop.gif", "whiteking.gif", "whiteknight.gif",
+		"whitepawn.gif", "whitequeen.gif", "whiterook.gif", "yellowsquare.jpg"),
+		OnPreloadProgress, OnPreloadComplete);
+}
+
+function OnUnload(){
+}
+
+///
+/// Preloading stuff
+///
+function OnPreloadProgress(progress){
+	divProgress.style.width = progress + "%";
+}
+
+function OnPreloadComplete(){
+	m_preloadDone = true;
+	initialize();
+}
+
+function initialize(){
+	if (m_preloadDone && m_remoteLoaded){
+		tblPreload.style.display = "none";
+		tblGame.style.display = "";
+
+		startGame();
+	}
+}
+
+function applyLanguage(){
+	lblBy.innerHTML = getWord("lblBroughtToYouBy", "<b>games.mess.be</b>");
+	lblVersion.innerText = getWord("lblVersion", VERSION);
+	lblPromote.innerText = getWord("lblPromote");
+	btnResign.innerText = getWord("cmdResign");
+	btnDraw.innerText = getWord("cmdDraw");
+	btnRestart.innerText = getWord("cmdRestart");
+	btnMute.title = getWord("cmdMute");
+	btnHelp.title = getWord("cmdHelp");
+}
+
+///
+/// Channel event handlers
+///
+
+///
+/// Occurs when the remote user closes the application, the conversation window or signs out of Messenger.
+///
+function Channel_OnAppClose(){
+	m_remoteLoaded = false;
+	updateGameState(GS_ERROR, getWord("errorUserLeft", getDisplayName(m_remoteUserName)));
+}
+
+///
+/// Occurs when a data send has failed, inspect Channel.Error for details.
+///
+function Channel_OnDataError(){
+	updateGameState(GS_ERROR, getWord("errorDataSend"));
+}
+
+///
+/// Occurs when new data has been received. The data is available in window.external.Channel.Data.
+///
+function Channel_OnDataReceived(){
+	var data = window.external.Channel.Data;
+	
+	if (data == CMD_RESTART){
+		if (isGameRunning()){
+			var restart = confirm(getWord("confirmRemoteWantsRestart", getDisplayName(m_remoteUserName)));
+			var cmd = restart ? CMD_RESTARTOK : CMD_NORESTART;
+			window.external.Channel.SendData(cmd);
+				
+			if (restart){
+				hideRemoteMoveIndicator();
+				startGame();
+			}
+		}
+	}
+	else if (data == CMD_NORESTART){
+		if (isGameRunning()){
+			m_requestRestart = false;
+			statusText.innerText = (m_gameState == GS_MYTURN) ? getWord("stateMyTurn") : getWord("stateRemoteTurn", getDisplayName(m_remoteUserName));
+			alert(getWord("infoRestartDenied", getDisplayName(m_remoteUserName)));
+		}
+	}
+	else if (data == CMD_RESTARTOK){
+		if (isGameRunning()){
+			m_requestRestart = false;
+			hideRemoteMoveIndicator();
+			startGame();
+		}
+	}
+	else if (data == CMD_RESIGN){
+		if (isGameRunning()){
+			pnlGameover.innerText = getWord("stateOpponentResigned");
+			pnlGameover.style.display = "";
+			
+			m_iStart = true;
+			hideRemoteMoveIndicator();
+			updateGameState(GS_GAMEOVER, getWord("stateOpponentResigned") + " " + getWord("infoClickToPlayAgain"));
+		}
+	}
+	else if (data == CMD_DRAW){
+		if (isGameRunning()){
+			var draw = confirm(getWord("confirmRemoteWantsTie", getDisplayName(m_remoteUserName)));
+			var cmd = (draw) ? CMD_DRAWOK : CMD_NODRAW;
+			window.external.Channel.SendData(cmd);
+			if (draw){
+				pnlGameover.innerText = getWord("stateTie");
+				pnlGameover.style.display = "";
+				
+				hideRemoteMoveIndicator();
+			
+				updateGameState(GS_GAMEOVER, getWord("stateTie") + " " + getWord("infoClickToPlayAgain"));
+			}
+		}
+	}
+	else if (data == CMD_DRAWOK){
+		if (isGameRunning()){
+			m_requestTie = false;
+			pnlGameover.innerText = getWord("stateTie");
+			pnlGameover.style.display = "";
+			
+			hideRemoteMoveIndicator();
+			
+			updateGameState(GS_GAMEOVER, getWord("stateTie") + " " + getWord("infoClickToPlayAgain"));
+		}
+	}
+	else if (data == CMD_NODRAW){
+		if (isGameRunning()){
+			m_requestTie = false;
+			
+			statusText.innerText = (m_gameState == GS_MYTURN) ? getWord("stateMyTurn") : getWord("stateRemoteTurn", getDisplayName(m_remoteUserName));
+			alert(getWord("infoTieDenied", getDisplayName(m_remoteUserName)));
+		}
+	}
+	else if (m_gameState == GS_REMOTETURN){
+		if (data.substr(0, 3) == CMD_SELPIECE){
+			var f = new field(data.substr(3));
+			f.rotate();
+			var imgObj = imgFromField(f);
+			var bgImg = imgObj.style.backgroundImage;
+
+			if (bgImg == "" || bgImg == IMG_REDSQUARE){
+				if (bgImg != "")
+					m_remoteKingInCheckImg = imgObj;
+
+				imgObj.style.backgroundImage = IMG_YLWSQUARE;
+			}
+			else if (imgObj == m_remoteKingInCheckImg)
+				imgObj.style.backgroundImage = IMG_REDSQUARE;
+			else
+				imgObj.style.backgroundImage = "";
+		}
+		else{
+			hideRemoteMoveIndicator();
+
+			m_lastRemoteMove = new move(data);
+			var to = m_lastRemoteMove.to.copy();
+			to.rotate();
+
+			var imgObj = imgFromField(to);
+			imgObj.style.backgroundImage = IMG_YLWSQUARE;
+
+			doMove(m_lastRemoteMove, true);
+			setGameState();
+			
+			//setTimeout("hideRemoteMoveIndicator();", 1000);
+		}
+	}
+	else if (m_gameState == GS_GAMEOVER)
+		if (data.substr(0, 3) != CMD_SELPIECE)
+			m_firstMove = new move(data);
+}
+
+function hideRemoteMoveIndicator(){
+	if (m_lastRemoteMove){
+		var from = m_lastRemoteMove.from;
+		var to = m_lastRemoteMove.to;
+		from.rotate();
+		to.rotate();
+		
+		imgFromField(from).style.backgroundImage = "";
+		imgFromField(to).style.backgroundImage = "";
+		
+		m_lastRemoteMove = null;
+	}
+}
+
+///
+/// Occurs when the remote user closes the window that contains the app.
+///
+function Channel_OnRemoteAppClosed(){
+	m_remoteLoaded = false;
+	updateGameState(GS_ERROR, getWord("errorUserLeft", getDisplayName(m_remoteUserName)));
+}
+
+///
+/// Occurs when the remote app has been initialized. Both apps are now initialized.
+///
+function Channel_OnRemoteAppLoaded(){
+	m_remoteLoaded = true;
+	initialize();
+}
+
+///
+/// Occurs when the connection between conversants changes from direct to indirect or disconnected.
+/// The type is available in window.external.Channel.Type
+///
+function Channel_OnTypeChanged(){
+	updateConnectionType();
+}
+
+///
+/// Helpers functions
+///
+function updateConnectionType(){
+	var icon, descr;
+	
+	switch(window.external.Channel.Type){
+		case CT_DIRECT:
+			icon = "ct_direct.gif"
+			descr = getWord("connectionDirect");
+			break;
+		case CT_DISCONNECTED:
+			icon = "ct_disconnected.gif"
+			descr = getWord("connectionDisconnected");
+
+			if (m_isInitialized)
+				updateGameState(GS_ERROR, getWord("errorDisconnected"));
+			else
+				updateGameState(GS_INITIALIZING, getWord("stateInitializing"));
+			
+			break;
+		case CT_INDIRECT:
+			icon = "ct_indirect.gif"
+			descr = getWord("connectionIndirect");
+			break;
+	}
+
+	statusIcon.src = "images/" + icon;
+	statusIcon.title = getWord("lblConnectionType") + ": " + descr;
+}
+
+///
+/// Game specific objects
+///
+function field(){
+	if (arguments.length == 1){
+		var args = arguments[0].split(",");
+		this.x = parseInt(args[0]);
+		this.y = parseInt(args[1]);
+	}
+	else{
+		this.x = arguments[0];
+		this.y = arguments[1];
+	}
+}
+field.prototype.copy = function(){
+	return new field(this.x, this.y);
+}
+field.prototype.equals = function(f){
+	if (f)
+		return this.x == f.x && this.y == f.y;
+	return false;
+}
+field.prototype.rotate = function(){
+	this.x = 7 - this.x;
+	this.y = 7 - this.y;
+}
+field.prototype.toString = function(){
+	return this.x + "," + this.y;
+}
+
+function move(){
+	if (arguments.length == 1){
+		var args = arguments[0].split(";");
+		this.from = new field(args[0]);
+		this.to = new field(args[1]);
+		this.piece = parseInt(args[2]);
+	}
+	else{
+		this.from = arguments[0];
+		this.to = arguments[1];
+		this.piece = arguments[2];
+	}
+}
+move.prototype.toString = function(){
+	return this.from + ";" + this.to + ";" + this.piece;
+}
+
+///
+/// Game specific functions
+///
+function startGame(){
+	m_fields = new Array(8);
+	for(var i = 0; i < 8; i++){
+		m_fields[i] = new Array(8);
+		for(var j = 0; j < 8; j++){
+			var f = new field(i, j);
+			setField(f, PC_EMPTY);
+			imgFromField(f).style.backgroundImage = "";
+		}
+	}
+	document.body.disabled = false;
+	pnlGameover.style.display = "none";
+	
+	m_myColor = m_iStart ? CL_WHITE : CL_BLACK;
+	m_remoteColor = m_myColor == CL_WHITE ? CL_BLACK : CL_WHITE;
+
+	imgMe.background = "images/player-" + ((m_myColor == CL_WHITE) ? "white.jpg" : "black.jpg");
+	imgRemote.background = "images/player-" + ((m_remoteColor == CL_WHITE) ? "white.jpg" : "black.jpg");
+	
+	var remoteOffset = (m_remoteColor == CL_WHITE) ? 0 : 10;
+	var myOffset = (m_myColor == CL_WHITE) ? 0 : 10;
+
+	//setup my pieces
+	setField(new field(0, 7), PC_WHITE_ROOK + myOffset);
+	setField(new field(1, 7), PC_WHITE_KNIGHT + myOffset);
+	setField(new field(2, 7), PC_WHITE_BISHOP + myOffset);
+	setField(new field(((m_myColor == CL_WHITE) ? 3 : 4), 7), PC_WHITE_QUEEN + myOffset);
+	setField(new field(((m_myColor == CL_WHITE) ? 4 : 3), 7), PC_WHITE_KING + myOffset);
+	setField(new field(5, 7), PC_WHITE_BISHOP + myOffset);
+	setField(new field(6, 7), PC_WHITE_KNIGHT + myOffset);
+	setField(new field(7, 7), PC_WHITE_ROOK + myOffset);
+	for(var i = 0; i < 8; i++)
+		setField(new field(i, 6), PC_WHITE_PAWN + myOffset);
+
+	m_orgKingField = new field(((m_myColor == CL_WHITE) ? 4 : 3), 7);
+	m_orgRook1Field = new field(0, 7);
+	m_orgRook2Field = new field(7, 7);
+	m_myKingField = m_orgKingField;
+
+	//setup remote pieces
+	setField(new field(0, 0), PC_WHITE_ROOK + remoteOffset);
+	setField(new field(1, 0), PC_WHITE_KNIGHT + remoteOffset);
+	setField(new field(2, 0), PC_WHITE_BISHOP + remoteOffset);
+	setField(new field(((m_remoteColor == CL_BLACK) ? 3 : 4), 0), PC_WHITE_QUEEN + remoteOffset);
+	setField(new field(((m_remoteColor == CL_BLACK) ? 4 : 3), 0), PC_WHITE_KING + remoteOffset);
+	setField(new field(5, 0), PC_WHITE_BISHOP + remoteOffset);
+	setField(new field(6, 0), PC_WHITE_KNIGHT + remoteOffset);
+	setField(new field(7, 0), PC_WHITE_ROOK + remoteOffset);
+	for(var i = 0; i < 8; i++)
+		setField(new field(i, 1), PC_WHITE_PAWN + remoteOffset);
+
+	m_remoteKingField = new field(((m_remoteColor == CL_BLACK) ? 4 : 3), 0);
+
+	if (m_iStart || (!m_iStart && m_firstMove)){
+		if (m_firstMove){
+			doMove(m_firstMove, true);
+			setGameState();
+			m_firstMove = null;
+		}
+		updateGameState(GS_MYTURN, getWord("stateStartMyTurn"));
+	}
+	else
+		updateGameState(GS_REMOTETURN, getWord("stateStartRemoteTurn", getDisplayName(m_remoteUserName)));
+}
+
+function updateGameState(gameState, msg){
+	if (gameState == GS_ERROR && m_gameState != GS_ERROR){
+		m_fields = new Array(8);
+		for(var i = 0; i < 8; i++){
+			m_fields[i] = new Array(8);
+			for(var j = 0; j < 8; j++){
+				var f = new field(i, j);
+				setField(f, PC_EMPTY);
+				imgFromField(f).style.backgroundImage = "";
+			}
+		}
+		document.body.disabled = true;
+	}
+	else if (gameState == GS_MYTURN){
+		m_fromField = null;
+		tblBoard.style.cursor = "hand";
+	}
+	else if (gameState == GS_REMOTETURN){
+		tblBoard.style.cursor = "default";
+	}
+	
+	m_gameState = gameState;
+	statusText.innerText = msg;
+}
+
+function setField(f, piece){
+	m_fields[f.x][f.y] = piece;
+	tblBoard.rows[f.y].cells[f.x].firstChild.src = "images/" + imgUrlFromPiece(piece);
+}
+
+function imgUrlFromPiece(piece){
+	switch(piece){
+		case PC_WHITE_PAWN:		return "whitepawn.gif";
+		case PC_WHITE_ROOK:		return "whiterook.gif";
+		case PC_WHITE_BISHOP:	return "whitebishop.gif";
+		case PC_WHITE_KNIGHT:	return "whiteknight.gif";
+		case PC_WHITE_QUEEN:	return "whitequeen.gif";
+		case PC_WHITE_KING:		return "whiteking.gif";
+		case PC_BLACK_PAWN:		return "blackpawn.gif";
+		case PC_BLACK_ROOK:		return "blackrook.gif";
+		case PC_BLACK_BISHOP:	return "blackbishop.gif";
+		case PC_BLACK_KNIGHT:	return "blackknight.gif";
+		case PC_BLACK_QUEEN:	return "blackqueen.gif";
+		case PC_BLACK_KING:		return "blackking.gif";
+		default:				return "empty.gif";
+	}
+}
+
+function fieldFromElement(element){
+	var td;
+
+	if (!tblBoard.contains(element))
+		return null;
+		
+	if (element.tagName == "TD")
+		td = event.srcElement;
+	else if (element.tagName == "IMG")
+		td = event.srcElement.parentElement;
+	else
+		return null;
+		
+	var x = td.cellIndex;
+	var y = td.parentElement.rowIndex;
+		
+	return new field(x, y);
+}
+
+function imgFromField(f){
+	if (f){
+		return tblBoard.rows[f.y].cells[f.x].firstChild;
+	}
+	return null;
+}
+
+function isGameRunning(){
+	return (m_gameState == GS_MYTURN || m_gameState == GS_REMOTETURN || m_gameState == GS_PROMOTEPAWN);
+}
+
+function getEndGameValue(color){
+	var inCheck = isFieldGuarded((color == m_myColor) ? m_myKingField : m_remoteKingField, null, (color == CL_WHITE) ? CL_BLACK : CL_WHITE);
+
+	// calculate there are any valid moves
+	for(var x = 0; x < 8; x++){
+		for(var y = 0; y < 8; y++){
+			var piece = m_fields[x][y];
+			if (colorFromPiece(piece) == color){
+				// very ugly implementation, calc moves to all possible fields
+				for(var x2 = 0; x2 < 8; x2++){
+					for(var y2 = 0; y2 < 8; y2++){
+						if (isValidMove(new field(x, y), new field(x2, y2), piece, m_fields[x2][y2], false))
+							if (inCheck)
+								return EG_CHECK;
+							else
+								return EG_NONE;
+					}
+				}
+			}
+		}
+	}
+	if (inCheck)
+		return EG_CHECKMATE;
+	else
+		return EG_STALEMATE;
+}
+
+// check if field f is guarded by opponent if specified move m is done
+function isFieldGuarded(f, m, opponentColor){
+	if (m){
+		// update fields as if move has been made
+		var orgPiece = m_fields[m.to.x][m.to.y];
+		var fromPiece = m_fields[m.from.x][m.from.y];		//fromPiece != m.piece since queen move is handled as rook & bishop move
+		m_fields[m.from.x][m.from.y] = PC_EMPTY;
+		m_fields[m.to.x][m.to.y] = fromPiece;
+	}
+
+	var targetPiece = m_fields[f.x][f.y];
+	
+	var retVal = false;
+	for(var x = 0; x < 8; x++){
+		for(var y = 0; y < 8; y++){
+			var p = m_fields[x][y];
+			if (colorFromPiece(p) == opponentColor && isValidMove(new field(x, y), f, p, targetPiece, true)){
+				retVal = true;
+				break;
+			}
+		}
+		if (retVal)
+			break;
+	}
+	
+	if (m){
+		// put fields back in original mode
+		m_fields[m.to.x][m.to.y] = orgPiece;
+		m_fields[m.from.x][m.from.y] = fromPiece;
+	}
+	
+	return retVal;
+}
+
+function isOpponent(piece, myPiece){
+	if (myPiece > 0 && myPiece < 7)
+		return (piece > 10 && piece < 17);
+	else (myPiece > 10 && myPiece < 17)
+		return (piece > 0 && piece < 7);
+		
+	return false;
+}
+
+function isOpponentOrEmpty(piece, myPiece){
+	if (isOpponent(piece, myPiece))
+		return true;
+	else
+		return piece == PC_EMPTY;
+}
+
+function colorFromPiece(piece){
+	if (piece > 0 && piece < 7)
+		return CL_WHITE;
+	else if (piece > 10 && piece < 17)
+		return CL_BLACK;
+	return CL_UNKNOWN;
+}
+
+function oppositeColorFromPiece(piece){
+	var color = colorFromPiece(piece)
+	if (color == CL_WHITE)
+		return CL_BLACK;
+	else if (color == CL_BLACK)
+		return CL_WHITE;
+	return CL_UNKNOWN;
+}
+
+function isValidSelection(f){
+	if (f){
+		var piece = m_fields[f.x][f.y];
+
+		if (m_fromField == null)
+			return (m_myColor == CL_WHITE && piece > 0 && piece < 7) || (m_myColor == CL_BLACK && piece > 10 && piece < 17);
+		else if (m_fromField.equals(f))
+			return true;		
+		else
+			return isValidMove(m_fromField, f, m_fields[m_fromField.x][m_fromField.y], piece, false);
+	}
+	return false;
+}
+
+function isValidMove(from, to, piece, targetPiece, calcTakeOver){
+	var opColor = oppositeColorFromPiece(piece);
+
+	//whatever piece is moved; king must be protected
+	if (!calcTakeOver){
+		// special case; king move itself
+		if (piece == PC_WHITE_KING || piece == PC_BLACK_KING){
+			if (isFieldGuarded(to, new move(from, to, piece), opColor))
+				return false;
+		}
+		else if (isFieldGuarded((colorFromPiece(piece) == m_myColor ? m_myKingField : m_remoteKingField), new move(from, to, piece), opColor))
+			return false;
+	} 
+
+	switch(piece){
+		case PC_WHITE_PAWN:
+		case PC_BLACK_PAWN:
+			var yStep = (colorFromPiece(piece) == m_myColor) ? 1 : -1;
+			if (from.x == to.x && !calcTakeOver){
+				// 1 square straight ahead to empty field
+				if (from.y - to.y == yStep && targetPiece == PC_EMPTY)
+					return true;
+				
+				// 2 squares straight ahead to empty field, no obstruction and 1st move
+				var firstMoveRow = (yStep == 1) ? 6 : 1;
+				if (from.y - to.y == yStep * 2 && targetPiece == PC_EMPTY && m_fields[from.x][from.y - yStep] == PC_EMPTY && from.y == firstMoveRow)
+					return true;
+			}
+			
+			// taking another piece in forward angle (left or right)
+			if (from.y - to.y == yStep && Math.abs(from.x - to.x) == 1 && isOpponent(targetPiece, piece))
+				return true;
+			
+			// taking another piece en passant
+			if (m_enpassantPawn != null && from.y - to.y == yStep && to.x == m_enpassantPawn.x && m_enpassantPawn.y == from.y)
+				return true;
+			
+			break;
+
+		case PC_WHITE_ROOK:
+		case PC_BLACK_ROOK:
+			if (from.x == to.x){
+				var minY = Math.min(from.y, to.y);
+				var maxY = Math.max(from.y, to.y);
+
+				for(var y = minY + 1; y < maxY; y++)
+					if (m_fields[to.x][y] != PC_EMPTY)
+						return false;
+			}
+			else if (from.y == to.y){
+				var minX = Math.min(from.x, to.x);
+				var maxX = Math.max(from.x, to.x);
+
+				for(var x = minX + 1; x < maxX; x++)
+					if (m_fields[x][to.y] != PC_EMPTY)
+						return false;
+			}
+			else
+				return false;
+
+			return isOpponentOrEmpty(targetPiece, piece);
+			
+		case PC_WHITE_KNIGHT:
+		case PC_BLACK_KNIGHT:
+			if ((Math.abs(from.x - to.x) == 1 && Math.abs(from.y - to.y) == 2) || (Math.abs(from.y - to.y) == 1 && Math.abs(from.x - to.x) == 2))
+				return isOpponentOrEmpty(targetPiece, piece);
+
+			break;
+
+		case PC_WHITE_BISHOP:
+		case PC_BLACK_BISHOP:
+			var steps = Math.abs(from.x - to.x);
+			if (steps == Math.abs(from.y - to.y)){
+				var xStep = (from.x < to.x) ? 1 : -1;
+				var yStep = (from.y < to.y) ? 1 : -1;
+				var x = from.x;
+				var y = from.y;
+				
+				for(var i = 1; i < steps; i++)
+					if (m_fields[x += xStep][y += yStep] != PC_EMPTY)
+						return false;
+
+				return isOpponentOrEmpty(targetPiece, piece);
+			}
+			break;
+			
+		case PC_WHITE_QUEEN:
+			// moves of queen equal to combination of rook & bishop
+			return isValidMove(from, to, PC_WHITE_ROOK, targetPiece, calcTakeOver) || isValidMove(from, to, PC_WHITE_BISHOP, targetPiece, calcTakeOver);
+		
+		case PC_BLACK_QUEEN:
+			// moves of queen equal to combination of rook & bishop
+			return isValidMove(from, to, PC_BLACK_ROOK, targetPiece, calcTakeOver) || isValidMove(from, to, PC_BLACK_BISHOP, targetPiece, calcTakeOver);
+			
+		case PC_WHITE_KING:
+		case PC_BLACK_KING:
+			if (!calcTakeOver){
+				// castling
+				if (from.equals(m_orgKingField) && from.y == to.y && Math.abs(from.x - to.x) == 2){
+					var minX = from.x + 1;
+					var maxX = 7;
+					if (from.x > to.x){
+						minX = 1;
+						maxX = from.x;
+					}
+					// rule #1 (see http://www.conservativebookstore.com/chess/castling.htm)
+					for(var x = minX; x < maxX; x++)
+						if (m_fields[x][from.y] != PC_EMPTY)
+							return false;
+					
+					// rule #2
+					if ((from.x > to.x && m_orgRook1Field == null) || (from.x < to.x && m_orgRook2Field == null))
+						return false;
+					
+					// rule #3
+					minX = Math.min(from.x, to.x);
+					maxX = Math.max(from.x, to.x);
+					for(var x = minX; x <= maxX; x++)
+						if (isFieldGuarded(new field(x, from.y), null, opColor)){
+							return false;
+						}
+
+					return true;
+				}
+			}
+		
+			// normal move
+			return (Math.abs(from.x - to.x) <= 1 && Math.abs(from.y - to.y) <= 1 && isOpponentOrEmpty(targetPiece, piece))
+	}
+	return false;
+}
+
+function playSound(soundFile){
+	if (!m_muted)
+		snd.src = soundFile;
+}
+
+function doMove(m, isRemote){
+	//if remote rotate fields
+	var from = m.from.copy();
+	var to = m.to.copy();
+	
+	if (isRemote){
+		from.rotate();
+		to.rotate();
+		
+		// clear the in-check indicator (if there)
+		imgFromField(m_remoteKingField).style.backgroundImage = "";
+		
+		// play the sound
+		playSound("sounds/beep_space_code.au");
+	}
+
+	var piece = m.piece;
+
+	m_promoteMove = null;
+
+	// detect and handle special moves
+	switch(piece){
+		case PC_WHITE_PAWN:
+		case PC_BLACK_PAWN:
+			if (Math.abs(from.x - to.x) == 1 && m_fields[to.x][to.y] == PC_EMPTY){
+				// handle en passant
+				setField(new field(to.x, from.y), PC_EMPTY);
+			}
+			
+			// promote a pawn
+			if (!isRemote && to.y == 0){
+				m_promoteMove = m;
+				m_gameState = GS_PROMOTEPAWN;
+				
+				pnlPromote.style.display = "";
+			}
+			
+			if (isRemote){
+				// store possible en passant move
+				if ((piece == PC_WHITE_PAWN || piece == PC_BLACK_PAWN) && Math.abs(from.y - to.y) == 2)
+					m_enpassantPawn = to;
+				else
+					m_enpassantPawn = null;
+			}
+			break;
+		
+		case PC_WHITE_ROOK:
+		case PC_BLACK_ROOK:
+			if (!isRemote){
+				// no more castling
+				if (from.equals(m_orgRook1Field))
+					m_orgRook1Field = null;
+				else if (from.equals(m_orgRook2Field))
+					m_orgRook2Field = null;
+			}
+			break;
+			
+		case PC_WHITE_KING:
+		case PC_BLACK_KING:
+			if (Math.abs(from.x - to.x) == 2){
+				// handle casting
+				var rookF = new field(0, 7);
+				var f = new field(m.from.x - 1, 7);
+				if (m.from.x < m.to.x){
+					rookF = new field(7, 7);
+					f = new field(m.from.x + 1, 7);
+				}
+				if (isRemote){
+					rookF.rotate();
+					f.rotate();
+				}
+				
+				setField(f, (colorFromPiece(piece) == CL_WHITE) ? PC_WHITE_ROOK : PC_BLACK_ROOK);
+				setField(rookF, PC_EMPTY);
+			}
+		
+			if (isRemote){
+				m_remoteKingField = to;
+			}
+			else{
+				m_orgKingField = null;	// no more castling
+				m_myKingField = to;		// keep track of king's position
+			}
+				
+			break;
+	}
+	
+	setField(to, piece);
+	setField(from, PC_EMPTY);
+}
+
+function setGameState(){
+	var newGameState = (m_gameState == GS_REMOTETURN ? GS_MYTURN : GS_REMOTETURN);
+	var endGame = getEndGameValue(newGameState == GS_MYTURN ? m_myColor : m_remoteColor);
+	var msg
+	
+	if (endGame == EG_CHECKMATE || endGame == EG_STALEMATE){
+		msg = getWord("stateStalemate");
+		
+		if (endGame = EG_CHECKMATE){
+			m_iStart = (newGameState != GS_MYTURN);
+			msg = getWord((newGameState == GS_MYTURN ? "stateCheckmate" : "stateRemoteCheckmate"));
+		}
+
+		pnlGameover.innerText = msg;
+		pnlGameover.style.display = "";
+		
+		newGameState = GS_GAMEOVER
+		msg += " " + getWord("infoClickToPlayAgain")
+	}
+	else if (newGameState == GS_MYTURN){
+		msg = getWord("stateMyTurn");
+		if (endGame == EG_CHECK){
+			msg = getWord("stateCheck") + "! " + msg;
+			
+			m_myKingInCheckImg = imgFromField(m_myKingField);
+			m_myKingInCheckImg.style.backgroundImage = IMG_REDSQUARE;
+		}
+	}
+	else if (newGameState == GS_REMOTETURN){
+		msg = getWord("stateRemoteTurn", getDisplayName(m_remoteUserName));
+		if (endGame == EG_CHECK){
+			msg = getWord("stateOpponentCheck") + "! " + msg;
+			imgFromField(m_remoteKingField).style.backgroundImage = IMG_REDSQUARE;
+		}
+		if (m_myKingInCheckImg != null){
+			m_myKingInCheckImg.style.backgroundImage = "";
+			m_myKingInCheckImg = null;
+		}
+	}
+	updateGameState(newGameState, msg);
+}
+
+function setIndicator(show, f){
+	if (show && f){
+		var img = imgFromField(f);
+		
+		if (img == m_indicator)
+			return;
+		
+		if (m_indicator && m_indicator != m_fromFieldImg && m_indicator != m_myKingInCheckImg)
+			m_indicator.style.backgroundImage = "";
+
+		img.style.backgroundImage = IMG_YLWSQUARE;
+		m_indicator = img;
+	}
+	else if (m_indicator && m_indicator != m_fromFieldImg && m_indicator != m_myKingInCheckImg){
+		m_indicator.style.backgroundImage = "";
+		m_indicator = null;
+	}
+}
+
+///
+/// GUI event handlers
+///
+function tblBoard_onmouseover(){
+	if (m_gameState == GS_MYTURN && m_fromField != null){
+		var f = fieldFromElement(event.srcElement);
+		if (f)
+			setIndicator(isValidSelection(f), f);
+		else
+			setIndicator(false);
+	}
+}
+
+function tblBoard_onclick(){
+	if (m_gameState == GS_MYTURN){
+		setIndicator(false);
+		hideRemoteMoveIndicator();
+
+		var deselect = true;
+		var f = fieldFromElement(event.srcElement);
+		
+		if (isValidSelection(f)){
+			if (m_fromField == null){
+				//selection of the piece
+				m_fromField = f;
+				m_fromFieldImg = imgFromField(f);
+			
+				window.external.Channel.SendData(CMD_SELPIECE + f.toString());
+				deselect = false;
+			}
+			else if (!m_fromField.equals(f)){
+				// the move
+				var m = new move(m_fromField, f, m_fields[m_fromField.x][m_fromField.y]);
+				doMove(m, false);
+				
+				if (m_gameState != GS_PROMOTEPAWN){
+					setGameState();
+					window.external.Channel.SendData(m.toString());
+				}
+			}
+		}
+		if (m_fromFieldImg){
+			var img = "";
+			if (deselect){
+				if (m_fromFieldImg == m_myKingInCheckImg)
+					img = IMG_REDSQUARE;
+			}
+			else
+				img = IMG_YLWSQUARE;
+
+			m_fromFieldImg.style.backgroundImage = img;
+		}
+		
+		// deselection
+		if (deselect && m_fromField){
+			window.external.Channel.SendData(CMD_SELPIECE + m_fromField.toString());
+			
+			m_fromField = null;
+			m_fromFieldImg = null;
+		}
+	}
+}
+
+function btnRestart_onclick(){
+	if (m_gameState == GS_GAMEOVER){
+		startGame();
+	}
+	else if (isGameRunning() && !m_requestRestart){
+		if (confirm(getWord("confirmRestart"))){
+			m_requestRestart = true;
+			window.external.Channel.SendData(CMD_RESTART);
+		
+			statusText.innerText = getWord("stateWaitForApproval");
+		}
+	}
+}
+
+function btnDraw_onclick(){
+	if (isGameRunning() && !m_requestTie){
+		if (confirm(getWord("confirmDraw"))){
+			m_requestTie = true;
+			statusText.innerText = getWord("stateWaitForApproval");
+			window.external.Channel.SendData(CMD_DRAW);
+		}
+	}
+}
+
+function btnResign_onclick(){
+	if (isGameRunning()){
+		if (confirm(getWord("confirmResign"))){
+			m_iStart = false;
+			updateGameState(GS_GAMEOVER, getWord("infoYouResigned") + " " + getWord("infoClickToPlayAgain"));
+			pnlGameover.innerText = getWord("infoYouResigned");
+			pnlGameover.style.display = "";
+
+			hideRemoteMoveIndicator();
+
+			window.external.Channel.SendData(CMD_RESIGN);
+		}
+	}
+}
+
+function help_onclick(){
+	showHelpFile("help/chess-help.htm");
+}
+
+function pnlPromote_onclick(){
+	if (m_gameState == GS_PROMOTEPAWN && m_promoteMove != null){
+		var newPiece;
+		switch(event.srcElement.id){
+			case "pcRook":
+				newPiece = (m_myColor == CL_WHITE) ? PC_WHITE_ROOK : PC_BLACK_ROOK;
+				break;
+			case "pcKnight":
+				newPiece = (m_myColor == CL_WHITE) ? PC_WHITE_KNIGHT : PC_BLACK_KNIGHT;
+				break;
+			case "pcBishop":
+				newPiece = (m_myColor == CL_WHITE) ? PC_WHITE_BISHOP : PC_BLACK_BISHOP;
+				break;
+			case "pcQueen":
+				newPiece = (m_myColor == CL_WHITE) ? PC_WHITE_QUEEN : PC_BLACK_QUEEN;
+				break;
+			default:
+				return;
+		}
+		pnlPromote.style.display = "none";
+		
+		m_promoteMove.piece = newPiece;
+		
+		window.external.Channel.SendData(m_promoteMove.toString());
+		
+		doMove(m_promoteMove, false);
+		setGameState();
+	}
+}
+
+function btnMute_onclick(){
+	m_muted = !m_muted;
+	if (m_muted)
+		btnMute.src="images/snd-off.gif";
+	else
+		btnMute.src="images/snd-on.gif";
+}
+		</script>
+	</head>
+	<body onload="OnLoad();" onunload="OnUnload();" style="margin:0" scroll="no">
+		<xml id="words"></xml>
+		<table id="tblPreload" width="100%" height="100%">
+			<tr height="20%">
+				<td>&nbsp;</td>
+			</tr>
+			<tr height="40%">
+				<td align="center"><img src="images/chess-logo.jpg"><div id="lblBy" style="color:#D4DEF4"></b></div></td>
+			</tr>
+			<tr valign="top" height="30%">
+				<td align="center">
+				<div align="left" style="width:100px;height:16px;color:#D4DEF4;border-style:solid;border-width:1px">
+					<div id="divProgress" style="background-color:#D4DEF4;width:0%;height:100%"></div>
+				</div>
+				</td>
+			</tr>
+		</table>
+		<table id="tblGame" width="100%" height="100%" style="display:none">
+			<tr valign="top">
+				<td colspan="2" align="center" width="100%">
+					<span id="pnlGameover" style="display:none;position:absolute;left:expression(document.body.clientWidth/2 - this.offsetWidth/2);
+						top:expression(document.body.clientHeight/2 - this.offsetHeight);padding-top:17px;width:345px;height:56px;border-style:none;color:white;background-image:url(images/popup.gif);font-family:Arial;font-size:14pt">
+						</span>
+					<span id="pnlPromote" onclick="pnlPromote_onclick();" style="display:none;background-color:#516CA1;border-style:outset;border-width:2px;position:absolute;left:expression(document.body.clientWidth/2 - this.offsetWidth/2);
+						top:expression(document.body.clientHeight/2 - this.offsetHeight)">
+						<div id="lblPromote" style="height:17px;background-image:url(images/playerbg.gif);width:200px"></div>
+						<img id="pcRook" src="images/whiterook.gif" style="cursor:hand">
+						<img id="pcKnight" src="images/whiteknight.gif" style="cursor:hand">
+						<img id="pcBishop" src="images/whitebishop.gif" style="cursor:hand">
+						<img id="pcQueen" src="images/whitequeen.gif" style="cursor:hand">
+					</span>
+					<table border="0" cellpadding="0" cellspacing="0" >
+						<tr height="360">
+							<td bgcolor="black" width="92" align="center">
+								<table height="356px" width="92px" border="0" style="table-layout:fixed;background-color:black"">
+									<tr height="138px" valign="bottom"><td id="imgRemote" align="center" style="background-position:center center;background-repeat:no-repeat"><div id="nameRemote" style="height:36px;overflow:hidden"></div></td></tr>
+									<tr height="80px"><td align="center"><img src="images/sidebar-vs.jpg"</td></tr>
+									<tr height="138px" valign="bottom"><td id="imgMe" align="center" style="background-position:center center;background-repeat:no-repeat"><div id="nameMe" style="height:36px;overflow:hidden"></div></td></tr>
+								</table>
+							</td>
+							<td width="356" bgcolor="black">
+								<table id="tblBoard" onmouseover="tblBoard_onmouseover();" onclick="tblBoard_onclick();" border="0" cellpadding="0" cellspacing="0" style="background-image:url(images/board.gif)">
+									<tr>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+									</tr>
+									<tr>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+									</tr>
+									<tr>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+									</tr>
+									<tr>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+									</tr>
+									<tr>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+									</tr>
+									<tr>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+									</tr>
+									<tr>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+									</tr>
+									<tr>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+										<td><img width="44" height="44"></td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2" align="center">
+					<button id="btnResign" onclick="btnResign_onclick();" class="btn"></button>&nbsp;
+					<button id="btnDraw" onclick="btnDraw_onclick();" class="btn"></button>&nbsp;
+					<button id="btnRestart" onclick="btnRestart_onclick();" class="btn"></button>
+				</td>
+			</tr>
+			<tr>
+				<td><img id="btnMute" onclick="btnMute_onclick();" src="images/snd-on.gif" style="cursor:hand"></td>
+				<td align="right" style="font-size:7pt"><a id="lblVersion" href="http://games.mess.be" target="_blank" style="color:white"></a> <a href="javascript:help_onclick();"><img id="btnHelp" align="absmiddle" border="0" src="images/help.gif"></a></td>
+			</tr>
+			<tr>
+			</tr>
+			<tr valign="bottom" height="17px">
+				<td colspan="2">
+					<div id="statusBar" style="height:17px;background-image:url(images/playerbg.gif)">
+						<img id="statusIcon" width="16" height="16" align="absmiddle" style="unselectable;margin:0px 5px">
+						<span id="statusText" unselectable style="cursor:default"></span>
+					</div>
+				</td>
+			</tr>
+		</table>
+		<bgsound id="snd"></bgsound>
+	</body>
+</html>

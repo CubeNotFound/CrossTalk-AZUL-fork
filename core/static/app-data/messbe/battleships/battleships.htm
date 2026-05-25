@@ -1,0 +1,693 @@
+<html>
+<!--
+	Copyright by Koen, 2003,2004,2005
+	http://games.mess.be
+-->
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7">
+		<title>Battleships</title>
+		<style type="text/css">
+		.btn{font-family:Tahoma;font-size:8pt;border-style:none;background-image:url(images/playerbg.gif);height:17px}
+		.header{font-weight:bold;color:white}
+		table{font-family:Tahoma;font-size:8pt}
+		</style>
+		<script language="javascript" src="../common/common.js"></script>
+		<script language="javascript">
+var VERSION			= "v2.0";
+/// Data commands
+var CMD_RESTART		= "res";
+var CMD_NORESTART	= "nor";
+var CMD_RESTARTOK	= "rok";
+var CMD_DONE		= "done";
+
+/// GAME_STATE
+var GS_INITIALIZING		= 0;
+var GS_WAITFORJOIN		= 1;
+var GS_WAITFORPLACING	= 2;
+var GS_PLACINGSHIPS		= 3;
+var GS_MYTURN			= 4;
+var GS_REMOTETURN		= 5;
+var GS_GAMEOVER			= 6;
+var GS_ERROR			= 7;
+
+var BOAT_CARRIER	= 0;
+var BOAT_BATTLESHIP	= 1;
+var BOAT_CRUISER	= 2;
+var BOAT_SUB		= 3;
+var BOAT_DESTROYER	= 4;
+
+var BOAT_NONE		= 10;
+var BOAT_HIT		= 11;
+var BOAT_MISS		= 12;
+
+var m_remoteUserName;
+var m_gameState = GS_INITIALIZING;
+var m_isInitialized	= false;
+var m_requestRestart = false;
+var m_iStart;
+var m_remoteDonePlacing = false;
+var m_myBoard = new Array(10);
+var m_remoteBoard = new Array(10);
+var m_myBoats = new Array(5);
+var m_remoteBoats = new Array(5);
+m_myBoats[BOAT_CARRIER] = new Array(5);
+m_myBoats[BOAT_BATTLESHIP] = new Array(4);
+m_myBoats[BOAT_CRUISER] = new Array(3);
+m_myBoats[BOAT_SUB] = new Array(3);
+m_myBoats[BOAT_DESTROYER] = new Array(2);
+
+var m_preloadDone = false;
+var m_remoteLoaded = false;
+///
+/// Global event handlers
+///
+function OnLoad(){
+	// load language
+	loadLanguage("battleships");
+	applyLanguage();
+
+	m_remoteUserName = getRemoteUserName();
+	m_iStart = iAmInviter();
+	
+	initBoard(true);
+	initBoard(false);
+	
+	updateGameState(GS_INITIALIZING, getWord("stateInitializing"));
+	updateConnectionType();
+
+	m_isInitialized = true;
+	window.external.Channel.Initialize();
+	
+	preloadImages(new Array("bigbg.gif", "boat-bottom.gif", "boat-left.gif", "boat-middle-h.gif",
+		"boat-middle-v.gif", "boat-right.gif", "boat-top.gif", "ct_direct.gif", "ct_disconnected.gif", 
+		"ct_indirect.gif", "empty.gif", "help.gif", "hit.gif", "miss.gif", "playerbg.gif"),
+		OnPreloadProgress, OnPreloadComplete);
+}
+
+function OnUnload(){
+}
+
+///
+/// Preloading stuff
+///
+function OnPreloadProgress(progress){
+	divProgress.style.width = progress + "%";
+}
+
+function OnPreloadComplete(){
+	m_preloadDone = true;
+	initialize();
+}
+
+function initialize(){
+	if (m_preloadDone && m_remoteLoaded){
+		tblPreload.style.display = "none";
+		tblGame.style.display = "";
+
+		startGame();
+	}
+}
+
+function applyLanguage(){
+	lblBy.innerHTML = getWord("lblBroughtToYouBy", "<b>games.mess.be</b>");
+	lblVersion.innerText = getWord("lblVersion", VERSION);
+	lblYourNavy.innerText = getWord("lblYourNavy");
+	lblEnemyNavy.innerText = getWord("lblEnemyNavy");
+	btnHelp.title = getWord("cmdHelp");
+	btnRestart.innerText = getWord("cmdRestart");
+	btnPlaceRnd.innerText = getWord("cmdPlaceRandomly");
+	btnDone.innerText = getWord("cmdDone");
+}
+
+///
+/// Channel event handlers
+///
+
+///
+/// Occurs when the remote user closes the application, the conversation window or signs out of Messenger.
+///
+function Channel_OnAppClose(){
+	m_remoteLoaded = false;
+	updateGameState(GS_ERROR, getWord("errorUserLeft", getDisplayName(m_remoteUserName)));
+}
+
+///
+/// Occurs when a data send has failed, inspect Channel.Error for details.
+///
+function Channel_OnDataError(){
+	updateGameState(GS_ERROR, getWord("errorDataSend"));
+}
+
+///
+/// Occurs when new data has been received. The data is available in window.external.Channel.Data.
+///
+function Channel_OnDataReceived(){
+	var data = window.external.Channel.Data;
+
+	if (data == CMD_RESTART){
+		if (m_gameState == GS_MYTURN || m_gameState == GS_REMOTETURN){
+			var restart = confirm(getWord("confirmRemoteWantsRestart", getDisplayName(m_remoteUserName)));
+			var cmd = restart ? CMD_RESTARTOK : CMD_NORESTART;
+			window.external.Channel.SendData(cmd);
+
+			if (restart)
+				startGame();
+		}
+		else if (m_gameState == GS_WAITFORJOIN){
+			window.external.Channel.SendData(CMD_RESTARTOK);		//confirm
+			startGame();
+		}
+	}
+	else if (data == CMD_RESTARTOK){
+		m_requestRestart = false;
+		startGame();
+	}
+	else if (data == CMD_NORESTART){
+		m_requestRestart = false;
+		var msg = getWord("infoNoRestart") + " ";
+		if (m_gameState == GS_MYTURN)
+			msg += getWord("stateMyTurn");
+		else if (m_gameState == GS_REMOTETURN)
+			msg += getWord("stateRemoteTurn", getDisplayName(m_remoteUserName));
+			
+		statusText.innerText = msg; 
+		alert(getWord("infoRestartDenied", getDisplayName(m_remoteUserName)));
+	}
+	else if (data.substr(0, CMD_DONE.length) == CMD_DONE){
+		handleFleetInfo(data);
+		if (m_gameState == GS_WAITFORPLACING)
+			startGamePlay();
+	}
+	else{
+		if (m_gameState == GS_REMOTETURN)
+			doMove(new point(data), false);
+	}
+}
+
+///
+/// Occurs when the remote user closes the window that contains the app.
+///
+function Channel_OnRemoteAppClosed(){
+	m_remoteLoaded = false;
+	updateGameState(GS_ERROR, getWord("errorUserLeft", getDisplayName(m_remoteUserName)));
+}
+
+///
+/// Occurs when the remote app has been initialized. Both apps are now initialized.
+///
+function Channel_OnRemoteAppLoaded(){
+	m_remoteLoaded = true;
+	initialize();
+}
+
+///
+/// Occurs when the connection between conversants changes from direct to indirect or disconnected.
+/// The type is available in window.external.Channel.Type
+///
+function Channel_OnTypeChanged(){
+	updateConnectionType();
+}
+
+///
+/// Helpers functions
+///
+function updateConnectionType(){
+	var icon, descr;
+	
+	switch(window.external.Channel.Type){
+		case CT_DIRECT:
+			icon = "ct_direct.gif"
+			descr = getWord("connectionDirect");
+			break;
+		case CT_DISCONNECTED:
+			icon = "ct_disconnected.gif"
+			descr = getWord("connectionDisconnected");
+			
+			if (m_isInitialized)
+				updateGameState(GS_ERROR, getWord("errorDisconnected"));
+			else
+				updateGameState(GS_INITIALIZING, getWord("stateInitializing"));
+
+			break;
+		case CT_INDIRECT:
+			icon = "ct_indirect.gif"
+			descr = getWord("connectionIndirect");
+			break;
+	}
+
+	statusIcon.src = "images/" + icon;
+	statusIcon.title = getWord("lblConnectionType") + ": " + descr;
+}
+
+///
+/// Game specific objects
+///
+function point(){
+	if (arguments.length == 1){
+		var args = arguments[0].split(",");
+		this.x = parseInt(args[0]);
+		this.y = parseInt(args[1]);
+	}
+	else{
+		this.x = arguments[0];
+		this.y = arguments[1];
+	}
+}
+point.prototype.toString = function(){
+	return this.x + "," + this.y;
+}
+
+///
+/// Game specific functions
+///
+function startGame(){
+	document.body.disabled = false;
+
+	initBoard(true);
+	initBoard(false);
+	m_remoteDonePlacing = false;
+	
+	updateGameState(GS_PLACINGSHIPS, getWord("statePlacingShips"));
+}
+
+function startGamePlay(){
+	btnRestart.disabled = false;
+	if (m_iStart)
+		updateGameState(GS_MYTURN, getWord("stateStartMyTurn"));
+	else
+		updateGameState(GS_REMOTETURN, getWord("stateStartRemoteTurn", getDisplayName(m_remoteUserName)));
+}
+
+function initBoard(me){
+	var board = myBoard;
+	var boardArr = m_myBoard;
+	var fleet = m_myBoats;
+
+	if (!me){
+		board = remoteBoard;
+		boardArr = m_remoteBoard;
+		fleet = m_remoteBoats;
+	}
+
+	if (board.rows.length != 0){
+		for(var i = 0; i < 10; i++){
+			board.deleteRow(0);
+		}
+	}
+	
+	for(var i = 0; i < 10; i++){
+		boardArr[i] = new Array(10);
+
+		var row = board.insertRow();
+		row.height = "21";
+		for(var j = 0; j < 10; j++){
+			var cell = row.insertCell();
+			
+			cell.innerHTML = "<img src='images/empty.gif'>"
+			cell.width = "21";
+			
+			boardArr[i][j] = BOAT_NONE;
+		}
+	}
+	
+	for(var i = 0; i < fleet.length; i++){
+		var boatInfo = fleet[i];
+		if (boatInfo){
+			for(var j = 0; j < boatInfo.length; j++){	
+				boatInfo[j] = null;
+			}
+		}
+	}
+}
+
+function drawBoat(boatInfo, myBoat){
+	var board = (myBoat) ? myBoard : remoteBoard;
+	var horizontal = (boatInfo[0].y == boatInfo[1].y);
+
+	for(var i = 0; i < boatInfo.length; i++){
+		var p = boatInfo[i];
+		var img;
+		
+		if (i == 0){
+			if (horizontal)
+				img = "boat-left.gif";
+			else
+				img = "boat-top.gif";
+		}
+		else if (i == boatInfo.length - 1){
+			if (horizontal)
+				img = "boat-right.gif";
+			else
+				img = "boat-bottom.gif";
+		}
+		else{
+			if (horizontal)
+				img = "boat-middle-h.gif";
+			else
+				img = "boat-middle-v.gif";
+		}
+
+		board.rows[p.y].cells[p.x].style.backgroundImage = "url(images/" + img + ")";
+	}
+}
+
+function placeBoat(boat, startPoint, horizontal){
+	var oldBoatInfo = m_myBoats[boat];
+	var newBoatInfo = new Array(oldBoatInfo.length);
+
+	var p = startPoint;
+
+	for(var i = 0; i < newBoatInfo.length; i++){
+		if (p.x > 9 || p.y > 9 || m_myBoard[p.x][p.y] != BOAT_NONE)
+			return false;
+		else{
+			newBoatInfo[i] = p;
+
+			if (horizontal)
+				p = new point(p.x + 1, p.y);
+			else
+				p = new point(p.x, p.y + 1);
+		}
+	}
+	
+	for(var i = 0; i < newBoatInfo.length; i++){
+		// clear old position
+		if (oldBoatInfo[i]){
+			var oldX = oldBoatInfo[i].x;
+			var oldY = oldBoatInfo[i].y;
+			m_myBoard[oldX][oldY] = BOAT_NONE;
+			myBoard.rows[oldY].cells[oldX].style.backgroundImage = "url(images/empty.gif)";
+			oldBoatInfo[i] = null;
+		}
+		var x = newBoatInfo[i].x;
+		var y = newBoatInfo[i].y;
+		m_myBoard[x][y] = boat;
+		
+		oldBoatInfo[i] = newBoatInfo[i];
+	}
+	drawBoat(newBoatInfo, true);
+	return true;
+}
+
+function placeBoatsRnd(){
+	for(var i = 0; i < 5; i++){
+		var placed = false;
+		while(!placed){
+			placed = placeBoat(i, new point(Math.floor(Math.random() * 10), Math.floor(Math.random() * 10)), (Math.random() < .5))
+		}
+	}
+}
+
+function updateGameState(gameState, msg){
+	var infoMsg = "";
+	if (gameState == GS_ERROR){
+		document.body.disabled = true;
+	}
+	else if (gameState == GS_PLACINGSHIPS){
+		infoMsg = getWord("infoPlaceShips");
+		btnDone.disabled = true;
+		btnRestart.disabled = true;
+		placePnl.style.display = "";
+	}
+	else if (gameState == GS_WAITFORPLACING){
+		btnRestart.disabled = true;
+		infoMsg = getWord("infoWaitPlacing");
+	}
+	else if (gameState == GS_MYTURN){
+		infoMsg = getWord("infoYourTurn");
+	}
+	else if (gameState == GS_REMOTETURN){
+		infoMsg = getWord("infoRemoteTurn");
+	}
+	
+	pnlInfo.innerText = infoMsg;
+	m_gameState = gameState;
+	statusText.innerText = msg;
+}
+
+function pointFromElement(element){
+	var td;
+	if (element.tagName == "TD")
+		td = event.srcElement;
+	else if (element.tagName == "IMG")
+		td = event.srcElement.parentElement;
+	else
+		return null;
+
+	var x = td.cellIndex;
+	var y = td.parentElement.rowIndex;
+		
+	return new point(x, y);
+}
+
+function handleFleetInfo(data){
+	data = data.substr(4);
+	var boatInfo = data.split("$");
+	m_remoteBoats = new Array(boatInfo.length);
+	for(var i = 0; i < boatInfo.length; i++){
+		var boatPos = boatInfo[i].split("|");
+		m_remoteBoats[i] = new Array(boatPos.length);
+		for(var j = 0; j < boatPos.length; j++){
+			var p = new point(boatPos[j]);
+			m_remoteBoard[p.x][p.y] = i;
+			m_remoteBoats[i][j] = p;
+		}
+	}
+	
+	m_remoteDonePlacing = true;
+}
+
+function sendFleetInfo(){	
+	var data = CMD_DONE;
+	for(var i = 0; i < 5; i++){
+		if (i > 0)
+			data += "$";
+		var boatInfo = m_myBoats[i];
+		for (var j = 0; j < boatInfo.length; j++){
+			if (j > 0)
+				data += "|";
+			data += boatInfo[j].toString();
+		}
+	}
+	window.external.Channel.SendData(data);
+}
+
+function doMove(p, isMyMove){
+	var board = (isMyMove) ? remoteBoard : myBoard;
+	var boardArr = (isMyMove) ? m_remoteBoard : m_myBoard;
+	var msg;
+	
+	if (boardArr[p.x][p.y] == BOAT_NONE){
+		boardArr[p.x][p.y] = BOAT_MISS;
+		board.rows[p.y].cells[p.x].firstChild.src = "images/miss.gif";
+		msg = getWord("infoMiss");
+	}
+	else{
+		boardArr[p.x][p.y] = BOAT_HIT;
+		board.rows[p.y].cells[p.x].firstChild.src = "images/hit.gif"
+		msg = getWord("infoHit");
+
+		var boatID = boatSunk(p, isMyMove)
+		if (boatID != -1){
+			var boat = getWord("boat" + boatID);
+			msg = ((isMyMove) ? getWord("infoSunkBoat", boat) : getWord("infoLostBoat", boat)) +"!";
+			drawBoat((isMyMove) ? m_remoteBoats[boatID] : m_myBoats[boatID], !isMyMove);
+		}
+	}
+	
+	if (isGameOver()){
+		if (isFleetGone(true)){
+			msg = getWord("stateGameOverLost");
+			m_iStart = false;
+			// reveal enemy fleet
+			for(var i = 0; i < m_remoteBoats.length; i++)
+				drawBoat(m_remoteBoats[i], false);
+		}
+		else{
+			msg = getWord("stateGameOverWon");
+			m_iStart = true;
+		}
+		
+		updateGameState(GS_GAMEOVER, msg);
+	}
+	else{
+		if (m_gameState == GS_MYTURN){
+			msg += " " + getWord("stateRemoteTurn", getDisplayName(m_remoteUserName));
+			updateGameState(GS_REMOTETURN, getWord("stateRemoteTurn", getDisplayName(m_remoteUserName)));
+		}
+		else{
+			msg += " " + getWord("stateMyTurn");
+			updateGameState(GS_MYTURN, getWord("stateMyTurn"));
+		}
+	}
+	pnlInfo.innerText = msg; 
+}
+
+function isFleetGone(me){
+	var fleet = (me) ? m_myBoats : m_remoteBoats;
+	var boardArr = (me) ? m_myBoard : m_remoteBoard;
+	
+	for(var i = 0; i < fleet.length; i++){
+		var boatInfo = fleet[i];
+		for(var j = 0; j < boatInfo.length; j++){
+			var p = boatInfo[j];
+			if (boardArr[p.x][p.y] != BOAT_HIT)
+				return false;
+		}
+	}
+	return true;
+}
+
+function boatSunk(p, isMyMove){
+	var fleet = (isMyMove) ? m_remoteBoats : m_myBoats;
+	var boardArr = (isMyMove) ? m_remoteBoard : m_myBoard;
+
+	for(var i = 0; i < fleet.length; i++){
+		var boatInfo = fleet[i];
+		for(var j = 0; j < boatInfo.length; j++){
+			var boatPos = boatInfo[j];
+			if (boatPos.x == p.x && boatPos.y == p.y){
+				// Find out if entire boat sunk
+				for(var k = 0; k < boatInfo.length; k++){
+					var boatPos2 = boatInfo[k];
+					if (boardArr[boatPos2.x][boatPos2.y] != BOAT_HIT)
+						return -1;
+				}
+				return i;
+			}
+		}
+	}
+	return -1;
+}
+
+function isGameOver(){
+	return isFleetGone(true) || isFleetGone(false);
+}
+
+///
+/// GUI event handlers
+///
+function btnPlaceRnd_onclick(){
+	placeBoatsRnd();
+	btnDone.disabled = false;
+}
+
+function btnDone_onclick(){
+	placePnl.style.display = "none";
+	sendFleetInfo();
+	
+	if (m_remoteDonePlacing)
+		startGamePlay();
+	else
+		updateGameState(GS_WAITFORPLACING, getWord("stateWaitOnPlacing"));
+}
+
+function myBoard_onmouseover(){
+	//NYI
+}
+
+function myBoard_onclick(){
+	//NYI
+}
+
+function remoteBoard_onmouseover(){
+}
+
+function remoteBoard_onclick(){
+	if (m_gameState == GS_MYTURN){
+		var p = pointFromElement(event.srcElement);
+		if (p){
+			if (m_remoteBoard[p.x][p.y] == BOAT_HIT || m_remoteBoard[p.x][p.y] == BOAT_MISS){
+				// ignore
+				return;
+			}
+			
+			doMove(p, true);
+			window.external.Channel.SendData(p.toString());
+		}
+	}
+}
+
+function btnRestart_onclick(){
+	if (m_gameState == GS_GAMEOVER){
+		updateGameState(GS_WAITFORJOIN, getWord("stateWaitOnJoin"));
+		window.external.Channel.SendData(CMD_RESTART);
+	}
+	else if ((m_gameState == GS_MYTURN || m_gameState == GS_REMOTETURN) && !m_requestRestart){
+		m_requestRestart = true;
+		statusText.innerText = getWord("infoRequestRestart");
+		window.external.Channel.SendData(CMD_RESTART);
+	}
+}
+
+function help_onclick(){
+	showHelpFile("help/battleships-help.htm");
+}
+		</script>
+	</head>
+	<body onload="OnLoad();" onunload="OnUnload();" style="margin:0" scroll="no" style="background-color:#516CA1">
+		<xml id="words"></xml>
+		<table id="tblPreload" width="100%" height="100%">
+			<tr height="20%">
+				<td>&nbsp;</td>
+			</tr>
+			<tr height="40%">
+				<td align="center"><img src="images/battleships-logo.jpg"><div id="lblBy" style="color:#D4DEF4"></div>
+				</td>
+			</tr>
+			<tr valign="top" height="30%">
+				<td align="center"><div align="left" style="width:100px;height:16px;color:#D4DEF4;border-style:solid;border-width:1px"><div id="divProgress" style="background-color:#D4DEF4;width:0%;height:100%"></div>
+					</div>
+				</td>
+			</tr>
+		</table>
+		<table id="tblGame" width="100%" height="100%" style="display:none">
+			<tr class="header">
+				<td id="lblYourNavy" align="center"></td>
+				<td id="lblEnemyNavy" align="center"></td>
+			</tr>
+			<tr>
+				<td align="center">
+					<table id="myBoard" onmouseover="myBoard_onmouseover();" onclick="myBoard_onclick();" border="0" borderColorDark="black" borderColorLight="black" cellpadding="0" cellspacing="0" style="background-image:url(images/blanksquare.gif);table-layout:fixed;border-collapse:collapse">
+					</table>
+				</td>
+				<td align="center">
+					<table id="remoteBoard" onmouseover="remoteBoard_onmouseover();" onclick="remoteBoard_onclick();" border="0" borderColorDark="black" borderColorLight="black" cellpadding="0" cellspacing="0" style="background-image:url(images/blanksquare.gif);table-layout:fixed;border-collapse:collapse">
+					</table>
+				</td>
+			</tr>
+			<tr id="placePnl" height="30" valign="bottom" style="display:none">
+				<td colspan="2" align="center">
+					<button id="btnPlaceRnd" class="btn" onclick="btnPlaceRnd_onclick();" style="width:150"></button>
+					&nbsp;
+					<button id="btnDone" class="btn" onclick="btnDone_onclick();" style="width:150"></button>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<div id="pnlInfo" style="margin:10px;padding:5px;height:50px;background-image:url(images/bigbg.gif);border-style:solid;border-width:1px;border-color:black;padding:2px">
+					</div>
+				</td>
+			</tr>
+			<tr height="100%">
+				<td colspan="2">&nbsp;</td>
+			</tr>
+			<tr>
+				<td colspan="2" align="center">
+					<button id="btnRestart" onclick="btnRestart_onclick();" class="btn"></button>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2" align="right" style="font-size:7pt"><a id="lblVersion" href="http://games.mess.be" target="_blank" style="color:white"></a> <a href="javascript:help_onclick();"><img id="btnHelp" align="absmiddle" border="0" src="images/help.gif"></a></td>
+			</tr>
+			<tr valign="bottom" height="17px">
+				<td colspan="2">
+					<div id="statusBar" style="border-style:solid;border-width:0px;border-color:buttonface;height:17px;background-image:url(images/playerbg.gif)">
+						<img id="statusIcon" width="16" height="16" align="absmiddle" style="unselectable;margin:0px 5px" src="images/empty.gif">
+						<span id="statusText" unselectable style="cursor:default"></span>
+					</div>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>

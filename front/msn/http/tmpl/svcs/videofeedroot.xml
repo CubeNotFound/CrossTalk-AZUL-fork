@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<rss version="2.0">
+	<channel>
+		<title>CrossTalk Video</title>
+		<link>https://{{ settings.WEBSITE_HOST }}</link>
+		<description>CrossTalk Video</description>
+		<language>en-us</language>
+		<copyright>2023 - 2026 the undergr0und</copyright>
+		<lastBuildDate>Thu, 05 Sep 2024 5:48:54 GMT</lastBuildDate>
+		<category>MSN_Microsoft</category>
+		<ttl>0</ttl>
+		<item>
+			<title>Testing</title>
+			<link>http://{{ settings.AD_HOST }}/svcs/feed</link>
+			<description>Test feed</description>
+			<pubDate>Thu, 05 Sep 2024 00:00:00 GMT</pubDate>
+			<category>MSN_Microsoft</category>
+		</item>
+	</channel>
+</rss>

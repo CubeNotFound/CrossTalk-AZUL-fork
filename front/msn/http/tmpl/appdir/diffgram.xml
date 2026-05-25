@@ -1,0 +1,9 @@
+<diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+{% if results %}
+<NewDataSet>
+	{{ results }}
+</NewDataSet>
+{% else %}
+<NewDataSet />
+{% endif %}
+</diffgr:diffgram>

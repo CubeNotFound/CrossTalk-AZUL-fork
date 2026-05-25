@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<boat0>Repülõgép-anyahajó</boat0>
+	<boat1>Csatahajó</boat1>
+	<boat2>Cirkáló</boat2>
+	<boat3>Tengeralattjáró</boat3>
+	<boat4>Romboló</boat4>
+	<cmdDone>Rendben</cmdDone>
+	<cmdHelp>Súgó</cmdHelp>
+	<cmdPlaceRandomly>Helyezd el a hajóidat</cmdPlaceRandomly>
+	<cmdRestart>Újrakezdés</cmdRestart>
+	<confirmRemoteWantsRestart>{0} újra szeretné kezdeni a játékot, egyet ért ezzel?</confirmRemoteWantsRestart>
+	<connectionDirect>közvetett</connectionDirect>
+	<connectionDisconnected>megszakadt</connectionDisconnected>
+	<connectionIndirect>közvetlen</connectionIndirect>
+	<errorDataSend>Adat hiba; nem lehet adatot küldeni. A játék leállt.</errorDataSend>
+	<errorDisconnected>Megszakadt.</errorDisconnected>
+	<errorUserLeft>{0} elhagyta a játékot. A játék véget ért.</errorUserLeft>
+	<infoHit>Találat!</infoHit>
+	<infoMiss>Elhibázás.</infoMiss>
+	<infoLostBoat>Vesztettél, {0}.</infoLostBoat>
+	<infoNoRestart>Nincs újrakezdés.</infoNoRestart>
+	<infoPlaceShips>Helyezd el a hajóidat a 'Helyezd el a hajóidat' gombra kattintva. Ha nem vagy megelégedve a hajók elrendezésével, akkor kattints újra a hajóra, és tedd máshová. Kattints a  'Kész' gombra a játékhoz.</infoPlaceShips>
+	<infoRequestRestart>Újrakezdés kérése..</infoRequestRestart>
+	<infoRemoteTurn>Várakozás az ellenfél lépésére.</infoRemoteTurn>
+	<infoRestartDenied>{0} nem szeretné újrakezdeni a játékot.</infoRestartDenied>
+	<infoSunkBoat>Elsülyedtél, {0}.</infoSunkBoat>
+	<infoWaitPlacing>Várakozás az ellenfélre, hogy elhelyezze a flottáját.</infoWaitPlacing>
+	<infoYourTurn>Te jössz. Kattints a szabad részre az ellenfél tábláján, és próbálj elsülyeszteni egy hajót.</infoYourTurn>
+	<lblBroughtToYouBy>Kihívó: {0}</lblBroughtToYouBy>
+	<lblConnectionType>Kapcsolat típusa</lblConnectionType>
+	<lblEnemyNavy>Ellenfél flottája</lblEnemyNavy>
+	<lblVersion>Csatahajók {0}</lblVersion>
+	<lblYourNavy>Flottád</lblYourNavy>
+	<stateGameOverLost>Vége, vesztettél!</stateGameOverLost>
+	<stateGameOverWon>Vége, nyertél!</stateGameOverWon>
+	<stateInitializing>Játék betöltése...</stateInitializing>
+	<stateMyTurn>Te jössz.</stateMyTurn>
+	<statePlacingShips>Helyezd ela  hajókat</statePlacingShips>
+	<stateRemoteTurn>Várakozás {0} lépésére.</stateRemoteTurn>
+	<stateStartMyTurn>A játék elindult, te jössz.</stateStartMyTurn>
+	<stateStartRemoteTurn>A játék elindult, várakozás {0} lépésére.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Várakozás az ellenfélre</stateWaitOnJoin>
+	<stateWaitOnPlacing>Várakozás az ellenfélre...</stateWaitOnPlacing>
+</words>
+
+

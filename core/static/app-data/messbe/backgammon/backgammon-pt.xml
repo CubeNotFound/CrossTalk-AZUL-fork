@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<colorBlue>azul</colorBlue>
+	<colorWhite>branco</colorWhite>
+	<cmdHelp>Ajuda</cmdHelp>
+	<cmdRestart>Recomeçar</cmdRestart>
+	<cmdRoll>Atire o dado</cmdRoll>
+	<cmdSwitchTurn>Mude de turno</cmdSwitchTurn>
+	<confirmRemoteWantsRestart>{0} quer recomeçar o jogo, está de acordo?</confirmRemoteWantsRestart>
+	<connectionDirect>directo</connectionDirect>
+	<connectionDisconnected>desconectar</connectionDisconnected>
+	<connectionIndirect>indirecto</connectionIndirect>
+	<errorDataSend>Erro de comunicação. Jogo parado.</errorDataSend>
+	<errorDisconnected>Desconectado.</errorDisconnected>
+	<errorUserLeft>{0} saiu. O jogo acabou.</errorUserLeft>
+	<infoBearOff>Todas as suas peças estão no tabuleiro de inicio, começe a jogar para fora.</infoBearOff>
+	<infoCheckerHit>Uma peça foi atingida e colocada na barra.</infoCheckerHit>
+	<infoFromBarFirst>Lembre-se, tem de limpar a barra primeiro.</infoFromBarFirst>
+	<infoLastMove>Esta é a sua ultima jogada.</infoLastMove>
+	<infoMovesLeft>Tem {0} jogadas.</infoMovesLeft>
+	<infoNoRestart>Sem recomeço.</infoNoRestart>
+	<infoRequestRestart>A pedir um recomeço..</infoRequestRestart>
+	<infoRestartDenied>{0} não quer recomeçar o jogo.</infoRestartDenied>
+	<infoRoll>Atire o dado</infoRoll>
+	<infoSelectPiece>Selecione a peça que deseja mover.</infoSelectPiece>
+	<infoSelectTarget>Agora escolha o destino ou selecione outra peça.</infoSelectTarget>
+	<infoTurnLost>Perdeu a sua vez.</infoTurnLost>
+	<infoTurnLostDetail>Perdeu a sua vez, não existem jogadas válidas. Clique em 'Mude de turno' para continuar.</infoTurnLostDetail>
+	<lblBroughtToYouBy>Produzido por {0}</lblBroughtToYouBy>
+	<lblConnectionType>Tipo de ligação</lblConnectionType>
+	<lblVersion>Backgammon {0}</lblVersion>
+	<stateGameOver>Jogo Terminado.</stateGameOver>
+	<stateGameOverWon>Parabéns, você ganhou! Clique em 'Recomeçar' para jogar de novo.</stateGameOverWon>
+	<stateGameOverLost>Você perdeu.</stateGameOverLost>
+	<stateInitializing>A iniciar jogo...</stateInitializing>
+	<stateMyTurn>É a sua vez.</stateMyTurn>
+	<stateRemoteTurn>À espera que {0} jogue.</stateRemoteTurn>
+	<stateStartMyTurn>Jogo começado, é a sua vez.</stateStartMyTurn>
+	<stateStartRemoteTurn>Jogo começado, à espera que {0} jogue.</stateStartRemoteTurn>
+	<stateWaitOnJoin>À espera que o seu adversário chegue.</stateWaitOnJoin>
+</words>
+

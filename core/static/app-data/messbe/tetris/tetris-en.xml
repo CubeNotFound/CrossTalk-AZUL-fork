@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<cmdHelp>Help</cmdHelp>
+	<cmdMute>Mute</cmdMute>
+	<cmdStart>Start</cmdStart>
+	<connectionDirect>direct</connectionDirect>
+	<connectionDisconnected>disconnected</connectionDisconnected>
+	<connectionIndirect>indirect</connectionIndirect>
+	<errorDataSend>Data error; unable to send data. Game stopped.</errorDataSend>
+	<errorDisconnected>Disconnected.</errorDisconnected>
+	<errorUserLeft>{0} has left the game. The game is over.</errorUserLeft>
+	<lblBroughtToYouBy>Brought to you by {0}</lblBroughtToYouBy>
+	<lblConnectionType>Connection type</lblConnectionType>
+	<lblGameLevel>Level</lblGameLevel>
+	<lblGameLines>Lines</lblGameLines>
+	<lblGameScore>Score</lblGameScore>
+	<lblPlayers>Players</lblPlayers>
+	<lblVersion>Tetris {0}</lblVersion>
+	<stateInitializing>Initializing game...</stateInitializing>
+	<stateGameOverCalc>Game over, calculating score..</stateGameOverCalc>
+	<stateGameOverDraw>Game over, it's a draw! Press 'start' to play again.</stateGameOverDraw>
+	<stateGameOverLost>Game over, you have lost! Press 'start' to play again.</stateGameOverLost>
+	<stateGameOverWon>Game over, you have won! Press 'start' to play again.</stateGameOverWon>
+	<statePlaying>Playing</statePlaying>
+	<stateWaitOnJoin>Waiting for your opponent to join</stateWaitOnJoin>
+	<stateWaitForStart>Press 'Start' to begin.</stateWaitForStart>
+</words>

@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<colorBlue>moder</colorBlue>
+	<colorWhite>bel</colorWhite>
+	<cmdHelp>Pomoč</cmdHelp>
+	<cmdRestart>Reset</cmdRestart>
+	<cmdRoll>Vrži kocke</cmdRoll>
+	<cmdSwitchTurn>Predaj potezo</cmdSwitchTurn>
+	<confirmRemoteWantsRestart>{0} želi resetirati to igro, se strinjaš?</confirmRemoteWantsRestart>
+	<connectionDirect>posredno</connectionDirect>
+	<connectionDisconnected>prekinjeno</connectionDisconnected>
+	<connectionIndirect>neposredno</connectionIndirect>
+	<errorDataSend>Podatkovna napaka; pošiljanje podatkov ni možno. Igra ustavljena.</errorDataSend>
+	<errorDisconnected>Prekinjeno.</errorDisconnected>
+	<errorUserLeft>{0} je zapustil igro. Igra je končana.</errorUserLeft>
+	<infoBearOff>Vsi tvoji žetoni so na domači tabli.</infoBearOff>
+	<infoCheckerHit>Žeton je bil zadet in postavljen na drog.</infoCheckerHit>
+	<infoFromBarFirst>Zapomni si, najprej moraš sprazniti drog.</infoFromBarFirst>
+	<infoLastMove>To je tvoj zadnji premik.</infoLastMove>
+	<infoMovesLeft>Imaš še {0} premikov.</infoMovesLeft>
+	<infoNoRestart>Brez reseta.</infoNoRestart>
+	<infoRequestRestart>Zahtevam reset..</infoRequestRestart>
+	<infoRestartDenied>{0} ne želi resetirati te igre.</infoRestartDenied>
+	<infoRoll>Vrži kocke</infoRoll>
+	<infoSelectPiece>Izberi žeton, katerega želiš premakniti.</infoSelectPiece>
+	<infoSelectTarget>Sedaj izberi destinacijo ali še enkrat klikni na žeton.</infoSelectTarget>
+	<infoTurnLost>Izgubil si potezo.</infoTurnLost>
+	<infoTurnLostDetail>Izgubil si potezo, nobenega premika ni možno izvesti. Klikni 'Predaj potezo' za nadaljevanje.</infoTurnLostDetail>
+	<lblBroughtToYouBy>Vam na uslugo: {0}</lblBroughtToYouBy>
+	<lblConnectionType>Vrsta povezave</lblConnectionType>
+	<lblVersion>Backgammon {0}</lblVersion>
+	<stateGameOver>Igra je končana.</stateGameOver>
+	<stateGameOverWon>Čestitam, zmagal si! Klikni 'Reset' za novo igro.</stateGameOverWon>
+	<stateGameOverLost>Škoda, izgubil si.</stateGameOverLost>
+	<stateInitializing>Nalagam igro...</stateInitializing>
+	<stateMyTurn>Ti si na vrsti.</stateMyTurn>
+	<stateRemoteTurn>Čakaš, da {0} naredi potezo.</stateRemoteTurn>
+	<stateStartMyTurn>Igra se je začela, ti si {0}. Ti si na vrsti.</stateStartMyTurn>
+	<stateStartRemoteTurn>Igra se je začela, ti si {0}. Čakaš, da {1} napravi potezo.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Čakaš na nasprotnika da se pridruži</stateWaitOnJoin>
+</words>
+

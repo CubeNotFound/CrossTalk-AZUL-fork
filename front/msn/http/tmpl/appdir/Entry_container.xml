@@ -1,0 +1,3 @@
+<Entry{% if extra %}{{ extra }}{% endif %}>
+	{{ entry }}
+</Entry>

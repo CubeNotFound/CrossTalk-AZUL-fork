@@ -1,0 +1,20 @@
+[
+	{
+		"id": 1,
+		"url": "http://wiby.me/",
+		"image": "http://static.ugnet.gay/svc/tab/wiby.png",
+		"tooltip": "Wiby"
+	},
+	{
+		"id": 2,
+		"url": "http://theoldnet.com",
+		"image": "http://static.ugnet.gay/svc/tab/theoldnet.png",
+		"tooltip": "TheOldNet"
+	},
+	{
+		"id": 3,
+		"url": "http://classicconnect.net",
+		"image": "http://static.ugnet.gay/svc/tab/classicconnect.png",
+		"tooltip": "ClassicConnect" 
+	}
+]

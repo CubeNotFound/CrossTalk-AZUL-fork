@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<soap:Body>
+		{% if entry %}
+		<GetAppEntryResponse xmlns="http://www.msn.com/webservices/Messenger/Client">
+			<GetAppEntryResult>
+				{{ entry }}
+			</GetAppEntryResult>
+		</GetAppEntryResponse>
+		{% else %}
+		<GetAppEntryResponse xmlns="http://www.msn.com/webservices/Messenger/Client" />
+		{% endif %}
+	</soap:Body>
+</soap:Envelope>

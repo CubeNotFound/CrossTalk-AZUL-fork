@@ -1,0 +1,15 @@
+<Category{% if extra %}{{ extra }}{% endif %}>
+	<CategoryID>{{ category.id }}</CategoryID>
+	<Locale>{{ locale }}</Locale>
+	{% if category.icon_url %}
+	<CategoryIconURL>{{ category.icon_url }}</CategoryIconURL>
+	{% else %}
+	<CategoryIconURL />
+	{% endif %}
+	<CategoryName>{{ category.name }}</CategoryName>
+	{% if category.description %}
+	<CategoryDescription>{{ category.description }}</CategoryDescription>
+	{% else %}
+	<CategoryDescription />
+	{% endif %}
+</Category>

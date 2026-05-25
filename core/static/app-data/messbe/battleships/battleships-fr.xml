@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<boat0>Porte-avions</boat0>
+	<boat1>Cuirassé</boat1>
+	<boat2>Croiseur</boat2>
+	<boat3>Sous-marin</boat3>
+	<boat4>Destroyer</boat4>
+	<cmdDone>Terminé</cmdDone>
+	<cmdHelp>Aide</cmdHelp>
+	<cmdPlaceRandomly>Placer les bateaux de façon aléatoire</cmdPlaceRandomly>
+	<cmdRestart>Redémarrer</cmdRestart>
+	<confirmRemoteWantsRestart>{0} veut relancer la partie, êtes-vous d'accord ?</confirmRemoteWantsRestart>
+	<connectionDirect>direct</connectionDirect>
+	<connectionDisconnected>déconnecté</connectionDisconnected>
+	<connectionIndirect>indirect</connectionIndirect>
+	<errorDataSend>Erreur de données; impossible d'envoyer les données. Arrêt du jeu.</errorDataSend>
+	<errorDisconnected>Déconnecté.</errorDisconnected>
+	<errorUserLeft>{0} a quitté la partie. Fin du jeu.</errorUserLeft>
+	<infoHit>Touché !</infoHit>
+	<infoMiss>Raté.</infoMiss>
+	<infoLostBoat>Vous venez de perdre {0}.</infoLostBoat>
+	<infoNoRestart>Pas de redémarrage.</infoNoRestart>
+	<infoPlaceShips>Placez vos bateaux en cliquant sur le bouton 'Placer les bateaux de façon aléatoire'. Si ces positions ne vous conviennent pas, recliquez. Cliquez sur 'Terminé' pour commencer à jouer.</infoPlaceShips>
+	<infoRequestRestart>Demande d'un redémarrage...</infoRequestRestart>
+	<infoRemoteTurn>Attente d'un mouvement de votre adversaire.</infoRemoteTurn>
+	<infoRestartDenied>{0} ne veut pas relancer cette partie.</infoRestartDenied>
+	<infoSunkBoat>Vous avez coulé {0}.</infoSunkBoat>
+	<infoWaitPlacing>Attente du placement de la flotte de votre adversaire.</infoWaitPlacing>
+	<infoYourTurn>A vous de jouer. Cliquez sur un carré libre sur l'écran de votre adversaire et tentez de couler ses bateaux.</infoYourTurn>
+	<lblBroughtToYouBy>Offert par {0}</lblBroughtToYouBy>
+	<lblConnectionType>Type de connexion</lblConnectionType>
+	<lblEnemyNavy>Marine de l'ennemi</lblEnemyNavy>
+	<lblVersion>Bataille navale {0}</lblVersion>
+	<lblYourNavy>Votre marine</lblYourNavy>
+	<stateGameOverLost>Partie terminée, vous avez perdu !</stateGameOverLost>
+	<stateGameOverWon>Partie terminée, vous avez gagné !</stateGameOverWon>
+	<stateInitializing>Initialisation du jeu...</stateInitializing>
+	<stateMyTurn>A vous de jouer.</stateMyTurn>
+	<statePlacingShips>Placez vos bateaux</statePlacingShips>
+	<stateRemoteTurn>Attente d'un mouvement de {0}</stateRemoteTurn>
+	<stateStartMyTurn>Début du jeu, à vous de jouer.</stateStartMyTurn>
+	<stateStartRemoteTurn>Début du jeu, attente d'un mouvement de {0}</stateStartRemoteTurn>
+	<stateWaitOnJoin>Attente de votre adversaire</stateWaitOnJoin>
+	<stateWaitOnPlacing>Attente des placements de votre adversaire...</stateWaitOnPlacing>
+</words>
+

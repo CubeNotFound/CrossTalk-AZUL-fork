@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<cmdHelp>Pomoč</cmdHelp>
+	<cmdMute>Tiho</cmdMute>
+	<cmdStart>Začetek</cmdStart>
+	<connectionDirect>posredno</connectionDirect>
+	<connectionDisconnected>prekinjeno</connectionDisconnected>
+	<connectionIndirect>neposredno</connectionIndirect>
+	<errorDataSend>Podatkovna napaka; pošiljanje podatkov ni možno. Igra ustavljena.</errorDataSend>
+	<errorDisconnected>Prekinjeno.</errorDisconnected>
+	<errorUserLeft>{0} je zapustil igro. Igra je končana.</errorUserLeft>
+	<lblBroughtToYouBy>Vam na uslugo: {0}</lblBroughtToYouBy>
+	<lblConnectionType>Vrsta povezave</lblConnectionType>
+	<lblGameLevel>Stopnja</lblGameLevel>
+	<lblGameLines>Vrstice</lblGameLines>
+	<lblGameScore>Rezultat</lblGameScore>
+	<lblPlayers>Igralci</lblPlayers>
+	<lblVersion>Tetris {0}</lblVersion>
+	<stateInitializing>Nalagam igro...</stateInitializing>
+	<stateGameOverCalc>Igra je končana, računam rezultat..</stateGameOverCalc>
+	<stateGameOverDraw>Igra je končana, neodločeno je! Pritisni 'Začetek' za novo igro.</stateGameOverDraw>
+	<stateGameOverLost>Igra je končana, izgubil si! Pritisni 'Začetek' za novo igro.</stateGameOverLost>
+	<stateGameOverWon>Igra je končana, zmagal si! Pritisni 'Začetek' za novo igro.</stateGameOverWon>
+	<statePlaying>Igra</statePlaying>
+	<stateWaitOnJoin>Čakaš na nasprotnika, da se pridruži</stateWaitOnJoin>
+	<stateWaitForStart>Pritisni 'Začetek' za začetek igre.</stateWaitForStart>
+</words>
+

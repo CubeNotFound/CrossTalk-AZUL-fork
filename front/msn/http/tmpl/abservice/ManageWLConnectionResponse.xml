@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<soap:Header>
+		<ServiceHeader xmlns="http://www.msn.com/webservices/AddressBook">
+			<Version>15.01.1408.0000</Version>
+			<CacheKey>12r1:{{ cachekey }}</CacheKey>
+			<CacheKeyChanged>true</CacheKeyChanged>
+			<PreferredHostName>{{ host }}</PreferredHostName>
+			<SessionId>{{ session_id }}</SessionId>
+		</ServiceHeader>
+	</soap:Header>
+	<soap:Body>
+		<ManageWLConnectionResponse xmlns="http://www.msn.com/webservices/AddressBook">
+			<ManageWLConnectionResult>
+				{% if error %}
+					<clientErrorData>
+						{{ error }}
+					</clientErrorData>
+				{% endif %}
+				{% if not error %}
+					<clientErrorData />
+					<contactId>{% if ab_id == '00000000-0000-0000-0000-000000000000' %}00000000-0000-0000-0009-{{ circle.chat_id }}{% else %}{{ head.uuid }}{% endif %}</contactId>
+					<contactInfo>
+						<contactType>{% if ab_id == '00000000-0000-0000-0000-000000000000' %}Circle{% else %}{% if circle.memberships[head.uuid].state == CircleState.WaitingResponse or circle.memberships[head.uuid].state == CircleState.Rejected or (circle.memberships[head.uuid].role == CircleRole.Empty or circle.memberships[head.uuid].state == CircleState.Empty) %}LivePending{% else %}Live{% endif %}{% endif %}</contactType>
+						<quickName>{% if ab_id == '00000000-0000-0000-0000-000000000000' %}circle{% else %}{{ head.email }}{% endif %}</quickName>
+						<passportName>{% if ab_id == '00000000-0000-0000-0000-000000000000' %}00000000-0000-0000-0009-{{ circle.chat_id.upper() }}@hotmail.com{% else %}{{ head.email }}{% endif %}</passportName>
+						<IsPassportNameHidden>false</IsPassportNameHidden>
+						<displayName>{% if ab_id == '00000000-0000-0000-0000-000000000000' %}{{ circle.name }}{% else %}{{ head.email }}{% endif %}</displayName>
+						<puid>{{ puid_format(user.uuid) }}</puid>
+						<CID>{{ cid_format('00000000-0000-0000-0009-' + circle.chat_id, decimal = True) }}</CID>
+						<IsNotMobileVisible>false</IsNotMobileVisible>
+						<isMobileIMEnabled>false</isMobileIMEnabled>
+						<isMessengerUser>false</isMessengerUser>
+						<isFavorite>false</isFavorite>
+						<isSmtp>false</isSmtp>
+						<hasSpace>false</hasSpace>
+						<spotWatchState>NoDevice</spotWatchState>
+						<birthdate>0001-01-01T00:00:00</birthdate>
+						<primaryEmailType>ContactEmailPersonal</primaryEmailType>
+						<PrimaryLocation>ContactLocationPersonal</PrimaryLocation>
+						<PrimaryPhone>ContactPhonePersonal</PrimaryPhone>
+						<IsPrivate>false</IsPrivate>
+						<IsHidden>{% if ab_id == '00000000-0000-0000-0000-000000000000' %}true{% else %}false{% endif %}</IsHidden>
+						<Gender>Unspecified</Gender>
+						<TimeZone>None</TimeZone>
+						{% if (ab_id == '00000000-0000-0000-0000-000000000000' or ab_id.startswith('00000000-0000-0000-0009-')) and not (circle.memberships[head.uuid].role == CircleRole.Empty or circle.memberships[head.uuid].state == CircleState.Empty) %}
+							<NetworkInfoList>
+								<NetworkInfo>
+									<DomainId>1</DomainId>
+									<SourceId>WL</SourceId>
+									{% if ab_id == '00000000-0000-0000-0000-000000000000' and circle.memberships[head.uuid].role != CircleRole.Admin %}
+										<DomainTag>00000000-0000-0000-0009-{{ circle.chat_id.upper() }}</DomainTag>
+										<DisplayName>00000000-0000-0000-0009-{{ circle.chat_id.upper() }}</DisplayName>
+									{% endif %}
+									<RelationshipType>5</RelationshipType>
+									<RelationshipState>{% if ab_id.startswith('00000000-0000-0000-0009-') and circle.memberships[head.uuid].state == CircleState.WaitingResponse %}2{% else %}{{ circle.memberships[head.uuid].state.value }}{% endif %}</RelationshipState>
+									<RelationshipStateDate>{{ now }}</RelationshipStateDate>
+									<RelationshipRole>{% if ab_id == '00000000-0000-0000-0000-000000000000' %}{% if circle.memberships[head.uuid].role == CircleRole.StatePendingOutbound %}4{% else %}0{% endif %}{% else %}{% if circle.memberships[head.uuid].role == CircleRole.StatePendingOutbound %}3{% else %}{{ circle.memberships[head.uuid].role.value }}{% endif %}{% endif %}</RelationshipRole>
+									<NDRCount>0</NDRCount>
+									{% if circle.memberships[head.uuid].invite_message %}
+										<InviterMessage>{{ circle.memberships[head.uuid].invite_message }}</InviterMessage>
+									{% endif %}
+									<InviterCID>{% if head.uuid == circle.owner_uuid %}0{% else %}{{ cid_format(circle.memberships[head.uuid].inviter_uuid, decimal = True) }}{% endif %}</InviterCID>
+									{% if circle.memberships[head.uuid].inviter_name %}
+										<InviterName>{{ circle.memberships[head.uuid].inviter_name }}</InviterName>
+									{% endif %}
+									{% if circle.memberships[head.uuid].inviter_email %}
+										<InviterEmail>{{ circle.memberships[head.uuid].inviter_email }}</InviterEmail>
+									{% endif %}
+									<CreateDate>{{ now }}</CreateDate>
+									<LastUpdated>{{ now }}</LastUpdated>
+									<PropertiesChanged />
+								</NetworkInfo>
+							</NetworkInfoList>
+						{% endif %}
+						<IsAutoUpdateDisabled>false</IsAutoUpdateDisabled>
+						<IsShellContact>false</IsShellContact>
+						<TrustLevel>0</TrustLevel>
+						<PropertiesChanged />
+					</contactInfo>
+					<propertiesChanged />
+					<fDeleted>false</fDeleted>
+					<CreateDate>{{ now }}</CreateDate>
+					<lastChange>{{ now }}</lastChange>
+					<CreatedBy>96</CreatedBy>
+				{% endif %}
+			</ManageWLConnectionResult>
+		</ManageWLConnectionResponse>
+	</soap:Body>
+</soap:Envelope>

@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<boat0>Letalonosilko</boat0>
+	<boat1>Bojno ladjo</boat1>
+	<boat2>Križarko</boat2>
+	<boat3>Podmornico</boat3>
+	<boat4>Uničevalca</boat4>
+	<cmdDone>Postavljeno</cmdDone>
+	<cmdHelp>Pomoč</cmdHelp>
+	<cmdPlaceRandomly>Postavi ladjice</cmdPlaceRandomly>
+	<cmdRestart>Reset</cmdRestart>
+	<confirmRemoteWantsRestart>{0} želi resetirati to igro, se strinjaš?</confirmRemoteWantsRestart>
+	<connectionDirect>posredno</connectionDirect>
+	<connectionDisconnected>prekinjeno</connectionDisconnected>
+	<connectionIndirect>neposredno</connectionIndirect>
+	<errorDataSend>Podatkovna napaka; pošiljanje podatkov ni možno. Igra ustavljena.</errorDataSend>
+	<errorDisconnected>Prekinjeno.</errorDisconnected>
+	<errorUserLeft>{0} je zapustil igro. Igra je končana.</errorUserLeft>
+	<infoHit>Zadetek!</infoHit>
+	<infoMiss>Zgrešeno.</infoMiss>
+	<infoLostBoat>Pravkar si izgubil {0}.</infoLostBoat>
+	<infoNoRestart>Brez reseta.</infoNoRestart>
+	<infoPlaceShips>Postavi svoje ladjice s klikom na 'Postavi ladjice'. Če nisi zadovoljen s pozicijo svojih ladjic klikni ponovno. Klikni 'Postavljeno' za začetek igre.</infoPlaceShips>
+	<infoRequestRestart>Zahtevam reset..</infoRequestRestart>
+	<infoRemoteTurn>Čakaš na nasprotnika da napravi potezo.</infoRemoteTurn>
+	<infoRestartDenied>{0} ne želi resetirati te igre.</infoRestartDenied>
+	<infoSunkBoat>Potopil si {0}.</infoSunkBoat>
+	<infoWaitPlacing>Čakaš da nasprotnik postavi svoje ladjice.</infoWaitPlacing>
+	<infoYourTurn>Ti si na vrsti. Klikni na prost kvadratek na nasprotnikovi tabli in poskusi potopiti njegove ladje.</infoYourTurn>
+	<lblBroughtToYouBy>Vam na uslugo: {0}</lblBroughtToYouBy>
+	<lblConnectionType>Vrsta povezave</lblConnectionType>
+	<lblEnemyNavy>Sovražnikova mornarica</lblEnemyNavy>
+	<lblVersion>Potaplanje ladjic {0}</lblVersion>
+	<lblYourNavy>Tvoja mornarica</lblYourNavy>
+	<stateGameOverLost>Konec igre, izgubil si!</stateGameOverLost>
+	<stateGameOverWon>Konec igre, zmagal si!</stateGameOverWon>
+	<stateInitializing>Nalagam igro...</stateInitializing>
+	<stateMyTurn>Ti si na vrsti.</stateMyTurn>
+	<statePlacingShips>Postavi ladjice</statePlacingShips>
+	<stateRemoteTurn>Čakaš, da {0} naredi potezo.</stateRemoteTurn>
+	<stateStartMyTurn>Igra se je začela, ti si na potezi.</stateStartMyTurn>
+	<stateStartRemoteTurn>Igra se je začela, čakaš da {0} naredi potezo.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Čakaš na nasprotnika, da se pridruži.</stateWaitOnJoin>
+	<stateWaitOnPlacing>Čakaš na nasprotnika...</stateWaitOnPlacing>
+</words>
+

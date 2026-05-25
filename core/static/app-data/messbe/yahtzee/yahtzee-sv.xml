@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<cmdHelp>Hjälp</cmdHelp>
+	<cmdHideScores>Göm rankinglistan</cmdHideScores>
+	<cmdRestart>Starta om</cmdRestart>
+	<cmdRollStep1>Kasta tärningarna (första gången)</cmdRollStep1>
+	<cmdRollStep2>Kasta tärningarna (andra gången)</cmdRollStep2>
+	<cmdRollStep3>Kasta tärningarna (tredje gången)</cmdRollStep3>
+	<cmdShowScores>Visa rankinglistan</cmdShowScores>
+	<confirmRemoteWantsRestart>{0} vill starta om omgången, är det ok?</confirmRemoteWantsRestart>
+	<confirmZeroOut>Är du säker på att du vill nollställa {0}?</confirmZeroOut>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>anslutning bruten</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<errorDataSend>Data fel; omöjligt att skicka data. Spelet har stoppats.</errorDataSend>
+	<errorDisconnected>Anslutning bruten.</errorDisconnected>
+	<errorUserLeft>{0} har lämnat spelet. Spelet är slut.</errorUserLeft>
+	<infoClickToPlayAgain>Klicka på 'Starta om' för att spela igen.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} vill inte starta om omgången.</infoRestartDenied>
+	<infoMyTurnStep1>Det är din tur, kasta tärningarna.</infoMyTurnStep1>
+	<infoMyTurnStep2>Välj den tärning du vill ta bort och rulla igen eller välj poäng.</infoMyTurnStep2>
+	<infoMyTurnStep3>Välj den tärning du vill ta bort och rulla för sista gången eller välj poäng.</infoMyTurnStep3>
+	<infoMyTurnStep4>Välj poäng på poängbrädet nu</infoMyTurnStep4>
+	<infoRemoteTurn>Vänta på motståndaren...</infoRemoteTurn>
+	<infoSelectDice>Du måste välja en eller flera tärningar, som du vill kasta om.</infoSelectDice>
+	<lblBroughtToYouBy>Framtaget till dig av {0}</lblBroughtToYouBy>
+	<lblConnectionType>Anslutnings typ</lblConnectionType>
+	<lblOpponent>Motståndaren</lblOpponent>
+	<lblTopTotal>Topplistan totalt</lblTopTotal>
+	<lblVersion>Yahtzee {0}</lblVersion>
+	<lblYou>Du</lblYou>
+	<lblOnes>Ettor</lblOnes>
+	<lblTwos>Tvåor</lblTwos>
+	<lblThrees>Treåor</lblThrees>
+	<lblFours>Fyror</lblFours>
+	<lblFives>Femmor</lblFives>
+	<lblSixes>Sexor</lblSixes>
+	<lblBonus>Bonus</lblBonus>
+	<lblThreeOfAKind>Tre av ett slag</lblThreeOfAKind>
+	<lblFourOfAKind>Fyra av ett slag</lblFourOfAKind>
+	<lblFullHouse>Fullt hus</lblFullHouse>
+	<lblSmallStraight>Liten Straight</lblSmallStraight>
+	<lblLargeStraight>Stor Straight</lblLargeStraight>
+	<lblYahtzee>Yahtzee</lblYahtzee>
+	<lblChance>Chans</lblChance>
+	<lblBottomTotal>Bottenlistan totalt</lblBottomTotal>
+	<lblGameTotal>Antal spel totalt</lblGameTotal>
+	<lblOverallTotal>överallt totalt</lblOverallTotal>
+	<lblGamesWon>Antal vunna spel</lblGamesWon>
+	<stateDraw>Det blev lika!</stateDraw>
+	<stateFinishedMyTurn>{0} är klar, det är din tur igen.</stateFinishedMyTurn>
+	<stateFinishedRemoteTurn>Du är klar, {0} får köra igen.</stateFinishedRemoteTurn>
+	<stateInitializing>Påbörjar spel...</stateInitializing>
+	<stateLost>För dåligt, du förlorade.</stateLost>
+	<stateMyTurn>Det är din tur.</stateMyTurn>
+	<stateRemoteTurn>Väntar på att {0} ska göra sitt drag.</stateRemoteTurn>
+	<stateStartMyTurn>Spelet har startat, det är din tur.</stateStartMyTurn>
+	<stateStartRemoteTurn>Spelet har startat, väntar på att {0} ska göra sitt drag.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Väntar på att motståndaren ska ansluta</stateWaitOnJoin>
+	<stateWon>Grattis, du har vunnit!</stateWon>
+</words>
+
+
