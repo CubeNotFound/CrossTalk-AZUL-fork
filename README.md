@@ -1,6 +1,6 @@
 # AZUL
 
-AZUL is the main server software for the CrossTalk service; a chat service planning to support as many messaging protocols as possible, both retro and modern. 
+AZUL is the main server software for the CrossTalk service; a chat service planning to support as many messaging protocols as possible, both retro and modern. Based on the legacy Escargot codebase.
 
 ## Protocol support
 
