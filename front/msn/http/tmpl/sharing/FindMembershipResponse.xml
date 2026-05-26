@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<soap:Header>
+		<ServiceHeader xmlns="http://www.msn.com/webservices/AddressBook">
+			<Version>15.01.1408.0000</Version>
+			<CacheKey>12r1:{{ cachekey }}</CacheKey>
+			<CacheKeyChanged>true</CacheKeyChanged>
+			<PreferredHostName>{{ host }}</PreferredHostName>
+			<SessionId>{{ session_id }}</SessionId>
+		</ServiceHeader>
+	</soap:Header>
+	<soap:Body>
+		<FindMembershipResponse xmlns="http://www.msn.com/webservices/AddressBook">
+			<FindMembershipResult>
+				<Services>
+					<Service>
+						<Memberships>
+							{% for lst in lists %}
+							<Membership>
+									<MemberRole>{{ lst.label }}</MemberRole>
+									<Members>
+									{% for contact in detail.contacts.values() %}
+									{% if (contact.lists.__and__(lst) and lst not in (ContactList.AL,ContactList.BL,ContactList.RL)) or (lst in (ContactList.AL,ContactList.BL,ContactList.RL) and contact.lists.__and__(lst) and not contact.pending) %}
+										<Member xsi:type="PassportMember">
+											<MembershipId>{{ lst.label }}/{{ contact.head.uuid }}</MembershipId>
+											<Type>Passport</Type>
+											<State>Accepted</State>
+											<Deleted>false</Deleted>
+											<LastChanged>{{ now }}</LastChanged>
+											<JoinedDate>{{ date_format(contact.head.date_created) }}</JoinedDate>
+											<ExpirationDate>0001-01-01T00:00:00</ExpirationDate>
+											<Changes />
+											<PassportName>{{ contact.head.email }}</PassportName>
+											<IsPassportNameHidden>false</IsPassportNameHidden>
+											<PassportId>0</PassportId>
+											<CID>{{ cid_format(contact.head.uuid, decimal = True) }}</CID>
+											<PassportChanges />
+											<LookedupByCID>false</LookedupByCID>
+										</Member>
+											{% endif %}
+										{% endfor %}
+										{% if lst == ContactList.BL %}
+											{% for circle in circles %}
+												{% if circle.memberships[user.uuid].blocking %}
+													<Member xsi:type="CircleMember">
+														<MembershipId>Block/00000000-0000-0000-0009-{{ circle.chat_id }}</MembershipId>
+														<Type>Circle</Type>
+														<State>Accepted</State>
+														<Deleted>false</Deleted>
+														<LastChanged>{{ now }}</LastChanged>
+														<JoinedDate>{{ now }}</JoinedDate>
+														<ExpirationDate>0001-01-01T00:00:00</ExpirationDate>
+														<Changes />
+														<CircleId>00000000-0000-0000-0009-{{ circle.chat_id }}</CircleId>
+													</Member>
+												{% endif %}
+											{% endfor %}
+										{% endif %}
+									</Members>
+									<MembershipIsComplete>true</MembershipIsComplete>
+								</Membership>
+							{% endfor %}
+							<Membership>
+								<MemberRole>Pending</MemberRole>
+								<Members>
+									{% for contact in detail.contacts.values() %}
+									{% if contact.pending and not contact.lists.__and__(ContactList.FL) %}
+									<Member xsi:type="PassportMember">
+										<MembershipId>Pending/{{ contact.head.uuid }}</MembershipId>
+										<Type>Passport</Type>
+										<State>Accepted</State>
+										<Deleted>false</Deleted>
+										<LastChanged>{{ now }}</LastChanged>
+										<JoinedDate>{{ date_format(contact.head.date_created) }}</JoinedDate>
+										<ExpirationDate>0001-01-01T00:00:00</ExpirationDate>
+										<Changes />
+										<PassportName>{{ contact.head.email }}</PassportName>
+										<IsPassportNameHidden>false</IsPassportNameHidden>
+										<PassportId>0</PassportId>
+										<CID>{{ cid_format(contact.head.uuid, decimal = True) }}</CID>
+										<PassportChanges />
+										<LookedupByCID>false</LookedupByCID>
+									</Member>
+									{% endif %}
+									{% endfor %}
+								</Members>
+								<MembershipIsComplete>true</MembershipIsComplete>
+							</Membership>
+						</Memberships>
+						<Info>
+							<Handle>
+								<Id>1</Id>
+								<Type>Messenger</Type>
+								<ForeignId />
+							</Handle>
+							<InverseRequired>false</InverseRequired>
+							<AuthorizationCriteria>Everyone</AuthorizationCriteria>
+							<IsBot>false</IsBot>
+						</Info>
+						<Changes />
+						<LastChange>{{ now }}</LastChange>
+						<Deleted>false</Deleted>
+					</Service>
+				</Services>
+				<OwnerNamespace>
+					<Info>
+						<Handle>
+							<Id>00000000-0000-0000-0000-000000000000</Id>
+							<IsPassportNameHidden>false</IsPassportNameHidden>
+							<CID>0</CID>
+						</Handle>
+						<CreatorPuid>0</CreatorPuid>
+						<CreatorCID>{{ cid_format(user.uuid, decimal = True) }}</CreatorCID>
+						<CreatorPassportName>{{ user.email }}</CreatorPassportName>
+						<CircleAttributes>
+							<IsPresenceEnabled>false</IsPresenceEnabled>
+							<Domain>WindowsLive</Domain>
+						</CircleAttributes>
+						<MessengerApplicationServiceCreated>false</MessengerApplicationServiceCreated>
+					</Info>
+					<Changes />
+					<CreateDate>{{ now }}</CreateDate>
+					<LastChange>{{ now }}</LastChange>
+				</OwnerNamespace>
+			</FindMembershipResult>
+		</FindMembershipResponse>
+	</soap:Body>
+</soap:Envelope>

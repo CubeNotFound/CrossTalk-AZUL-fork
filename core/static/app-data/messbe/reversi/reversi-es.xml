@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<cmdHelp>Ayuda</cmdHelp>
+	<cmdRestart>Reiniciar</cmdRestart>
+	<confirmRemoteWantsRestart>{0} quiere reiniciar el juego, ¿estás de acuerdo?</confirmRemoteWantsRestart>
+	<connectionDirect>directa</connectionDirect>
+	<connectionDisconnected>desconectado</connectionDisconnected>
+	<connectionIndirect>indirecta</connectionIndirect>
+	<errorDataSend>Error; Imposible enviar datos. Se ha parado el juego.</errorDataSend>
+	<errorDisconnected>Desconectado.</errorDisconnected>
+	<errorUserLeft>{0} ha dejado el juego. El juego ha acabado.</errorUserLeft>
+	<infoRestartDenied>{0} no quiere reiniciar el juego.</infoRestartDenied>
+	<infoClickToPlayAgain>Haz clic en 'Reiniciar' para jugar de nuevo.</infoClickToPlayAgain>
+	<lblBroughtToYouBy>Juego patrocinado por {0}</lblBroughtToYouBy>
+	<lblConnectionType>Tipo de conexión</lblConnectionType>
+	<lblPlayers>Jugadores</lblPlayers>
+	<lblColor>Color</lblColor>
+	<lblGamePoints>Puntos en este juego</lblGamePoints>
+	<lblGameTotalPoints>Puntos totales</lblGameTotalPoints>
+	<lblGamesWon>Juegos ganados</lblGamesWon>
+	<lblRed>rojo</lblRed>
+	<lblVersion>Reversi {0}</lblVersion>
+	<lblWhite>blanco</lblWhite>
+	<stateAnotherMyTurn>{0} no puede mover, es tu turno otra vez.</stateAnotherMyTurn>
+	<stateAnotherRemoteTurn>Estás bloqueado, {0} mueve otra vez.</stateAnotherRemoteTurn>
+	<stateInitializing>Iniciando juego...</stateInitializing>
+	<stateGameOverDraw>Juego acabado, Es un empate! </stateGameOverDraw>
+	<stateGameOverLost>Juego acabado, Has perdido!</stateGameOverLost>
+	<stateGameOverWon>Juego acabado, Has ganado!</stateGameOverWon>
+	<stateMyTurn>Es tu turno.</stateMyTurn>
+	<stateRemoteTurn>Esperando por {0} para realizar movimiento.</stateRemoteTurn>
+	<stateStartMyTurn>El juego ha empezado, tu eres el color {0}. Es tu turno.</stateStartMyTurn>
+	<stateStartRemoteTurn>El juego ha empezado, tu eres el color {0}. Esperando por {1} para completar su turno.</stateStartRemoteTurn>
+
+</words>
+
+
+

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<boat0>het vliegdekschip</boat0>
+	<boat1>de kruiser</boat1>
+	<boat2>de torpedojager</boat2>
+	<boat3>de onderzeeboot</boat3>
+	<boat4>de mijnenveger</boat4>
+	<cmdDone>Klaar</cmdDone>
+	<cmdHelp>Help</cmdHelp>
+	<cmdPlaceRandomly>Plaats de vloot</cmdPlaceRandomly>
+	<cmdRestart>Herstart</cmdRestart>
+	<confirmRemoteWantsRestart>{0} wil het spel opnieuw beginnen. Vind je dat goed?</confirmRemoteWantsRestart>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>verbroken</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<errorDataSend>Data fout; kan geen gegevens versturen. Het spel is gestopt.</errorDataSend>
+	<errorDisconnected>Verbroken.</errorDisconnected>
+	<errorUserLeft>{0} heeft het spel verlaten. Het spel is gestopt.</errorUserLeft>
+	<infoHit>Raak!</infoHit>
+	<infoMiss>Mis.</infoMiss>
+	<infoLostBoat>O, o, {0} is gezonken.</infoLostBoat>
+	<infoNoRestart>Geen herstart.</infoNoRestart>
+	<infoPlaceShips>Plaats jouw vloot door te klikken op 'Plaats de vloot'. Als je niet tevreden bent over de positie van je schepen, klik opnieuw. Klik 'Klaar' om te beginnen met spelen.</infoPlaceShips>
+	<infoRequestRestart>Herstart aanvragen..</infoRequestRestart>
+	<infoRemoteTurn>Wacht op de beurt van je tegenstander.</infoRemoteTurn>
+	<infoRestartDenied>{0} wil dit spel niet opnieuw beginnen.</infoRestartDenied>
+	<infoSunkBoat>Je hebt {0} van je tegenstander laten zinken.</infoSunkBoat>
+	<infoWaitPlacing>Wacht tot je tegenstander zijn vloot heeft geplaatst.</infoWaitPlacing>
+	<infoYourTurn>Het is jouw beurt. Klik op een leeg vak van je tegenstander en probeer de schepen te laten zinken.</infoYourTurn>
+	<lblBroughtToYouBy>Aangeboden door {0}</lblBroughtToYouBy>
+	<lblConnectionType>Connectie type</lblConnectionType>
+	<lblEnemyNavy>Vloot van de tegenstander</lblEnemyNavy>
+	<lblVersion>Zeeslag {0}</lblVersion>
+	<lblYourNavy>Jouw vloot</lblYourNavy>
+	<stateGameOverLost>Spel over, je hebt verloren!</stateGameOverLost>
+	<stateGameOverWon>Spel over, je hebt gewonnen!</stateGameOverWon>
+	<stateInitializing>Spel wordt geïnitialiseerd...</stateInitializing>
+	<stateMyTurn>Het is jouw beurt.</stateMyTurn>
+	<statePlacingShips>Plaats je vloot</statePlacingShips>
+	<stateRemoteTurn>Wacht op de beurt van {0}.</stateRemoteTurn>
+	<stateStartMyTurn>Spel gestart, het is jouw beurt.</stateStartMyTurn>
+	<stateStartRemoteTurn>Spel gestart, wacht op de beurt van {0}.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Wacht op de tegenstander om mee te doen</stateWaitOnJoin>
+	<stateWaitOnPlacing>Wacht op de tegenstander...</stateWaitOnPlacing>
+</words>

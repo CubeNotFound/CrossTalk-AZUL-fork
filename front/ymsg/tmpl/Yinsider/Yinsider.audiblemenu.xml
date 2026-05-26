@@ -1,0 +1,75 @@
+<audiblemenu signature="YwYF9wY51P0MW+oG9U17PKb70MPP9BjlKlIkVuCThYVzcs2+OB2dK4f1jDy9vhj334eJbansjC8S+N5xSEi/IZh6/34KcwzQPhB1/bSBKVCoRBi+qA0DlLE/I1KpYyiYNWhNohLlEqJRU8Glw8YN/Wwq3U8ZI99XFMrzZd3F/Tf6EiloTZYGDcv2mgFeXTcVORpClBWAfbpGZ8lKNt8xRixHH3u/AGzTE3C1p+EwNXBtzO6NpF3GdqsLv8Z8W9KUP0WNvdn3YN/9kd7OG2ZWlHni0Tf8zXxVvz0t8xpfegHl1YfMbJIeoGyffPIyJQVyqL3teqrq2X4TlsX8DZs6DA==">
+	<Menu text="See all Audibles">
+		<set id="base.us.hello" img="1" text="Hellos"/>
+		<set id="base.us.goodbyes" img="1" text="Goodbyes"/>
+		<set id="base.us.emoticons2" img="1" text="Emoticons"/>
+		<set id="base.us.flirts" img="1" text="Flirts" ver="1.2"/>
+		<set id="base.us.work" img="1" text="Work" ver="1.1"/>
+		<set id="base.us.insults" img="1" text="Insults"/>
+		<set id="base.us.yodel" img="1" text="Yahoo! Yodels" ver="4.0"/>
+		<set id="base.us.emoticats" img="1" text="Emoticats" ver="5.0"/>
+		<set id="base.us.halloween" img="1" text="Halloween" ver="1.0"/>
+		<Menu text="Game Audibles">
+			<set id="base.us.losing" img="1" text="Game - Losing" ver="1.2"/>
+			<set id="base.us.taunt" img="1" text="Game - Taunts"/>
+			<set id="base.us.winning" img="1" text="Game - Winning"/>
+		</Menu>
+		<set id="base.us.htf" img="1" text="Happy Tree Friends"/>
+		<set id="base.us.contender" img="1" text="The Contender"/>
+		<set id="base.us.madonna" img="1" text="Madonna"/>
+		<set id="base.us.chilis" img="1" text="Chili&apos;s"/>
+		<set id="base.us.valentines" img="1" text="Valentines" ver="1.0"/>
+		<Menu text="International">
+			<Menu text="Chinese">
+				<set id="base.cn.emotion" img="1" text="China"/>
+				<set id="base.tw.smiley" img="1" text="Taiwan"/>
+			</Menu>
+			<Menu text="English">
+				<set id="base.uk.general" img="1" text="UK"/>
+			</Menu>
+			<set id="base.de.siedler5" img="1" text="German"/>
+			<Menu text="Indic Languages">
+				<set id="base.in.gujarati" img="1" text="Gujarati"/>
+				<set id="base.in.malayalam" img="1" text="Malayalam"/>
+				<set id="base.in.marathi" img="1" text="Marathi"/>
+				<set id="base.in.masti" img="1" text="Masti"/>
+				<set id="base.in.punjabi" img="1" text="Punjabi"/>
+				<set id="base.in.tamil" img="1" text="Tamil"/>
+			</Menu>
+			<Menu text="Indonesia">
+				<set id="base.id.changcuters" img="1" text="Changcuters"/>
+				<set id="base.aa.indonesia2" img="1" text="Indonesian"/>
+			</Menu>
+			<set id="base.aa.malaysia2" img="1" text="Malay"/>
+			<Menu text="Spanish">
+				<Menu text="Neutral">
+					<set id="base.es.generic" img="1" text="Genéricos"/>
+					<set id="base.es.flirts" img="1" text="Coqueteo"/>
+					<set id="base.es.hello" img="1" text="Hola"/>
+					<set id="base.es.goodbyes" img="1" text="Despedidas"/>
+					<set id="base.es.winning" img="1" text="Ganando"/>
+					<set id="base.es.losing" img="1" text="Perdiendo"/>
+				</Menu>
+				<Menu text="Argentina">
+					<set id="base.ar.valentines2" img="1" text="Enamorados"/>
+					<set id="base.ar.friends" img="1" text="Amigos"/>
+					<set id="base.ar.hello" img="1" text="¡Hola!"/>
+					<set id="base.ar.goodbye" img="1" text="Chau"/>
+					<set id="base.ar.yesno" img="1" text="¿Sí o no?"/>
+					<set id="base.ar.moods" img="1" text="Estados de ánimo"/>
+					<set id="base.ar.games" img="1" text="Jugando"/>
+					<set id="base.ar.springtime2" img="1" text="Primavera"/>
+					<set id="base.ar.winter" img="1" text="Invierno"/>
+					<set id="base.ar.generic" img="1" text="Variados"/>
+				</Menu>
+			</Menu>
+			<set id="base.aa.philippines2" img="1" text="Tagalog"/>
+			<Menu text="Vietnam">
+				<set id="base.vn.yahooinvietnam" img="1" text="Yahoo! in Vietnam" ver="1.1"/>
+				<set id="base.aa.vietnam4" img="1" text="Vietnamese" ver="1.1"/>
+			</Menu>
+		</Menu>
+	</Menu>
+	<separator/>
+	<set id="RecentAudibles" img="1" text="Recently used Audibles"/>
+</audiblemenu>

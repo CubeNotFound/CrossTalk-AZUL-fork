@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<cmdHelp>Súgó</cmdHelp>
+	<cmdMute>Csendes</cmdMute>
+	<cmdStart>Kezdés</cmdStart>
+	<connectionDirect>fennáll</connectionDirect>
+	<connectionDisconnected>megszakadt</connectionDisconnected>
+	<connectionIndirect>közvetett</connectionIndirect>
+	<errorDataSend>Adat hiba; nem lehet adatot küldeni. A játék megállt.</errorDataSend>
+	<errorDisconnected>Megszakadt.</errorDisconnected>
+	<errorUserLeft>{0} elhagyta a játékot. A játék véget ért.</errorUserLeft>
+	<lblBroughtToYouBy>Kihívó: {0}</lblBroughtToYouBy>
+	<lblConnectionType>Kapcsolat típusa</lblConnectionType>
+	<lblGameLevel>Szint</lblGameLevel>
+	<lblGameLines>Sorok</lblGameLines>
+	<lblGameScore>Pontok</lblGameScore>
+	<lblPlayers>Játékosok</lblPlayers>
+	<lblVersion>Tetris {0}</lblVersion>
+	<stateInitializing>Játék betöltése...</stateInitializing>
+	<stateGameOverCalc>Vége, pontok kiszámítása..</stateGameOverCalc>
+	<stateGameOverDraw>Vége, döntetlen! Kattints a "Kezdés" gombra az újrakezdéshez.</stateGameOverDraw>
+	<stateGameOverLost>Vége, vesztettél! Kattints a "Kezdés" gombra az újrakezdéshez.</stateGameOverLost>
+	<stateGameOverWon>Vége, nyertél! Kattints a "Kezdés" gombra az újrakezdéshez.</stateGameOverWon>
+	<statePlaying>Játszik</statePlaying>
+	<stateWaitOnJoin>Várjon, míg a partner kapcsolódik a játékhoz</stateWaitOnJoin>
+	<stateWaitForStart>Kattints a "Kezdés" gombra.</stateWaitForStart>
+</words>
+
+

@@ -1,0 +1,715 @@
+
+
+<html>
+
+<head>
+	<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7">
+	<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1" />
+	<meta http-equiv="imagetoolbar" content="no" />
+	<style type="text/css">
+
+		font
+			{cursor: default;}
+
+		.link
+			{font-family: Tahoma;			font-size: 9px;		font-weight: normal;	color: #245181;	text-decoration: none;}
+
+		a:link, a:visited, a:active
+			{font-family: Tahoma;			font-size: 12px;	font-weight: normal;	color: #245181;	text-decoration: none;}
+
+		a:hover
+			{font-family: Tahoma;			font-size: 12px;	font-weight: bold;	color: #245181;	text-decoration: none;}
+
+		a.active_status:link, a.active_status:visited, a.active_status:active
+			{font-family: Tahoma;			font-size: 12px;	font-weight: bold;	color: #FF2D41;	text-decoration: none;}
+
+		a.active_status:hover
+			{font-family: Tahoma;			font-size: 12px;	font-weight: bold;	color: #FF2D41;	text-decoration: underline;}
+
+		.stats_status
+
+			{font-family: Tahoma;			font-size: 12px;				color: #418D0C;	text-decoration: none;}
+
+
+
+		.active_status
+
+			{font-family: Tahoma;			font-size: 12px;				color: #FF2D41;	text-decoration: none;}
+
+
+
+		.status
+
+			{font-family: Tahoma;			font-size: 12px;				color: #525252;	text-decoration: none;}
+
+
+
+		.sub_status
+
+			{font-family: Tahoma;			font-size: 9px;					color: #525252;	text-decoration: none;}
+
+
+
+		.sub
+
+			{font-family: Tahoma;			font-size: 9px;					color: #245181;	text-decoration: none;}
+
+
+
+		.sub2
+
+			{font-family: Tahoma;			font-size: 9px;					color: #245181;	text-decoration: none;	position: relative;	bottom: 1px;}
+
+
+
+		.pre_sub
+
+			{font-family: Tahoma;			font-size: 12px;				color: #245181;	text-decoration: none;}
+
+
+
+		.pre_text_light
+
+			{font-family: Tahoma;			font-size: 12px;				color: #529E1D;	text-decoration: none;}
+
+
+
+		.pre_text_dark
+
+			{font-family: Tahoma;			font-size: 12px;				color: #D2D2D2;	text-decoration: none;}
+
+
+
+	</style>
+
+	<script type="text/javascript" src="./index.en-us.js"></script>
+
+</head>
+
+
+
+<body style="margin: 0px 0px 0px 0px; background: #F1F1F1; direction: ltr;" scroll="no" onContextMenu="return false;" onSelectStart="return false;" onDragStart="return false;">
+
+
+
+<table id="html_preload_table" width="100%" height="100%" cellpadding="0" cellspacing="0" style="display: none; position: relative;">
+
+	<tr>
+
+		<td height="50%">
+
+		</td>
+
+	</tr>
+
+	<tr>
+
+		<td align="center">
+
+			<img src="./imgs/en-us/patience.gif"><font id="html_preload_percent" class="pre_sub">0</font><font class="pre_sub"> percents</font>
+
+		</td>
+
+	</tr>
+
+	<tr>
+
+		<td align="center" valign="top">
+
+			<div id="html_preload_text" style="width: 50%;"></div>
+
+		</td>
+
+	</tr>
+
+	<tr>
+
+		<td height="50%">
+
+		</td>
+
+	</tr>
+
+</table>
+
+
+
+<script type="text/javascript">
+
+	preload();
+
+</script>
+
+
+
+<table id="html_main_table" width="100%" height="100%" cellpadding="0" cellspacing="0" style="display: none; position: relative;">
+
+	<tr>
+
+		<td width="100%" height="32" colspan="9" style="background: #D4E8C7;">
+
+			<table width="100%" cellpadding="0" cellspacing="0">
+
+				<tr>
+
+					<td height="27" valign="bottom">
+
+						<nobr><img src="./imgs/en-us/title.gif"><font class="sub2">version 1.0</font></nobr></td>
+
+					<td width="100%" height="27" valign="bottom" align="right">
+
+						<nobr><img src="./imgs/spacer.gif" height="20"><font id="html_connection_text" class="sub_status"></font>&nbsp;</nobr></td>
+
+				</tr>
+
+				<tr>
+
+					<td>
+
+						<img src="./imgs/spcaer.gif" height="1"></td>
+
+				</tr>
+
+			</table></td>
+
+	</tr>
+
+	<tr>
+
+		<td width="100%" height="22" colspan="9" style="background: #E1ECDA" align="right">
+
+<font class="link"><a href="#" onclick="restart();">start-over</a> | 
+
+<a href="#" onclick="show_rules();">rules</a> | 
+
+<a href="#" onmouseover="show_stats();" onmouseout="hide_stats();">statistics</a></font>&nbsp;
+
+		</td>
+
+	</tr>
+
+	<tr>
+
+		<td width="100%" height="25%" colspan="9">
+
+		</td>
+
+	</tr>
+
+	<tr>
+
+		<td width="33" height="17" valign="bottom">
+
+			<img src="./imgs/gray.gif" width="33" height="8"></td>
+
+		<td width="23" height="17" valign="bottom">
+
+			<img src="./imgs/gray_top.gif" width="23" height="8"></td>
+
+		<td width="10" height="40" rowspan="2" valign="bottom">
+
+			<img src="./imgs/gray_right_top.gif"></td>
+
+		<td width="50%" height="265" rowspan="19">
+
+		</td>
+
+		<td width="269" height="265" rowspan="19">
+
+			<div style="width: 269px; height: 265px; background: url(./imgs/en-us/board.gif); direction: ltr;">
+
+				<table width="269" height="265" cellpadding="0" cellspacing="0">
+
+					<tr>
+
+						<td width="269" height="17" colspan="15"><img src="./imgs/spacer.gif" height="17"></td>
+
+					</tr>
+
+					<tr>
+
+						<td width="19" height="23"><img src="./imgs/spacer.gif" width="19" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_a1" width="23" height="23"></td>
+
+						<td width="81" height="23" colspan="5"><img src="./imgs/spacer.gif" width="81" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_a2" width="23" height="23"></td>
+
+						<td width="79" height="23" colspan="5"><img src="./imgs/spacer.gif" width="79" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_a3" width="23" height="23"></td>
+
+						<td width="21" height="23"><img src="./imgs/spacer.gif" width="21" height="0"></td>
+
+					</tr>
+
+					<tr>
+
+						<td width="269" height="5" colspan="15"><img src="./imgs/spacer.gif" height="5"></td>
+
+					</tr>
+
+					<tr>
+
+						<td width="47" height="23" colspan="3"><img src="./imgs/spacer.gif" width="47" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_b1" width="23" height="23"></td>
+
+						<td width="53" height="23" colspan="3"><img src="./imgs/spacer.gif" width="53" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_b2" width="23" height="23"></td>
+
+						<td width="52" height="23" colspan="3"><img src="./imgs/spacer.gif" width="52" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_b3" width="23" height="23"></td>
+
+						<td width="48" height="23" colspan="3"><img src="./imgs/spacer.gif" width="48" height="0"></td>
+
+					</tr>
+
+					<tr>
+
+						<td width="269" height="6" colspan="15"><img src="./imgs/spacer.gif" height="6"></td>
+
+					</tr>
+
+					<tr>
+
+						<td width="76" height="23" colspan="5"><img src="./imgs/spacer.gif" width="76" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_c1" width="23" height="23"></td>
+
+						<td width="24" height="23"><img src="./imgs/spacer.gif" width="24" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_c2" width="23" height="23"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" width="23" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_c3" width="23" height="23"></td>
+
+						<td width="76" height="23" colspan="5"><img src="./imgs/spacer.gif" width="76" height="0"></td>
+
+					</tr>
+
+					<tr>
+
+						<td width="269" height="24" colspan="15"><img src="./imgs/spacer.gif" height="24"></td>
+
+					</tr>
+
+					<tr>
+
+						<td width="19" height="23"><img src="./imgs/spacer.gif" width="19" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_a8" width="23" height="23"></td>
+
+						<td width="5" height="23"><img src="./imgs/spacer.gif" width="5" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_b8" width="23" height="23"></td>
+
+						<td width="6" height="23"><img src="./imgs/spacer.gif" width="6" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_c8" width="23" height="23"></td>
+
+						<td width="70" height="23" colspan="3"><img src="./imgs/spacer.gif" width="70" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_c4" width="23" height="23"></td>
+
+						<td width="5" height="23"><img src="./imgs/spacer.gif" width="5" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_b4" width="23" height="23"></td>
+
+						<td width="4" height="23"><img src="./imgs/spacer.gif" width="4" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_a4" width="23" height="23"></td>
+
+						<td width="21" height="23"><img src="./imgs/spacer.gif" width="21" height="0"></td>
+
+					</tr>
+
+					<tr>
+
+						<td width="269" height="24" colspan="15"><img src="./imgs/spacer.gif" height="24"></td>
+
+					</tr>
+
+					<tr>
+
+						<td width="76" height="23" colspan="5"><img src="./imgs/spacer.gif" width="76" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_c7" width="23" height="23"></td>
+
+						<td width="24" height="23"><img src="./imgs/spacer.gif" width="24" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_c6" width="23" height="23"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" width="23" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_c5" width="23" height="23"></td>
+
+						<td width="76" height="23" colspan="5"><img src="./imgs/spacer.gif" width="76" height="0"></td>
+
+					</tr>
+
+					<tr>
+
+						<td width="269" height="6" colspan="15"><img src="./imgs/spacer.gif" height="6"></td>
+
+					</tr>
+
+					<tr>
+
+						<td width="47" height="23" colspan="3"><img src="./imgs/spacer.gif" width="47" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_b7" width="23" height="23"></td>
+
+						<td width="53" height="23" colspan="3"><img src="./imgs/spacer.gif" width="53" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_b6" width="23" height="23"></td>
+
+						<td width="52" height="23" colspan="3"><img src="./imgs/spacer.gif" width="52" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_b5" width="23" height="23"></td>
+
+						<td width="48" height="23" colspan="3"><img src="./imgs/spacer.gif" width="48" height="0"></td>
+
+					</tr>
+
+					<tr>
+
+						<td width="269" height="5" colspan="15"><img src="./imgs/spacer.gif" height="5"></td>
+
+					</tr>
+
+					<tr>
+
+						<td width="19" height="23"><img src="./imgs/spacer.gif" width="19" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_a7" width="23" height="23"></td>
+
+						<td width="81" height="23" colspan="5"><img src="./imgs/spacer.gif" width="81" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_a6" width="23" height="23"></td>
+
+						<td width="79" height="23" colspan="5"><img src="./imgs/spacer.gif" width="79" height="0"></td>
+
+						<td width="23" height="23"><img src="./imgs/spacer.gif" id="html_a5" width="23" height="23"></td>
+
+						<td width="21" height="23"><img src="./imgs/spacer.gif" width="21" height="0"></td>
+
+					</tr>
+
+					<tr>
+
+						<td width="269" height="17" colspan="15"><img src="./imgs/spacer.gif" height="17"></td>
+
+					</tr>
+
+				</table>
+
+			</div></td>
+
+		<td width="50%" height="265" rowspan="19">
+
+		</td>
+
+		<td width="10" height="40" rowspan="2" valign="bottom">
+
+			<img src="./imgs/green_left_top.gif"></td>
+
+		<td width="23" height="17" valign="bottom">
+
+			<img src="./imgs/green_top.gif" width="23" height="8"></td>
+
+		<td width="33" height="17" valign="bottom">
+
+			<img src="./imgs/green.gif" width="33" height="8"></td>
+
+	</tr>
+
+	<tr>
+
+		<td width="33" height="231" rowspan="17" style="background: #E3E3E3">
+
+			<img src="./imgs/spacer.gif" width="33">
+
+		</td>
+
+		<td width="23" height="23" style="background: #E3E3E3">
+
+			<img src="./imgs/gray_empty_circle.gif" id="html_gray1"></td>
+
+		<td width="23" height="23" style="background: #BDE3A3">
+
+			<img src="./imgs/green_empty_circle.gif" id="html_green1"></td>
+
+		<td width="33" height="231" rowspan="17" style="background: #BDE3A3">
+
+			<img src="./imgs/spacer.gif" width="33">
+
+		</td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="3" style="background: #E3E3E3">
+
+		</td>
+
+		<td width="10" height="185" rowspan="15" style="background: #E3E3E3">
+
+			<img src="./imgs/spacer.gif" width="10">
+
+		</td>
+
+		<td width="10" height="183" rowspan="15" style="background: #BDE3A3">
+
+			<img src="./imgs/spacer.gif" width="10">
+
+		</td>
+
+		<td width="23" height="3" style="background: #BDE3A3">
+
+		</td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="23" style="background: #E3E3E3">
+
+			<img src="./imgs/gray_empty_circle.gif" id="html_gray2"></td>
+
+		<td width="23" height="23" style="background: #BDE3A3">
+
+			<img src="./imgs/green_empty_circle.gif" id="html_green2"></td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="3" style="background: #E3E3E3">
+
+		</td>
+
+		<td width="23" height="3" style="background: #BDE3A3">
+
+		</td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="23" style="background: #E3E3E3">
+
+			<img src="./imgs/gray_empty_circle.gif" id="html_gray3"></td>
+
+		<td width="23" height="23" style="background: #BDE3A3">
+
+			<img src="./imgs/green_empty_circle.gif" id="html_green3"></td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="3" style="background: #E3E3E3">
+
+		</td>
+
+		<td width="23" height="3" style="background: #BDE3A3">
+
+		</td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="23" style="background: #E3E3E3">
+
+			<img src="./imgs/gray_empty_circle.gif" id="html_gray4"></td>
+
+		<td width="23" height="23" style="background: #BDE3A3">
+
+			<img src="./imgs/green_empty_circle.gif" id="html_green4"></td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="3" style="background: #E3E3E3">
+
+		</td>
+
+		<td width="23" height="3" style="background: #BDE3A3">
+
+		</td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="23" style="background: #E3E3E3">
+
+			<img src="./imgs/gray_empty_circle.gif" id="html_gray5"></td>
+
+		<td width="23" height="23" style="background: #BDE3A3">
+
+			<img src="./imgs/green_empty_circle.gif" id="html_green5"></td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="3" style="background: #E3E3E3">
+
+		</td>
+
+		<td width="23" height="3" style="background: #BDE3A3">
+
+		</td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="23" style="background: #E3E3E3">
+
+			<img src="./imgs/gray_empty_circle.gif" id="html_gray6"></td>
+
+		<td width="23" height="23" style="background: #BDE3A3">
+
+			<img src="./imgs/green_empty_circle.gif" id="html_green6"></td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="3" style="background: #E3E3E3">
+
+		</td>
+
+		<td width="23" height="3" style="background: #BDE3A3">
+
+		</td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="23" style="background: #E3E3E3">
+
+			<img src="./imgs/gray_empty_circle.gif" id="html_gray7"></td>
+
+		<td width="23" height="23" style="background: #BDE3A3">
+
+			<img src="./imgs/green_empty_circle.gif" id="html_green7"></td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="3" style="background: #E3E3E3">
+
+		</td>
+
+		<td width="23" height="3" style="background: #BDE3A3">
+
+		</td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="23" style="background: #E3E3E3">
+
+			<img src="./imgs/gray_empty_circle.gif" id="html_gray8"></td>
+
+		<td width="23" height="23" style="background: #BDE3A3">
+
+			<img src="./imgs/green_empty_circle.gif" id="html_green8"></td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="3" style="background: #E3E3E3">
+
+		</td>
+
+		<td width="23" height="3" style="background: #BDE3A3">
+
+		</td>
+
+	</tr>
+
+	<tr>
+
+		<td width="23" height="23" style="background: #E3E3E3">
+
+			<img src="./imgs/gray_empty_circle.gif" id="html_gray9"></td>
+
+		<td width="10" height="40" rowspan="2" valign="top">
+
+			<img src="./imgs/gray_right_bottom.gif"></td>
+
+		<td width="10" height="40" rowspan="2" valign="top">
+
+			<img src="./imgs/green_left_bottom.gif"></td>
+
+		<td width="23" height="23" style="background: #BDE3A3">
+
+			<img src="./imgs/green_empty_circle.gif" id="html_green9"></td>
+
+	</tr>
+
+	<tr>
+
+		<td width="33" height="17" valign="top">
+
+			<img src="./imgs/gray.gif" width="33" height="5"></td>
+
+		<td width="23" height="17" valign="top">
+
+			<img src="./imgs/gray_bottom.gif" width="23" height="5"></td>
+
+		<td width="23" height="17" valign="top">
+
+			<img src="./imgs/green_bottom.gif" width="23" height="5"></td>
+
+		<td width="33" height="17" valign="top">
+
+			<img src="./imgs/green.gif" width="33" height="5"></td>
+
+	</tr>
+
+	<tr>
+
+		<td width="100%" height="75%" colspan="9" align="center" valign="middle">
+
+			<font id="html_status_text" class="status"></font>
+
+		</td>
+
+	</tr>
+
+	<tr>
+
+		<td width="100%" height="32" colspan="9" style="background: #D4E8C7;">
+
+			<img src="./imgs/doron.gif"><font class="sub">&copy; copyrights 2003 doron schwartz. all rights reserved.</font><br />
+
+			<img src="./imgs/spcaer.gif" height="2"></td>
+
+	</tr>
+
+</table>
+
+
+
+</body>
+
+
+
+</html>

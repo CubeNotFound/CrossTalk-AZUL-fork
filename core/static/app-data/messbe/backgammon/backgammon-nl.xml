@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<colorBlue>blauw</colorBlue>
+	<colorWhite>wit</colorWhite>
+	<cmdHelp>Help</cmdHelp>
+	<cmdRestart>Herstart</cmdRestart>
+	<cmdRoll>Gooi de dobbelstenen</cmdRoll>
+	<cmdSwitchTurn>Geef beurt over</cmdSwitchTurn>
+	<confirmRemoteWantsRestart>{0} wil het spel opnieuw beginnen. Vind je dat goed?</confirmRemoteWantsRestart>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>verbroken</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<errorDataSend>Data fout; kan geen gegevens versturen. Het spel is gestopt.</errorDataSend>
+	<errorDisconnected>Verbroken.</errorDisconnected>
+	<errorUserLeft>{0} heeft het spel verlaten. Het spel is gestopt.</errorUserLeft>
+	<infoBearOff>Alle stenen staan in het eindvak, je kunt nu gaan afspelen.</infoBearOff>
+	<infoCheckerHit>Een steen is op de balk geplaatst.</infoCheckerHit>
+	<infoFromBarFirst>Je moet eerst de balk leeghalen.</infoFromBarFirst>
+	<infoLastMove>Dit is de laatste steen.</infoLastMove>
+	<infoMovesLeft>Je kunt nog {0} stenen verplaatsen.</infoMovesLeft>
+	<infoNoRestart>Geen herstart.</infoNoRestart>
+	<infoRequestRestart>Herstart aanvragen..</infoRequestRestart>
+	<infoRestartDenied>{0} wil dit spel niet opnieuw beginnen.</infoRestartDenied>
+	<infoRoll>Gooi de dobbelstenen</infoRoll>
+	<infoSelectPiece>Selecteer de steen die je wilt verplaatsen.</infoSelectPiece>
+	<infoSelectTarget>Selecteer het vak waar de steen moet komen te staan of de-selecteer de steen door erop te klikken.</infoSelectTarget>
+	<infoTurnLost>Je beurt is voorbij.</infoTurnLost>
+	<infoTurnLostDetail>Je beurt is voorbij, er zijn geen stenen meer die verplaatst kunnen worden. Klik op 'Geef beurt over' om door te gaan.</infoTurnLostDetail>
+	<lblBroughtToYouBy>Aangeboden door {0}</lblBroughtToYouBy>
+	<lblConnectionType>Connectie type</lblConnectionType>
+	<lblVersion>Backgammon {0}</lblVersion>
+	<stateGameOver>Spel over.</stateGameOver>
+	<stateGameOverWon>Gefeliciteerd, je hebt gewonnen! Klik 'Herstart' om opnieuw te spelen.</stateGameOverWon>
+	<stateGameOverLost>Jammer, je hebt verloren.</stateGameOverLost>
+	<stateInitializing>Spel wordt geïnitialiseerd...</stateInitializing>
+	<stateMyTurn>Het is jouw beurt.</stateMyTurn>
+	<stateRemoteTurn>Wacht op de beurt van {0}.</stateRemoteTurn>
+	<stateStartMyTurn>Het spel is gestart, jij bent {0}. Het is jouw beurt.</stateStartMyTurn>
+	<stateStartRemoteTurn>Het spel is gestart, jij bent {0}. Wacht op de beurt van {1}.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Wacht op de tegenstander om mee te doen</stateWaitOnJoin>
+</words>

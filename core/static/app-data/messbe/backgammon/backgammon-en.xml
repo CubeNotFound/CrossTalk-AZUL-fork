@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<colorBlue>blue</colorBlue>
+	<colorWhite>white</colorWhite>
+	<cmdHelp>Help</cmdHelp>
+	<cmdRestart>Restart</cmdRestart>
+	<cmdRoll>Roll the dice</cmdRoll>
+	<cmdSwitchTurn>Switch turn</cmdSwitchTurn>
+	<confirmRemoteWantsRestart>{0} wants to restart this game, are you ok with that?</confirmRemoteWantsRestart>
+	<connectionDirect>direct</connectionDirect>
+	<connectionDisconnected>disconnected</connectionDisconnected>
+	<connectionIndirect>indirect</connectionIndirect>
+	<errorDataSend>Data error; unable to send data. Game stopped.</errorDataSend>
+	<errorDisconnected>Disconnected.</errorDisconnected>
+	<errorUserLeft>{0} has left the game. The game is over.</errorUserLeft>
+	<infoBearOff>All your checkers are in the home board, commence bearing off.</infoBearOff>
+	<infoCheckerHit>A checker has been hit and placed on the bar.</infoCheckerHit>
+	<infoFromBarFirst>Remember, you must clear the bar first.</infoFromBarFirst>
+	<infoLastMove>This is your last move.</infoLastMove>
+	<infoMovesLeft>You have {0} moves left.</infoMovesLeft>
+	<infoNoRestart>No restart.</infoNoRestart>
+	<infoRequestRestart>Requesting restart..</infoRequestRestart>
+	<infoRestartDenied>{0} doesn't want to restart this game.</infoRestartDenied>
+	<infoRoll>Roll the dice</infoRoll>
+	<infoSelectPiece>Select the checker you want to move.</infoSelectPiece>
+	<infoSelectTarget>Now select the target point or deselect by clicking the selected checker.</infoSelectTarget>
+	<infoTurnLost>You've lost your turn.</infoTurnLost>
+	<infoTurnLostDetail>You've lost your turn, there are no valid moves left. Click 'Switch turn' to continue.</infoTurnLostDetail>
+	<lblBroughtToYouBy>Brought to you by {0}</lblBroughtToYouBy>
+	<lblConnectionType>Connection type</lblConnectionType>
+	<lblVersion>Backgammon {0}</lblVersion>
+	<stateGameOver>Game over.</stateGameOver>
+	<stateGameOverWon>Congratulations, you have won! Click 'Restart' to play again.</stateGameOverWon>
+	<stateGameOverLost>Too bad, you lost.</stateGameOverLost>
+	<stateInitializing>Initializing game...</stateInitializing>
+	<stateMyTurn>It's your turn.</stateMyTurn>
+	<stateRemoteTurn>Waiting for {0} to make a move.</stateRemoteTurn>
+	<stateStartMyTurn>Game started, you are {0}. It's your turn.</stateStartMyTurn>
+	<stateStartRemoteTurn>Game started, you are {0}. Waiting for {1} to complete his/her turn.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Waiting for your opponent to join</stateWaitOnJoin>
+</words>

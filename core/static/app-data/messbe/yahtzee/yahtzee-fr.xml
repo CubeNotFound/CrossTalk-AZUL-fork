@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<cmdHelp>Aide</cmdHelp>
+	<cmdHideScores>Cacher les meilleurs scores</cmdHideScores>
+	<cmdRestart>Relancer le jeu</cmdRestart>
+	<cmdRollStep1>Lancez les dés (1ère fois)</cmdRollStep1>
+	<cmdRollStep2>Lancez les dés (2ème fois)</cmdRollStep2>
+	<cmdRollStep3>Lancez les dés (3ème fois)</cmdRollStep3>
+	<cmdShowScores>Afficher les meilleurs scores</cmdShowScores>
+	<confirmRemoteWantsRestart>{0} veut redémarrer la partie, êtes-vous d'accord ?</confirmRemoteWantsRestart>
+	<confirmZeroOut>Désirez-vous réellement jouer 0 sur {0}?</confirmZeroOut>
+	<connectionDirect>direct</connectionDirect>
+	<connectionDisconnected>déconnecté</connectionDisconnected>
+	<connectionIndirect>indirect</connectionIndirect>
+	<errorDataSend>Erreur de données; impossible d'envoyer les données. Jeu arrêté.</errorDataSend>
+	<errorDisconnected>Déconnecté.</errorDisconnected>
+	<errorUserLeft>{0} a quitté la partie. Le jeu est terminé.</errorUserLeft>
+	<infoClickToPlayAgain>Cliquez sur "Relancer le jeu" pour rejouer.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} ne souhaite pas rejouer cette partie.</infoRestartDenied>
+	<infoMyTurnStep1>C'est à votre tour, lancez les dés.</infoMyTurnStep1>
+	<infoMyTurnStep2>Choisissez le dé que tu veux enlever et relancez-le ou choisissez un score.</infoMyTurnStep2>
+	<infoMyTurnStep3>Choisissez le dé que tu veux enlever et lancez-le une dernière fois ou choisissez un score.</infoMyTurnStep3>
+	<infoMyTurnStep4>Choisissez un score sur le tableau des scores.</infoMyTurnStep4>
+	<infoRemoteTurn>Veuillez attendre votre adversaire...</infoRemoteTurn>
+	<infoSelectDice>Vous devez sélectionner au moins un dé que vous souhaitez relancer.</infoSelectDice>
+	<lblBroughtToYouBy>Offert par {0}</lblBroughtToYouBy>
+	<lblConnectionType>Type de connexion</lblConnectionType>
+	<lblOpponent>Adversaire</lblOpponent>
+	<lblTopTotal>Total Général</lblTopTotal>
+	<lblVersion>Yahtzee {0}</lblVersion>
+	<lblYou>Vous</lblYou>
+	<lblOnes>Uns</lblOnes>
+	<lblTwos>Deux</lblTwos>
+	<lblThrees>Trois</lblThrees>
+	<lblFours>Quatres</lblFours>
+	<lblFives>Cinqs</lblFives>
+	<lblSixes>Six</lblSixes>
+	<lblBonus>Bonus</lblBonus>
+	<lblTopTotal>Total Général</lblTopTotal>
+	<lblThreeOfAKind>Trois identiques</lblThreeOfAKind>
+	<lblFourOfAKind>Quatre identiques</lblFourOfAKind>
+	<lblFullHouse>Full</lblFullHouse>
+	<lblSmallStraight>Petite Suite</lblSmallStraight>
+	<lblLargeStraight>Longue Suite</lblLargeStraight>
+	<lblYahtzee>Yahtzee</lblYahtzee>
+	<lblChance>Chance</lblChance>
+	<lblBottomTotal>Sous Total</lblBottomTotal>
+	<lblGameTotal>Total</lblGameTotal>
+	<lblOverallTotal>Total Cummulé</lblOverallTotal>
+	<lblGamesWon>Parties gagnées</lblGamesWon>
+	<stateDraw>Egalité !</stateDraw>
+	<stateFinishedMyTurn>{0} a terminé, à vous de jouer.</stateFinishedMyTurn>
+	<stateFinishedRemoteTurn>Vous avez terminé, {0} gets to move again.</stateFinishedRemoteTurn>
+	<stateInitializing>Initialisation du jeu...</stateInitializing>
+	<stateLost>Dommage, vous avez perdu.</stateLost>
+	<stateMyTurn>A vous de jouer.</stateMyTurn>
+	<stateRemoteTurn>En attente d'un mouvement de {0}</stateRemoteTurn>
+	<stateStartMyTurn>Début du jeu, c'est à vous de jouer.</stateStartMyTurn>
+	<stateStartRemoteTurn>Début du jeu, en attente d'un mouvement de {0}.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Attente de votre adversaire</stateWaitOnJoin>
+	<stateWon>Félicitations, vous avez gagné !</stateWon>
+</words>

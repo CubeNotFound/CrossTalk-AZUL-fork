@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<confirmDraw>Are you sure you want to draw?</confirmDraw>
+	<confirmRemoteWantsRestart>{0} wants to restart this game, are you ok with that?</confirmRemoteWantsRestart>
+	<confirmRemoteWantsTie>{0} offers a tie, are you ok with that?</confirmRemoteWantsTie>
+	<confirmResign>Are you sure you want to resign?</confirmResign>
+	<confirmRestart>Are you sure you want to restart?</confirmRestart>
+	<connectionDirect>direct</connectionDirect>
+	<connectionDisconnected>disconnected</connectionDisconnected>
+	<connectionIndirect>indirect</connectionIndirect>
+	<cmdDraw>Draw</cmdDraw>
+	<cmdHelp>Help</cmdHelp>
+	<cmdMute>Mute</cmdMute>
+	<cmdResign>Resign</cmdResign>
+	<cmdRestart>Restart</cmdRestart>
+	<errorDataSend>Data error; unable to send data. Game stopped.</errorDataSend>
+	<errorDisconnected>Disconnected.</errorDisconnected>
+	<errorUserLeft>{0} has left the game. The game is over.</errorUserLeft>
+	<lblBroughtToYouBy>Brought to you by {0}</lblBroughtToYouBy>
+	<lblConnectionType>Connection type</lblConnectionType>
+	<lblVersion>Chess {0}</lblVersion>
+	<lblPromote>Promote your pawn</lblPromote>
+	<infoClickToPlayAgain>Click 'Restart' to play again.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} doesn't want to restart this game.</infoRestartDenied>
+	<infoTieDenied>{0} doesn't want to draw.</infoTieDenied>
+	<infoYouResigned>You resigned, you have lost.</infoYouResigned>
+	<stateCheck>Check</stateCheck>
+	<stateCheckmate>Checkmate, you have lost.</stateCheckmate>
+	<stateInitializing>Initializing game...</stateInitializing>
+	<stateMyTurn>It's your turn.</stateMyTurn>
+	<stateOpponentCheck>Opponent in check</stateOpponentCheck>
+	<stateOpponentResigned>Opponent resigned, you have won.</stateOpponentResigned>
+	<stateRemoteCheckmate>Opponent checkmate, you have won.</stateRemoteCheckmate>
+	<stateRemoteTurn>Waiting for {0} to make a move.</stateRemoteTurn>
+	<stateStalemate>Stalemate, it's a tie.</stateStalemate>
+	<stateStartMyTurn>Game started, it's your turn.</stateStartMyTurn>
+	<stateStartRemoteTurn>Game started, waiting for {0} to make a move.</stateStartRemoteTurn>
+	<stateTie>It's a draw.</stateTie>
+	<stateWaitForApproval>Waiting for you opponent's approval..</stateWaitForApproval>
+</words>

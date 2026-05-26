@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<boat0>Flugzeugträger</boat0>
+	<boat1>Schlachtschiff</boat1>
+	<boat2>Kreuzer</boat2>
+	<boat3>U-Boot</boat3>
+	<boat4>Zerstörer</boat4>
+	<cmdDone>Fertig</cmdDone>
+	<cmdHelp>Hilfe</cmdHelp>
+	<cmdPlaceRandomly>Schiffe zufällig platzieren</cmdPlaceRandomly>
+	<cmdRestart>Neustart</cmdRestart>
+	<confirmRemoteWantsRestart>{0} möchte das Spiel neu starten, geht das in Ordnung?</confirmRemoteWantsRestart>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>getrennt</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<errorDataSend>Datenfehler; Die Daten können nicht gesendet werden. Spiel gestoppt.</errorDataSend>
+	<errorDisconnected>Getrennt.</errorDisconnected>
+	<errorUserLeft>{0} hat das Spiel verlassen. Das Spiel wurde beendet.</errorUserLeft>
+	<infoHit>Treffer!</infoHit>
+	<infoMiss>Daneben.</infoMiss>
+	<infoLostBoat>Ein {0} wurde versenkt.</infoLostBoat>
+	<infoNoRestart>Kein Neustart.</infoNoRestart>
+	<infoPlaceShips>Platzieren Sie Ihre Schiffe durch Klicken auf 'Schiffe zufällig platzieren'. Wenn Sie mit der Position Ihrer Flotte nicht einverstanden sind klicken Sie noch einmal. Klicken Sie auf 'Fertig' um mit dem Spiel zu beginnen.</infoPlaceShips>
+	<infoRequestRestart>Um Neustart ersuchen..</infoRequestRestart>
+	<infoRemoteTurn>Bitte warten Sie bis Ihr Gegner einen Zug gemacht hat.</infoRemoteTurn>
+	<infoRestartDenied>{0} möchte das Spiel nicht neu starten.</infoRestartDenied>
+	<infoSunkBoat>Ein {0} wurde versenkt.</infoSunkBoat>
+	<infoWaitPlacing>Bitte warten Sie bis Ihr Gegner seine Flotte platziert hat.</infoWaitPlacing>
+	<infoYourTurn>Sie sind dran. Klicken Sie auf ein freies Feld Ihres Gegners und versuchen Sie seine Schiffe zu treffen.</infoYourTurn>
+	<lblBroughtToYouBy>Wird Ihnen präsentiert von {0}</lblBroughtToYouBy>
+	<lblConnectionType>Verbindungsart</lblConnectionType>
+	<lblEnemyNavy>Gegnerische Flotte</lblEnemyNavy>
+	<lblVersion>Schiffe Versenken {0}</lblVersion>
+	<lblYourNavy>Ihre Flotte</lblYourNavy>
+	<stateGameOverLost>Was für ein Pech! Sie haben verloren.</stateGameOverLost>
+	<stateGameOverWon>Gratulation, Sie haben gewonnen!</stateGameOverWon>
+	<stateInitializing>Starte Spiel...</stateInitializing>
+	<stateMyTurn>Sie sind dran.</stateMyTurn>
+	<statePlacingShips>Platzieren Sie Ihre Schiffe</statePlacingShips>
+	<stateRemoteTurn>Bitte warten Sie bis {0} einen Zug gemacht hat.</stateRemoteTurn>
+	<stateStartMyTurn>Spiel gestartet. Sie sind dran.</stateStartMyTurn>
+	<stateStartRemoteTurn>Spiel gestartet. Bitte warten Sie bis {0} einen Zug gemacht hat.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Bitte warten Sie bis die Verbindung mit Ihrem Gegner hergestellt ist.</stateWaitOnJoin>
+	<stateWaitOnPlacing>Bitte warten Sie auf Ihren Gegner...</stateWaitOnPlacing>
+</words>
+

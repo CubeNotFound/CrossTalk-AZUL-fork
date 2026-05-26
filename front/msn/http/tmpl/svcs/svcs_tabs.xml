@@ -1,0 +1,16 @@
+<msntabsettings>
+	<oemtotallimit>1</oemtotallimit>
+	<oemdisplaylimit>1</oemdisplaylimit>
+</msntabsettings>
+<msntabdata>{% for tab in tabs %}
+	<tab>
+		<type>page</type>
+		<contenturl>{{ tab.url }}</contenturl>
+		<hiturl>{{ tab.url }}</hiturl>
+		<image>{{ tab.image }}</image>
+		<name>{{ tab.tooltip }}</name>
+		<tooltip>{{ tab.tooltip }}</tooltip>
+		<siteid>0</siteid>
+		<notificationid>0</notificationid>
+	</tab>{% endfor %}
+</msntabdata>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<confirmDraw>Biztos, hogy döntetlent akarsz?</confirmDraw>
+	<confirmRemoteWantsRestart>{0} újra akarja indítani a játékot, egyetért ezzel?</confirmRemoteWantsRestart>
+	<confirmRemoteWantsTie>{0} egy döntetlent javasol, egyet ért ezzel?</confirmRemoteWantsTie>
+	<confirmResign>Biztos, hogy feladja?</confirmResign>
+	<confirmRestart>Biztos, hogy újrakezded?</confirmRestart>
+	<connectionDirect>közvetlen</connectionDirect>
+	<connectionDisconnected>megszakadt</connectionDisconnected>
+	<connectionIndirect>közvetett</connectionIndirect>
+	<cmdDraw>Döntetlen</cmdDraw>
+	<cmdHelp>Súgó</cmdHelp>
+	<cmdMute>Csendes</cmdMute>
+	<cmdResign>Feladás</cmdResign>
+	<cmdRestart>Újrakezdés</cmdRestart>
+	<errorDataSend>Adat hiba; nem lehet adatot küldeni. A játék leállt.</errorDataSend>
+	<errorDisconnected>Kapcsolat megszakadt.</errorDisconnected>
+	<errorUserLeft>{0} elhagyta a játékot. A játék véget ért.</errorUserLeft>
+	<lblBroughtToYouBy>Kihívó: {0}</lblBroughtToYouBy>
+	<lblConnectionType>Kapcsolat típusa</lblConnectionType>
+	<lblVersion>Sakk {0}</lblVersion>
+	<lblPromote>Biztosítsd a parasztod</lblPromote>
+	<infoClickToPlayAgain>Kattints az 'Újrakezdés' gombra az új játékhoz.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} nem akarja újrakezdeni a játékot.</infoRestartDenied>
+	<infoTieDenied>{0} nem akar döntetlent.</infoTieDenied>
+	<infoYouResigned>Feladtad, vesztettél.</infoYouResigned>
+	<stateCheck>Sakk</stateCheck>
+	<stateCheckmate>Sakk-matt, vesztettél.</stateCheckmate>
+	<stateInitializing>Játék betöltése...</stateInitializing>
+	<stateMyTurn>Te jössz.</stateMyTurn>
+	<stateOpponentCheck>Ellenfél sakkban</stateOpponentCheck>
+	<stateOpponentResigned>AZ ellenfél feladta, nyertél.</stateOpponentResigned>
+	<stateRemoteCheckmate>Sakk-matt, te nyertél.</stateRemoteCheckmate>
+	<stateRemoteTurn>Várakozás {0} lépésére.</stateRemoteTurn>
+	<stateStalemate>Holtpont, ez holtverseny.</stateStalemate>
+	<stateStartMyTurn>A játék elindult, te jössz.</stateStartMyTurn>
+	<stateStartRemoteTurn>A játék elindult, várakozás {0} lépésére.</stateStartRemoteTurn>
+	<stateTie>Döntetlen.</stateTie>
+	<stateWaitForApproval>Várakozás az ellenfél jóváhagyására..</stateWaitForApproval>
+</words>
+
+

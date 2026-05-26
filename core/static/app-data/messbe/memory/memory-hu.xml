@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<cmdHelp>Súgó</cmdHelp>
+	<cmdRestart>Újrakezdés</cmdRestart>
+	<confirmRemoteWantsRestart>{0} újra szeretné kezdeni a játékot, egyet ért ezzel?</confirmRemoteWantsRestart>
+	<connectionDirect>közvetett</connectionDirect>
+	<connectionDisconnected>megszakadt</connectionDisconnected>
+	<connectionIndirect>közvetlen</connectionIndirect>
+	<errorDataSend>Adat hiba; nem lehet adatot küldeni. A játék leállt.</errorDataSend>
+	<errorDisconnected>Megszakadt.</errorDisconnected>
+	<errorUserLeft>{0} elhagyta a játékot. A játék befejezõdött.</errorUserLeft>
+	<infoRestartDenied>{0} nem akarja újrakezdeni a játékot.</infoRestartDenied>
+	<infoClickToPlayAgain>Kattints az 'Újrakezdés' gombra az új játékhoz.</infoClickToPlayAgain>
+	<lblBroughtToYouBy>Kihívó: {0}</lblBroughtToYouBy>
+	<lblConnectionType>Kapcsolat típusa</lblConnectionType>
+	<lblPlayers>Játékosok</lblPlayers>
+	<lblColor>Szinek</lblColor>
+	<lblGamePoints>Pontok</lblGamePoints>
+	<lblGameTotalPoints>Összes pont</lblGameTotalPoints>
+	<lblGamesWon>Gyõzelmek</lblGamesWon>
+	<lblVersion>Memória {0}</lblVersion>
+	<stateAnotherMyTurn>{0} nem tud lépni, újra te jössz.</stateAnotherMyTurn>
+	<stateAnotherRemoteTurn>Megakadtál, {0} újra jön.</stateAnotherRemoteTurn>
+	<stateInitializing>Játék betöltése...</stateInitializing>
+	<stateGameOverDraw>Vége, döntetlen!</stateGameOverDraw>
+	<stateGameOverLost>Vége, ön vesztett!</stateGameOverLost>
+	<stateGameOverWon>Vége, ön nyert!</stateGameOverWon>
+	<stateMyTurn>Te jössz.</stateMyTurn>
+	<stateRemoteTurn>Várakozás {0} lépésére.</stateRemoteTurn>
+	<stateStartMyTurn>A játék elkezdõdött, te jössz.</stateStartMyTurn>
+	<stateStartRemoteTurn>A játék elkezdõdött, várakozás {0} lépésére.</stateStartRemoteTurn>
+</words>
+
+

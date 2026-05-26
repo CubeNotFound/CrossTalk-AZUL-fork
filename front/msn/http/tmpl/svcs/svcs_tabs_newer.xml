@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?> 
+<ads>
+	<tabad>
+		<type>page</type>
+		<contenturl>{{ tab.url }}</contenturl>
+		<hiturl>{{ tab.url }}</hiturl>
+		<image>{{ tab.image }}</image>
+		<name>{{ tab.tooltip }}</name>
+		<tooltip>{{ tab.tooltip }}</tooltip>
+		<siteid>0</siteid>
+		<notificationid>0</notificationid>
+	</tabad>
+</ads>

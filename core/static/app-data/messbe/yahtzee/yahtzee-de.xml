@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<cmdHelp>Hilfe</cmdHelp>
+	<cmdHideScores>Highscores verstecken</cmdHideScores>
+	<cmdRestart>Neustart</cmdRestart>
+	<cmdRollStep1>Würfeln (erstes Mal)</cmdRollStep1>
+	<cmdRollStep2>Würfeln (zweites Mal)</cmdRollStep2>
+	<cmdRollStep3>Würfeln (letztes Mal)</cmdRollStep3>
+	<cmdShowScores>Highscores zeigen</cmdShowScores>
+	<confirmRemoteWantsRestart>{0} möchte das Spiel neu starten, geht das in Ordnung?</confirmRemoteWantsRestart>
+	<confirmZeroOut>{0} wirklich streichen?</confirmZeroOut>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>getrennt</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<errorDataSend>Datenfehler; Die Daten können nicht gesendet werden. Spiel gestoppt.</errorDataSend>
+	<errorDisconnected>Getrennt.</errorDisconnected>
+	<errorUserLeft>{0} hat das Spiel verlassen. Das Spiel wurde beendet.</errorUserLeft>
+	<infoClickToPlayAgain>Klicken Sie auf 'Neustart' für ein neues Spiel.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} möchte das Spiel nicht neu starten.</infoRestartDenied>
+	<infoMyTurnStep1>Sie sind dran, würfeln Sie!</infoMyTurnStep1>
+	<infoMyTurnStep2>Wählen Sie die Würfel die Sie entfernen möchten und würfeln Sie erneut oder schreiben Sie Ihre Punkte an.</infoMyTurnStep2>
+	<infoMyTurnStep3>Wählen Sie die Würfel die Sie entfernen möchten und würfeln Sie zum letzten Mal oder schreiben Sie Ihre Punkte an.</infoMyTurnStep3>
+	<infoMyTurnStep4>Schreiben Sie Ihre Punkte an.</infoMyTurnStep4>
+	<infoRemoteTurn>Bitte warten Sie bis Ihr Gegner fertig ist...</infoRemoteTurn>
+	<infoSelectDice>Wählen Sie bitte Würfel aus mit denen Sie würfeln wollen.</infoSelectDice>
+	<lblBroughtToYouBy>Wird Ihnen präsentiert von {0}</lblBroughtToYouBy>
+	<lblConnectionType>Verbindungsart</lblConnectionType>
+	<lblOpponent>Gegner</lblOpponent>
+	<lblTopTotal>oben gesamt</lblTopTotal>
+	<lblVersion>Yahtzee {0}</lblVersion>
+	<lblYou>Sie</lblYou>
+	<lblOnes>1er</lblOnes>
+	<lblTwos>2er</lblTwos>
+	<lblThrees>3er</lblThrees>
+	<lblFours>4er</lblFours>
+	<lblFives>5er</lblFives>
+	<lblSixes>6er</lblSixes>
+	<lblBonus>Bonus</lblBonus>
+	<lblThreeOfAKind>Dreierpasch</lblThreeOfAKind>
+	<lblFourOfAKind>Viererpasch</lblFourOfAKind>
+	<lblFullHouse>Full House</lblFullHouse>
+	<lblSmallStraight>Kleine Straße</lblSmallStraight>
+	<lblLargeStraight>Große Straße</lblLargeStraight>
+	<lblYahtzee>Yahtzee</lblYahtzee>
+	<lblChance>Chance</lblChance>
+	<lblBottomTotal>unten gesamt</lblBottomTotal>
+	<lblGameTotal>Speilsumme</lblGameTotal>
+	<lblOverallTotal>Gesamtsumme</lblOverallTotal>
+	<lblGamesWon>Spiele gewonnen</lblGamesWon>
+	<stateDraw>Es ist ein Unentschieden!</stateDraw>
+	<stateFinishedMyTurn>{0} ist fertig, Sie sind dran.</stateFinishedMyTurn>
+	<stateFinishedRemoteTurn>Sie sind fertig, {0} ist wieder dran.</stateFinishedRemoteTurn>
+	<stateInitializing>Starte Spiel...</stateInitializing>
+	<stateLost>Was für ein Pech! Sie haben verloren.</stateLost>
+	<stateMyTurn>Sie sind dran.</stateMyTurn>
+	<stateRemoteTurn>Bitte warten Sie bis {0} fertig ist.</stateRemoteTurn>
+	<stateStartMyTurn>Spiel gestartet. Sie sind dran.</stateStartMyTurn>
+	<stateStartRemoteTurn>Spiel gestartet, Bitte warten Sie bis {0} einen Zug gemacht hat.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Bitte warten Sie bis die Verbindung mit Ihrem Gegner hergestellt ist</stateWaitOnJoin>
+	<stateWon>Gratulation, Sie haben gewonnen!</stateWon>
+</words>
+

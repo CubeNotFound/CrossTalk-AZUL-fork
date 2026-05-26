@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<colorBlue>kék</colorBlue>
+	<colorWhite>fehér</colorWhite>
+	<cmdHelp>Súgó</cmdHelp>
+	<cmdRestart>Újrakezdés</cmdRestart>
+	<cmdRoll>Dobd a kockát</cmdRoll>
+	<cmdSwitchTurn>Forduló csere</cmdSwitchTurn>
+	<confirmRemoteWantsRestart>{0} újra szeretné kezdeni a játékot, egyetért ezzel?</confirmRemoteWantsRestart>
+	<connectionDirect>közvetlen</connectionDirect>
+	<connectionDisconnected>megszakadt</connectionDisconnected>
+	<connectionIndirect>közvetett</connectionIndirect>
+	<errorDataSend>Adat hiba; nem lehet adatot küldeni. A játék megállt.</errorDataSend>
+	<errorDisconnected>Megszakadt.</errorDisconnected>
+	<errorUserLeft>{0} elhagyta a játékot. A játék véget ért.</errorUserLeft>
+	<infoBearOff>Az összes dámád a háznál van.</infoBearOff>
+	<infoCheckerHit>A dáma le lett ütve és el lett helyezve a pulton.</infoCheckerHit>
+	<infoFromBarFirst>Emlékezz, elöször meg kell tisztítanod a pultot.</infoFromBarFirst>
+	<infoLastMove>Ez az utolsó lépésed.</infoLastMove>
+	<infoMovesLeft>{0} lépésed van hátra.</infoMovesLeft>
+	<infoNoRestart>Nincs újrakezdés.</infoNoRestart>
+	<infoRequestRestart>Újrakezdési kérelem..</infoRequestRestart>
+	<infoRestartDenied>{0} nem szeretné újrakezdeni a játékot.</infoRestartDenied>
+	<infoRoll>Kocka eldobása</infoRoll>
+	<infoSelectPiece>Válaszd ki a dámát, amit el akarsz mozdítani.</infoSelectPiece>
+	<infoSelectTarget>Most válassz egy kiindulópontot vagy tedd le úgy, hogy a kijelölt dámára kattintasz.</infoSelectTarget>
+	<infoTurnLost>Vesztésre állsz, te jössz.</infoTurnLost>
+	<infoTurnLostDetail>Vesztésre állsz, te jössz, nincsen több lépés. Kattints a 'Forduló csere' gombra a folytatáshoz.</infoTurnLostDetail>
+	<lblBroughtToYouBy>Kihívó: {0}</lblBroughtToYouBy>
+	<lblConnectionType>Kapcsolat típusa</lblConnectionType>
+	<lblVersion>Backgammon {0}</lblVersion>
+	<stateGameOver>Vége.</stateGameOver>
+	<stateGameOverWon>Gratulálok, nyertél! Kattints az 'Újrakezdés' gombra az új játékhoz.</stateGameOverWon>
+	<stateGameOverLost>Túl rossz, vesztettél.</stateGameOverLost>
+	<stateInitializing>Játék betöltése...</stateInitializing>
+	<stateMyTurn>Te jössz.</stateMyTurn>
+	<stateRemoteTurn>Várakozás {0} lépésére.</stateRemoteTurn>
+	<stateStartMyTurn>A játék elindult, te vagy a {0}. Te jössz.</stateStartMyTurn>
+	<stateStartRemoteTurn>A játék elindult, te vagy a {0}. Várakozás a {1} játékosra.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Várakozás az ellenfél kapcsolódására</stateWaitOnJoin>
+</words>
+
+

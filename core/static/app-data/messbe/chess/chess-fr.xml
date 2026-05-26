@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<confirmDraw>Etes-vous sûr de vouloir Faire match Nul?</confirmDraw>
+	<confirmRemoteWantsRestart>{0} veut relancer la partie, êtes-vous d'accord ?</confirmRemoteWantsRestart>
+	<confirmRemoteWantsTie>{0} offre un tie, êtes-vous d'accord ?</confirmRemoteWantsTie>
+	<confirmResign>Etes-vous sûr de vouloir abandonner ?</confirmResign>
+	<confirmRestart>Etes-vous sûr de vouloir redémarrer la partie ?</confirmRestart>
+	<connectionDirect>direct</connectionDirect>
+	<connectionDisconnected>déconnecté</connectionDisconnected>
+	<connectionIndirect>indirect</connectionIndirect>
+	<cmdDraw>Match Nul</cmdDraw>
+	<cmdHelp>Aide</cmdHelp>
+	<cmdMute>Muet</cmdMute>
+	<cmdResign>Abandonner</cmdResign>
+	<cmdRestart>Redémarrer</cmdRestart>
+	<errorDataSend>Erreur de données; impossible d'envoyer les données. Jeu arrêté.</errorDataSend>
+	<errorDisconnected>Déconnecté.</errorDisconnected>
+	<errorUserLeft>{0} a quitté la partie. Le jeu est terminé.</errorUserLeft>
+	<lblBroughtToYouBy>Offert par {0}</lblBroughtToYouBy>
+	<lblConnectionType>Type de connexion</lblConnectionType>
+	<lblVersion>Echecs {0}</lblVersion>
+	<lblPromote>Choisissez votre pion</lblPromote>
+	<infoClickToPlayAgain>Cliquez sur "Redémarrer" pour rejouer.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} ne veut pas redémarrer la partie.</infoRestartDenied>
+	<infoTieDenied>{0} ne veut pas de match nul.</infoTieDenied>
+	<infoYouResigned>Vous avez abandonné, vous avez perdu.</infoYouResigned>
+	<stateCheck>Echec</stateCheck>
+	<stateCheckmate>Echec et mat, vous avez perdu.</stateCheckmate>
+	<stateInitializing>Initialisation du jeu...</stateInitializing>
+	<stateMyTurn>A vous de jouer.</stateMyTurn>
+	<stateOpponentCheck>Adversaire en échec</stateOpponentCheck>
+	<stateOpponentResigned>Votre adversaire a abandonné, vous remportez la partie.</stateOpponentResigned>
+	<stateRemoteCheckmate>Echec et mat pour votre adversaire, vous avez remporté la partie.</stateRemoteCheckmate>
+	<stateRemoteTurn>En attente d'un mouvement de {0}</stateRemoteTurn>
+	<stateStalemate>Impasse</stateStalemate>
+	<stateStartMyTurn>Début du jeu, à vous de jouer.</stateStartMyTurn>
+	<stateStartRemoteTurn>Début du jeu, attente d'un mouvement de {0}</stateStartRemoteTurn>
+	<stateTie>C'est un match Nul.</stateTie>
+	<stateWaitForApproval>Attente de la confirmation de votre adversaire...</stateWaitForApproval>
+</words>
+

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<cmdHelp>Hilfe</cmdHelp>
+	<cmdMute>Stumm schalten</cmdMute>
+	<cmdStart>Start</cmdStart>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>getrennt</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<errorDataSend>Datenfehler; Die Daten können nicht gesendet werden. Spiel gestoppt.</errorDataSend>
+	<errorDisconnected>Getrennt.</errorDisconnected>
+	<errorUserLeft>{0} hat das Spiel verlassen. Das Spiel wurde beendet.</errorUserLeft>
+	<lblBroughtToYouBy>Wird Ihnen präsentiert von {0}</lblBroughtToYouBy>
+	<lblConnectionType>Verbindungsart</lblConnectionType>
+	<lblGameLevel>Level</lblGameLevel>
+	<lblGameLines>Zeilen</lblGameLines>
+	<lblGameScore>Punkte</lblGameScore>
+	<lblPlayers>Spieler</lblPlayers>
+	<lblVersion>Tetris {0}</lblVersion>
+	<stateInitializing>Starte Spiel...</stateInitializing>
+	<stateGameOverCalc>Die Punkte werden berechnet..</stateGameOverCalc>
+	<stateGameOverDraw>Spiel beendet! Es ist ein Unentschieden. Klicken Sie auf 'Start' für ein neues Spiel.</stateGameOverDraw>
+	<stateGameOverLost>Was für ein Pech! Sie haben verloren. Klicken Sie auf 'Start' für ein neues Spiel.</stateGameOverLost>
+	<stateGameOverWon>Gratulation, Sie haben gewonnen. Klicken Sie auf 'Start' für ein neues Spiel.</stateGameOverWon>
+	<statePlaying>Spielen</statePlaying>
+	<stateWaitOnJoin>Bitte warten Sie bis die Verbindung mit Ihrem Gegner hergestellt ist</stateWaitOnJoin>
+	<stateWaitForStart>Klicken Sie auf 'Start' um mit dem Spiel zu beginnen.</stateWaitForStart>
+</words>
+

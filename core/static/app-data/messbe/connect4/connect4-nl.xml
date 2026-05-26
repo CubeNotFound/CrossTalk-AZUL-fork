@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<cmdHelp>Help</cmdHelp>
+	<cmdRestart>Herstart</cmdRestart>
+	<confirmRemoteWantsRestart>{0} wil het spel opnieuw beginnen. Vind je dat goed?</confirmRemoteWantsRestart>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>verbroken</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<errorDataSend>Data fout; kan geen gegevens versturen. Het spel is gestopt.</errorDataSend>
+	<errorDisconnected>Verbroken.</errorDisconnected>
+	<errorUserLeft>{0} heeft het spel verlaten. Het spel is gestopt.</errorUserLeft>
+	<infoRestartDenied>{0} wil dit spel niet opnieuw beginnen.</infoRestartDenied>
+	<infoClickToPlayAgain>Druk op 'Herstart' om opnieuw te spelen.</infoClickToPlayAgain>
+	<lblBroughtToYouBy>Aangeboden door {0}</lblBroughtToYouBy>
+	<lblConnectionType>Connectie type</lblConnectionType>
+	<lblPlayers>Spelers</lblPlayers>
+	<lblColor>Kleur</lblColor>
+	<lblGamesLost>Verloren</lblGamesLost>
+	<lblGamesWon>Gewonnen</lblGamesWon>
+	<lblGamesDrawn>Gelijkspel</lblGamesDrawn>
+	<lblOrange>oranje</lblOrange>
+	<lblRed>rood</lblRed>
+	<lblVersion>Vier Op Een Rij {0}</lblVersion>
+	<stateGameOverDraw>Spel over, het is een gelijkspel!</stateGameOverDraw>
+	<stateGameOverLost>Spel over, je hebt verloren!</stateGameOverLost>
+	<stateGameOverWon>Spel over, je hebt gewonnen!</stateGameOverWon>
+	<stateInitializing>Spel wordt geïnitialiseerd...</stateInitializing>
+	<stateMyTurn>Het is jouw beurt</stateMyTurn>
+	<stateRemoteTurn>Wacht op de beurt van {0}.</stateRemoteTurn>
+	<stateStartMyTurn>Spel gestart, het is jouw beurt.</stateStartMyTurn>
+	<stateStartRemoteTurn>Spel gestart, wacht op de beurt van {0}.</stateStartRemoteTurn>
+</words>

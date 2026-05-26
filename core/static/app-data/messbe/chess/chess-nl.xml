@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<confirmDraw>Weet je zeker dat je een remise wilt voorstellen?</confirmDraw>
+	<confirmRemoteWantsRestart>{0} wil het spel opnieuw beginnen. Vind je dat goed?</confirmRemoteWantsRestart>
+	<confirmRemoteWantsTie>{0} biedt een remise aan. Accepteer je de remise?</confirmRemoteWantsTie>
+	<confirmResign>Weet je zeker dat je dit spel wilt opgeven?</confirmResign>
+	<confirmRestart>Weet je zeker dat je het spel opnieuw wilt beginnen?</confirmRestart>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>verbroken</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<cmdDraw>Remise</cmdDraw>
+	<cmdHelp>Help</cmdHelp>
+	<cmdMute>Zet geluid aan of uit</cmdMute>
+	<cmdResign>Geef op</cmdResign>
+	<cmdRestart>Herstart</cmdRestart>
+	<errorDataSend>Data fout; kan geen gegevens versturen. Het spel is gestopt.</errorDataSend>
+	<errorDisconnected>Verbroken.</errorDisconnected>
+	<errorUserLeft>{0} heeft het spel verlaten. Het spel is gestopt.</errorUserLeft>
+	<lblBroughtToYouBy>Aangeboden door {0}</lblBroughtToYouBy>
+	<lblConnectionType>Connectie type</lblConnectionType>
+	<lblVersion>Schaken {0}</lblVersion>
+	<lblPromote>Pion promotie</lblPromote>
+	<infoClickToPlayAgain>Druk op 'Herstart' om opnieuw te spelen.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} wil dit spel niet opnieuw beginnen.</infoRestartDenied>
+	<infoTieDenied>{0} wil geen remise.</infoTieDenied>
+	<infoYouResigned>Je hebt opgegeven en verloren.</infoYouResigned>
+	<stateCheck>Schaak</stateCheck>
+	<stateCheckmate>Schaakmat, je hebt verloren.</stateCheckmate>
+	<stateInitializing>Spel wordt geïnitialiseerd...</stateInitializing>
+	<stateMyTurn>Het is jouw beurt.</stateMyTurn>
+	<stateOpponentCheck>Tegenstander is aan de beurt.</stateOpponentCheck>
+	<stateOpponentResigned>Tegenstander heeft opgegeven, je hebt gewonnen.</stateOpponentResigned>
+	<stateRemoteCheckmate>Tegenstander staat schaakmat, je hebt gewonnen.</stateRemoteCheckmate>
+	<stateRemoteTurn>Wacht op de beurt van {0}.</stateRemoteTurn>
+	<stateStalemate>Pat, het is een remise.</stateStalemate>
+	<stateStartMyTurn>Spel gestart, het is jouw beurt.</stateStartMyTurn>
+	<stateStartRemoteTurn>Spel gestart, wacht op de beurt van {0}.</stateStartRemoteTurn>
+	<stateTie>Het is een remise.</stateTie>
+	<stateWaitForApproval>Wacht op het antwoord van de tegenstander..</stateWaitForApproval>
+</words>

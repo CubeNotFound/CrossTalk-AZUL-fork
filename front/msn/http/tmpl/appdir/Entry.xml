@@ -1,0 +1,48 @@
+<EntryID>{{ entry.id }}</EntryID>
+<SubscriptionURL />
+{% if entry.error %}
+<Error>{{ entry.error }}</Error>
+{% else %}
+<Error/>
+{% endif %}
+<Locale>{{ entry.locale or 'en-US' }}</Locale>
+<Kids>{{ 1 if entry.kids else 0 }}</Kids>
+<Page>{{ entry.page }}</Page>
+<CategoryID>{{ entry.category_id }}</CategoryID>
+<Sequence>{{ i }}</Sequence>
+<Name>{{ entry.name }}</Name>
+<Description>{{ entry.description }}</Description>
+<URL>{{ entry.url }}</URL>
+{% if entry.icon_url %}
+<IconURL>{{ entry.icon_url }}</IconURL>
+<AppIconURL>{{ entry.icon_url }}</AppIconURL>
+{% else %}
+<IconURL/>
+<AppIconURL/>
+{% endif %}
+<PassportSiteID>0</PassportSiteID>
+<Type>{{ entry.type }}</Type>
+<Height>{{ entry.height }}</Height>
+<Width>{{ entry.width }}</Width>
+<Location>{{ entry.location }}</Location>
+<MinUsers>{{ entry.min_users }}</MinUsers>
+<MaxUsers>{{ entry.max_users }}</MaxUsers>
+<EnableIP>{{ bool_to_str(entry.enable_ip) }}</EnableIP>
+<ActiveX>{{ bool_to_str(entry.activex) }}</ActiveX>
+<SendFile>{{ bool_to_str(entry.send_file) }}</SendFile>
+<SendIM>{{ bool_to_str(entry.send_im) }}</SendIM>
+<ReceiveIM>{{ bool_to_str(entry.receive_im) }}</ReceiveIM>
+<ReplaceIM>{{ bool_to_str(entry.replace_im) }}</ReplaceIM>
+<Windows>{{ bool_to_str(entry.windows) }}</Windows>
+<MaxPacketRate>{{ entry.max_packet_rate }}</MaxPacketRate>
+{% if entry.log_url %}
+<LogURL>{{ entry.log_url }}</LogURL>
+{% else %}
+<LogURL/>
+{% endif %}
+<UserProperties>{{ bool_to_str(entry.user_properties) }}</UserProperties>
+{% if entry.minimum_client_version %}
+<ClientVersion>{{ entry.minimum_client_version }}</ClientVersion>
+{% endif %}
+<AppType>{{ entry.app_type }}</AppType>
+<Hidden>{{ bool_to_str(entry.hidden) }}</Hidden>

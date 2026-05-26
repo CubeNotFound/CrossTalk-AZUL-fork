@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<boat0>Aircraft Carrier</boat0>
+	<boat1>Battleship</boat1>
+	<boat2>Cruiser</boat2>
+	<boat3>Submarine</boat3>
+	<boat4>Destroyer</boat4>
+	<cmdDone>Done</cmdDone>
+	<cmdHelp>Help</cmdHelp>
+	<cmdPlaceRandomly>Place ships randomly</cmdPlaceRandomly>
+	<cmdRestart>Restart</cmdRestart>
+	<confirmRemoteWantsRestart>{0} wants to restart this game, are you ok with that?</confirmRemoteWantsRestart>
+	<connectionDirect>direct</connectionDirect>
+	<connectionDisconnected>disconnected</connectionDisconnected>
+	<connectionIndirect>indirect</connectionIndirect>
+	<errorDataSend>Data error; unable to send data. Game stopped.</errorDataSend>
+	<errorDisconnected>Disconnected.</errorDisconnected>
+	<errorUserLeft>{0} has left the game. The game is over.</errorUserLeft>
+	<infoHit>A hit!</infoHit>
+	<infoMiss>A miss.</infoMiss>
+	<infoLostBoat>You just lost {0}.</infoLostBoat>
+	<infoNoRestart>No restart.</infoNoRestart>
+	<infoPlaceShips>Place your ships by clicking on the 'Place ships randomly' button. If you're not satisfied with the position of your fleet click again. Click 'Done' to start playing.</infoPlaceShips>
+	<infoRequestRestart>Requesting restart..</infoRequestRestart>
+	<infoRemoteTurn>Waiting for your opponent to make a move.</infoRemoteTurn>
+	<infoRestartDenied>{0} doesn't want to restart this game.</infoRestartDenied>
+	<infoSunkBoat>You sank {0}.</infoSunkBoat>
+	<infoWaitPlacing>Waiting for your opponent to finish placing it's fleet.</infoWaitPlacing>
+	<infoYourTurn>It's your turn. Click a free square on the opponent's board and try to sink his ships.</infoYourTurn>
+	<lblBroughtToYouBy>Brought to you by {0}</lblBroughtToYouBy>
+	<lblConnectionType>Connection type</lblConnectionType>
+	<lblEnemyNavy>Enemy's navy</lblEnemyNavy>
+	<lblVersion>Battleships {0}</lblVersion>
+	<lblYourNavy>Your navy</lblYourNavy>
+	<stateGameOverLost>Game over, you have lost!</stateGameOverLost>
+	<stateGameOverWon>Game over, you have won!</stateGameOverWon>
+	<stateInitializing>Initializing game...</stateInitializing>
+	<stateMyTurn>It's your turn.</stateMyTurn>
+	<statePlacingShips>Place your ships</statePlacingShips>
+	<stateRemoteTurn>Waiting for {0} to make a move.</stateRemoteTurn>
+	<stateStartMyTurn>Game started, it's your turn.</stateStartMyTurn>
+	<stateStartRemoteTurn>Game started, waiting for {0} to make a move.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Waiting for your opponent to join</stateWaitOnJoin>
+	<stateWaitOnPlacing>Waiting for your opponent...</stateWaitOnPlacing>
+</words>

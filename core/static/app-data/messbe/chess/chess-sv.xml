@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<confirmDraw>Är du säker på att du vill göra draget?</confirmDraw>
+	<confirmRemoteWantsRestart>{0} vill starta om omgången, är det ok?</confirmRemoteWantsRestart>
+	<confirmRemoteWantsTie>{0} erbjuder oavgjort, är det ok?</confirmRemoteWantsTie>
+	<confirmResign>Är du säker på att du vill ge upp?</confirmResign>
+	<confirmRestart>Är du säker på att du vill starta om?</confirmRestart>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>Anslutning bruten</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<cmdDraw>Drag</cmdDraw>
+	<cmdHelp>Hjälp</cmdHelp>
+	<cmdMute>Gör ljudlöst</cmdMute>
+	<cmdResign>Ge upp</cmdResign>
+	<cmdRestart>Starta om</cmdRestart>
+	<errorDataSend>Data fel; omöjligt att skicka data. Spelet har stoppats.</errorDataSend>
+	<errorDisconnected>Anslutning bruten.</errorDisconnected>
+	<errorUserLeft>{0} har lämnat spelet. Spelet är slut.</errorUserLeft>
+	<lblBroughtToYouBy>Framtaget till dig av {0}</lblBroughtToYouBy>
+	<lblConnectionType>Anslutningstyp</lblConnectionType>
+	<lblVersion>Schack {0}</lblVersion>
+	<lblPromote>Flytta upp din bonde</lblPromote>
+	<infoClickToPlayAgain>Klicka på 'Starta om' för att spela igen.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} vill inte starta om omgången.</infoRestartDenied>
+	<infoTieDenied>{0} vill inte göra något drag.</infoTieDenied>
+	<infoYouResigned>Du har gett upp, du har förlorat.</infoYouResigned>
+	<stateCheck>Kontrollera</stateCheck>
+	<stateCheckmate>Schackmatt, du har förlorat.</stateCheckmate>
+	<stateInitializing>Påbörjar spel...</stateInitializing>
+	<stateMyTurn>Det är din tur.</stateMyTurn>
+	<stateOpponentCheck>Moståndare kontrollerar</stateOpponentCheck>
+	<stateOpponentResigned>Motståndaren har gett upp, du har vunnit.</stateOpponentResigned>
+	<stateRemoteCheckmate>Motståndaren har fått schackmatt, du har vunnit.</stateRemoteCheckmate>
+	<stateRemoteTurn>Väntar på att {0} ska göra sitt drag.</stateRemoteTurn>
+	<stateStalemate>Pattställning, det är oavgjort.</stateStalemate>
+	<stateStartMyTurn>Spelet har startat, det är din tur.</stateStartMyTurn>
+	<stateStartRemoteTurn>Spelet har startat, väntar på att {0} ska göra sitt drag.</stateStartRemoteTurn>
+	<stateTie>Det är oavgjort.</stateTie>
+	<stateWaitForApproval>Väntar på din motståndares godkännande..</stateWaitForApproval>
+</words>
+
+

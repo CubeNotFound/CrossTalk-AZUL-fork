@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<!--[if IE 7]><html class="ie7" lang="en"><![endif]-->
+<!--[if IE 8]><html class="ie8" lang="en"><![endif]-->
+<!--[if !(IE 7) | !(IE 8)]><!-->
+<html lang="en">
+<!--<![endif]-->
+	<head>
+		<link rel="stylesheet" href="/static/style/today.css">
+		<!--[if lt IE 9]>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+		<![endif]-->
+		<script type="text/javascript">
+			function preventDefaultFallback() {
+				if (window.event.preventDefault) {
+					window.event.preventDefault();
+				} else {
+					window.event.returnValue = false;
+				}
+			}
+			
+			function NavPage() {
+				var tmp, e, srcE, url;
+				srcE = window.event.srcElement;
+				if (srcE != null) {
+					tmp = srcE.tagName;
+					while(tmp != "BODY") {
+						if (tmp == "A"){
+							e = srcE;
+							break;
+						} else {
+							srcE = srcE.parentElement;
+							tmp = srcE.tagName;	
+						}
+					}	
+					if (e != null) {
+						url = e.href;
+						if(url.indexOf("javascript:") == -1) {
+							window.open(url,'msnt');
+							preventDefaultFallback();
+						} else {
+							eval(url.substring(11,url.length));
+							preventDefaultFallback();
+						}
+					}
+				}
+			}
+			{% if msn %}
+			function OpenWA(TargetURL, SiteID) { 
+				var bNoAuth = true; 
+				var p,e; 
+				e = window.external;
+				
+				if (e != null) { 
+					p = e.MsgrHost; 
+					if (p != null) {
+						p.OpenWithAuth(TargetURL, SiteID); 
+						bNoAuth = false; 
+					} 
+				} 
+				if (bNoAuth) {
+					window.open(TargetURL,'msnt');
+				} 
+			}
+			
+			function ShowMSNToday(popInFront) { 
+				var p,e; 
+				e = window.external;
+				if (e != null) { 
+					p = e.MsgrHost; 
+					if (p != null){ 
+						p.ShowMessengerHostWnd(popInFront); 
+					} 
+				}
+			}
+			var intSiteID = 6528;
+			{% endif %}
+			{% if wlm %}
+			window.onerror=function(){return true};
+			try {
+				if(window.location.search.indexOf('nopop=true')==-1){window.external.MsgrHost.ShowMessengerHostWnd(0)}
+			} catch(e) {}
+			{% endif %}
+			{% if windowslive %}
+			{% raw %}<![CDATA[*/function showToday(){var b=/tdyloaded=1/ig,a=document.cookie.match(b)==null;if(a)try{"tdyloaded".setCookie(1);window.external.MsgrHost.ShowMessengerHostWnd(0)}catch(c){}}(function($){$(function(){$.async("asyncCanary",function(){$(window).todaylayout().trigger("resize");$("div.cogr.coss").slideshow({delay:7e3});$(document).todayClickHandler({siteIds:"hotmail.msn.com:2|passport.net:10|spaces.msn.com:45930|maps.live.com:76517|mail.live.com:64855"});showToday();$.extend(true,{hotmail:{defaults:{proxyurl:"https://web.archive.org/web/20120504194423/http://hotmailproxy.us.msn.com/pm/v1.0/getheaders.aspx",domain:"https://web.archive.org/web/20120504194423/http://mail.live.com",listlen:5}}});$(".hminbox1").previewInbox({tsrttextOn:0,expanded:1,noSignOut:1,disableExpand:1});$("div.todaynav1").menuBar({delay:{open:500,close:50}});$('<input type="hidden"/>').attr({name:"mkt",value:"en-US"}).appendTo("#srchfrm")},$.jsUrl)})})(jQuery)//]]{% endraw %}
+			{% endif %}
+		</script>
+	</head>
+	{% if msn %}
+	<body onclick="NavPage();" onload="ShowMSNToday(0);">
+	{% else %}
+	<body onclick="NavPage();">
+	{% endif %}
+		<div class="header">
+			<div class="svclogo">
+				<p class="headtext"><b>CrossTalk</b></p>
+			</div>
+			<div class="date">
+				<script src="/static/js/date.js"></script>
+			</div>
+		</div>
+		<div class="content">
+			<h3>Welcome! Thank you for using CrossTalk!</h3>
+			<p>If you find any issues, have suggestions for any new features, or just want to hang out with fellow CrossTalk users, join our <a href="https://discord.gg/dumJwXTPxX">Discord server</a>.</p>
+			<p>This page will soon be redesigned with more content and WLM 2011/2012 support. Stay tuned!</p>
+		</div>
+	</body>
+</html>

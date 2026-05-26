@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<cmdHelp>Help</cmdHelp>
+	<cmdHideScores>Verberg highscores</cmdHideScores>
+	<cmdRestart>Spel herstarten</cmdRestart>
+	<cmdRollStep1>Gooi voor de eerste keer</cmdRollStep1>
+	<cmdRollStep2>Gooi voor de tweede keer</cmdRollStep2>
+	<cmdRollStep3>Gooi voor de laatste keer</cmdRollStep3>
+	<cmdShowScores>Bekijk highscores</cmdShowScores>
+	<confirmRemoteWantsRestart>{0} wil het spel opnieuw beginnen. Vind je dat goed?</confirmRemoteWantsRestart>
+	<confirmZeroOut>Weet je zeker dat je '{0}' op nul wilt zetten?</confirmZeroOut>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>verbroken</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<errorDataSend>Data fout; kan geen gegevens versturen. Het spel is gestopt.</errorDataSend>
+	<errorDisconnected>Verbroken.</errorDisconnected>
+	<errorUserLeft>{0} heeft het spel verlaten. Het spel is gestopt.</errorUserLeft>
+	<infoClickToPlayAgain>Klik op 'Spel herstarten' om opnieuw te spelen.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} wil dit spel niet opnieuw beginnen.</infoRestartDenied>
+	<infoMyTurnStep1>Het is jouw beurt, gooi de dobbelstenen.</infoMyTurnStep1>
+	<infoMyTurnStep2>Selecteer de dobbelstenen die je opnieuw wilt gooien of selecteer een score.</infoMyTurnStep2>
+	<infoMyTurnStep3>Selecteer voor de laatste keer de dobbelstenen die je opnieuw wilt gooien of selecteer een score.</infoMyTurnStep3>
+	<infoMyTurnStep4>Selecteer nu een score.</infoMyTurnStep4>
+	<infoRemoteTurn>Wacht op de beurt van {0}.</infoRemoteTurn>
+	<infoSelectDice>Je moet een of meerder dobbelstenen selecteren om opnieuw te kunnen gooien.</infoSelectDice>
+	<lblBroughtToYouBy>Aangeboden door {0}</lblBroughtToYouBy>
+	<lblConnectionType>Connectie type</lblConnectionType>
+	<lblOpponent>Ander</lblOpponent>
+	<lblVersion>Yahtzee {0}</lblVersion>
+	<lblYou>Jij</lblYou>
+	<lblOnes>Enen</lblOnes>
+	<lblTwos>Tweeën</lblTwos>
+	<lblThrees>Drieën</lblThrees>
+	<lblFours>Vieren</lblFours>
+	<lblFives>Vijven</lblFives>
+	<lblSixes>Zessen</lblSixes>
+	<lblBonus>Bonus</lblBonus>
+	<lblTopTotal>Totaal boven</lblTopTotal>
+	<lblThreeOfAKind>Drie dezelfde</lblThreeOfAKind>
+	<lblFourOfAKind>Vier dezelfde</lblFourOfAKind>
+	<lblFullHouse>Full house</lblFullHouse>
+	<lblSmallStraight>Kleine straat</lblSmallStraight>
+	<lblLargeStraight>Grote straat</lblLargeStraight>
+	<lblYahtzee>Yahtzee</lblYahtzee>
+	<lblChance>Kans</lblChance>
+	<lblBottomTotal>Totaal onder</lblBottomTotal>
+	<lblGameTotal>Totaal spel</lblGameTotal>
+	<lblOverallTotal>Totaal</lblOverallTotal>
+	<lblGamesWon>Gewonnen</lblGamesWon>
+	<stateDraw>Het is een gelijkspel!</stateDraw>
+	<stateFinishedMyTurn>{0} is klaar, het is weer jouw beurt.</stateFinishedMyTurn>
+	<stateFinishedRemoteTurn>Je bent klaar, {0} mag nog een keer.</stateFinishedRemoteTurn>
+	<stateInitializing>Spel wordt geïnitialiseerd...</stateInitializing>
+	<stateLost>Helaas, je hebt verloren.</stateLost>
+	<stateMyTurn>Het is jouw beurt.</stateMyTurn>
+	<stateRemoteTurn>Wacht op de beurt van {0}.</stateRemoteTurn>
+	<stateStartMyTurn>Spel gestart, het is jouw beurt.</stateStartMyTurn>
+	<stateStartRemoteTurn>Spel gestart, wacht op de beurt van {0}.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Wacht op de tegenstander om mee te doen</stateWaitOnJoin>
+	<stateWon>Gefeliciteerd, je hebt gewonnen!</stateWon>
+</words>

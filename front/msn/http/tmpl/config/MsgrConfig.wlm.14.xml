@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MsgrConfig>
+	<Simple>
+		<Config>
+			<ExpiresInDays>0</ExpiresInDays>
+		</Config>
+		<P2PConfig>
+			<ObjectStore>
+				<SendDelay>1</SendDelay>
+			</ObjectStore>
+		</P2PConfig>
+		<DisablePhoneDialer>1</DisablePhoneDialer>
+		<GetItemVersionForUnknown>false</GetItemVersionForUnknown>
+		<MinFlashPlayer BuildNumber="28" MajorVersion="9" MinorVersion="0" /> 
+		<Relay>
+			<Enabled>0</Enabled>
+			<MaxCallLength>0</MaxCallLength>
+		</Relay>
+		<Contacts>
+			<Client ZombieServerDetectDelay="1800" ZombieServerDetectInterval="30" ZombieServerDetectResumeDelay="1800" />
+			<Server ZombieServerDetectDelay="900" ZombieServerDetectResumeDelay="900" ZombieServerDetectConnectDelay="900" ZombieServerDetectLongDelay="900" />
+		</Contacts>
+		<TrustedDomains>
+			<domain name="hiden.cc"/>
+			<domain name="ugnet.gay"/>
+			<domain name="crosstalk.im"/>
+			<domain name="ctsrv.gay"/>
+		</TrustedDomains>
+		<ErrorResponseTable>
+			<Feature type="0" name="Login">
+				<Entry hr="0x80004002" action="3"/>
+				<Entry hr="0x80004004" action="3"/>
+				<Entry hr="0x80004005" action="3"/>
+				<Entry hr="0x8000402A" action="3"/>
+				<Entry hr="0x8000FFFF" action="3"/>
+				<Entry hr="0x8001012E" action="3"/>
+				<Entry hr="0x80040200" action="3"/>
+				<Entry hr="0x80048051" action="3"/>
+				<Entry hr="0x80048820" action="3"/>
+				<Entry hr="0x80048823" action="3"/>
+				<Entry hr="0x80070002" action="3"/>
+				<Entry hr="0x80070005" action="3"/>
+				<Entry hr="0x8007000E" action="3"/>
+				<Entry hr="0x80070057" action="3"/>
+				<Entry hr="0x8007007E" action="3"/>
+				<Entry hr="0x800702E4" action="3"/>
+				<Entry hr="0x800706BA" action="3"/>
+				<Entry hr="0x800706BE" action="3"/>
+				<Entry hr="0x80071392" action="3"/>
+				<Entry hr="0x80072745" action="3"/>
+				<Entry hr="0x80072746" action="3"/>
+				<Entry hr="0x80072EE2" action="3"/>
+				<Entry hr="0x80072EF3" action="3"/>
+				<Entry hr="0x80072EFD" action="3"/>
+				<Entry hr="0x80072EFF" action="3"/>
+				<Entry hr="0x80072F06" action="3"/>
+				<Entry hr="0x80072F7D" action="3"/>
+				<Entry hr="0x800C013E" action="3"/>
+				<Entry hr="0x80191002" action="3"/>
+				<Entry hr="0x81000306" action="3"/>
+				<Entry hr="0x8100030D" action="3"/>
+				<Entry hr="0x81000314" action="3"/>
+				<Entry hr="0x81000362" action="3"/>
+				<Entry hr="0x81000378" action="3"/>
+				<Entry hr="0x81000395" action="3"/>
+				<Entry hr="0x85AE000B" action="3"/>
+				<Entry hr="0x85AE000F" action="3"/>
+				<Entry hr="0x85AE001D" action="3"/>
+				<Entry hr="0x85AE0022" action="3"/>
+				<Entry hr="0x85AE0024" action="3"/>
+				<Entry hr="0x85AE0027" action="3"/>
+				<Entry hr="0x85AE003C" action="3"/>
+				<Entry hr="0x85AE0053" action="3"/>
+				<Entry hr="0x8E5E0152" action="3"/>
+				<Entry hr="0x8E5E0158" action="3"/>
+				<Entry hr="0x8E5E0211" action="3"/>
+				<Entry hr="0x8E5E0220" action="3"/>
+				<Entry hr="0x8E5E0226" action="3"/>
+				<Entry hr="0x8E5E03FE" action="3"/>
+				<Entry hr="0x8E5E0408" action="3"/>
+				<Entry hr="0x8E5E05F6" action="3"/>
+				<Entry hr="0x8E5E0710" action="3"/>
+				<Entry hr="0x8E5E0713" action="3"/>
+			</Feature>
+			<Feature type="2" name="MapFile">
+				<Entry hr="0x810003F1" action="3"/>
+				<Entry hr="0x810003F6" action="3"/>
+			</Feature>
+			<Feature type="3" name="P2P">
+				<Entry hr="0x82000016" action="3"/>
+				<Entry hr="0x82000017" action="3"/>
+				<Entry hr="0x82000019" action="3"/>
+				<Entry hr="0x8200001b" action="3"/>
+				<Entry hr="0x8200001d" action="3"/>
+				<Entry hr="0x8200001e" action="3"/>
+				<Entry hr="0x82000024" action="3"/>
+				<Entry hr="0x82000026" action="3"/>
+			</Feature>
+		</ErrorResponseTable>
+		<USBDevices>
+			<Device VID="0x045e" PID="0x0719"/>
+			<Device VID="0x045e" PID="0x0722"/>
+			<Device VID="0x041e" PID="0x4080"/>
+		</USBDevices>
+		<CirclesWeb General="https://crosstalk.im/circles/$CIRCLECID$/settings/" General-SiteId="73625" Management="https://crosstalk.im/circles/$CIRCLECID$/settings/" Management-SiteId="73625" Membership="https://crosstalk.im/circles/$CIRCLECID$/settings/" Membership-SiteId="73625" Leave="https://crosstalk.im/circles/$CIRCLECID$/settings/" Leave-SiteId="73625" Disc="https://discord.gg/dumJwXTPxX" />
+		<AnonymousIMSettings>
+			<SettingsPage URL="http://settings.messenger.live.com/applications/WebSettings.aspx" SiteID="76215" />
+		</AnonymousIMSettings>
+	</Simple>
+	<AbchCfg>
+		<abchconfig>
+			<url>https://ctsvcs.addressbook.ugnet.gay/abservice.asmx</url>
+		</abchconfig>
+	</AbchCfg>
+	<LocalizedConfig Market="en-US">
+		<AdMainConfig>
+			<TextAdRotation>420</TextAdRotation>
+			<TextAdRefresh>1</TextAdRefresh>
+			<TextAdServer>http://ctsvcs.advertising.ugnet.gay/ads/txt</TextAdServer>
+			<AdBanner20URL Refresh="300">http://ctsvcs.advertising.ugnet.gay/ads/banner</AdBanner20URL>
+			<StdAd AdVisible="60" VideoVisible="120" VideoDldIntvl="0">
+				<VideoFeeds FeedsListURL="http://ctsvcs.advertising.ugnet.gay/svcs/msn-video-feeds/"/>
+			</StdAd>
+		</AdMainConfig>
+		<AppDirConfig>
+			<AppDirPageURL>http://mactivities.msgrsvcs.ctsrv.gay/AppDirectory/Directory.aspx?L=en-us</AppDirPageURL>
+			<AppDirSeviceURL>http://mactivities.msgrsvcs.ctsrv.gay/AppDirectory/AppDirectory.asmx</AppDirSeviceURL>
+			<AppDirVersionURL>http://mactivities.msgrsvcs.ctsrv.gay/AppDirectory/GetAppdirVersion.aspx</AppDirVersionURL>
+		</AppDirConfig>
+		<Contacts>
+			<ABPendingRequests>
+				<SiteId>73625</SiteId>
+				<height>672</height>
+				<IncludeSNRequests>true</IncludeSNRequests>
+				<width>808</width>
+				<urlcid>http://cid-%1!16.16I64X!.profile.live.com/invites?partner=Messenger</urlcid>
+			</ABPendingRequests>
+			<EditMyLiveContactProfile>
+				<url>http://social.ugnet.gay/profile.aspx?action=edit&amp;mode=activecontacts&amp;mkt=en-us&amp;partner=Messenger</url>
+				<SiteId>73625</SiteId>
+			</EditMyLiveContactProfile>
+			<EditMyProfile>
+				<url>http://profile.live.com/details</url>
+				<SiteId>73625</SiteId>
+			</EditMyProfile>
+			<Import>
+				<url>http://cid-%1!16.16I64X!.profile.live.com/connect/?partner=Messenger</url>
+				<SiteId>73625</SiteId>
+			</Import>
+			<MessengerInvite>
+				<url>http://cid-%1.profile.live.com/connect/send.aspx?email=%2</url>
+				<urlcid>http://cid-%1.profile.live.com/connect/send.aspx?cid=%2</urlcid>
+				<SiteId>73625</SiteId>
+			</MessengerInvite>
+			<Profile>
+				<url>http://social.ugnet.gay/Profile.aspx?partner=Messenger&amp;mkt=en-us&amp;mem=%ls</url>
+				<urlcid>http://social.ugnet.gay/Profile.aspx?partner=Messenger&amp;mkt=en-us&amp;cid=%ls</urlcid>
+				<urlcid2>http://cid-%1!16.16I64X!.profile.live.com</urlcid2>
+				<SiteId>73625</SiteId>
+			</Profile>
+			<SNInvites>
+				<url>http://cid-%1.profile.live.com/connect/Messenger.aspx?Email=%2</url>
+				<urlcid>http://cid-%1.profile.live.com/connect/Messenger.aspx?cid=0x%2</urlcid>
+				<SiteId>73625</SiteId>
+			</SNInvites>
+			<ViewMapEnabled>true</ViewMapEnabled>
+		</Contacts>
+		<ContactCard>
+			<AddToMySpaceSiteId>45930</AddToMySpaceSiteId>
+			<AddToMySpaceUrl>http://social.ugnet.gay/?addblogentry=true&amp;mkt=nl-nl</AddToMySpaceUrl>
+			<ContactCardDisabled>false</ContactCardDisabled>
+			<CreateSpaceSiteId>45930</CreateSpaceSiteId>
+			<CreateSpaceUrl>http://social.ugnet.gay/signup.aspx?mkt=nl-nl</CreateSpaceUrl>
+			<GetItemVerUrl>http://ctas.storage.ugnet.gay/storageservice/schematizedstore.asmx</GetItemVerUrl>
+			<GetXmlFeedUrl>http://social.ugnet.gay/contactcard/contactcardservice.asmx</GetXmlFeedUrl>
+			<MySpaceSiteId>45930</MySpaceSiteId>
+			<MySpaceUrl>http://social.ugnet.gay/homepage.aspx</MySpaceUrl>
+			<SpaceBaseSiteId>45930</SpaceBaseSiteId>
+			<SpaceBaseUrl>http://social.ugnet.gay</SpaceBaseUrl>
+			<SpaceIntegrationEnabled>true</SpaceIntegrationEnabled>
+		</ContactCard>
+		<FlashUpgradeURL>http://storage.ugnet.gay/crosstalk-dist/client/all/tools/flashplayer_10_3r183_48_winax.exe</FlashUpgradeURL>
+		<GLinkMarket v="en_us" />
+		<LiveFolders UpsellMessageId="1" />
+		<MessengerBlogURL>https://crosstalk.im/blog</MessengerBlogURL>
+		<MSNSearch>
+			<DesktopInstallURL>https://searx.ugnet.gay/searxng/search?q=$QUERY$&amp;ia=web</DesktopInstallURL>
+			<ImagesURL>https://searx.ugnet.gay/searxng/search?q=$QUERY$&amp;ia=images</ImagesURL>
+			<NearMeURL>https://searx.ugnet.gay/searxng/search?q=$QUERY$&amp;ia=web</NearMeURL>
+			<NewsURL>https://searx.ugnet.gay/searxng/search?q=$QUERY$+news&amp;ia=news</NewsURL>
+			<PeopleSearchURL>http://home.live.com/search?query=$QUERY$</PeopleSearchURL>
+			<PeopleSearchSiteID>73625</PeopleSearchSiteID>
+			<SearchKidsURL>https://searx.ugnet.gay/searxng/search?q=$QUERY$&amp;ia=web</SearchKidsURL>
+			<SearchURL>https://searx.ugnet.gay/searxng/search?q=$QUERY$&amp;ia=web</SearchURL>
+			<SharedSearchURL>https://searx.ugnet.gay/searxng/search?q=$QUERY$&amp;ia=web</SharedSearchURL>
+			<SharedSearchURL2>https://searx.ugnet.gay/searxng/search?q=$QUERY$&amp;ia=web</SharedSearchURL2>
+		</MSNSearch>
+		<MsnTodayConfig>
+			<MsnTodaySiteID>6528</MsnTodaySiteID>
+			<MsnTodayURL>http://today.msgrsvcs.ctsrv.gay/start?wlm=1</MsnTodayURL>
+			<Flags>2</Flags>
+		</MsnTodayConfig>
+		<MusicIntegration URL="https://www.last.fm/search/tracks?q=$ARTIST$+$TITLE$"/>
+		<OneCare Enabled="0" />
+		<PE Tracking=""/>
+		<PremiumAV Visibility="1" />
+		<PSTNOut Hidden="0" />
+		<ReportAbuse>
+			<ReportAbuseSID />
+			<ReportAbuseURL>https://crosstalk.im/report</ReportAbuseURL>
+		</ReportAbuse>
+		<RL>
+			<ViewProfileURL>http://g.msn.com/5meen_us/106?%1&amp;Plcid=%2!hs!&amp;%3&amp;Country=%4!hs!&amp;BrandID=%5&amp;passport=%6</ViewProfileURL>
+		</RL>
+		<SDrive Enabled="true" />
+		<TermsOfUse>
+			<TermsOfUseSID>956</TermsOfUseSID>
+			<TermsOfUseURL>https://crosstalk.im/tos</TermsOfUseURL>
+		</TermsOfUse>
+		<VoiceClip Hidden="0" />
+		<VoiceVideo>
+			<DisableSipProxyInviteTest>0</DisableSipProxyInviteTest>
+			<DisableSipProxyCapability>0</DisableSipProxyCapability>
+			<DisableSipProxyInvite>0</DisableSipProxyInvite>
+			<DisableSipProxyCapability2>0</DisableSipProxyCapability2>
+			<DisableSipProxyInvite2>0</DisableSipProxyInvite2>
+		</VoiceVideo>   
+		<TabConfig>
+			<RowNumber>1</RowNumber>
+			<slots>
+				{% for tab in tabs %}
+					<URL id="{{ tab.id }}">
+						https://ctsvcs.advertising.ugnet.gay/svcs/tab={{ tab.id }}
+					</URL>
+				{% endfor %}
+				</slots>
+  		</TabConfig>
+	</LocalizedConfig>
+</MsgrConfig>

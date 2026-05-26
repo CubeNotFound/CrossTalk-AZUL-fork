@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<cmdHelp>Help</cmdHelp>
+	<cmdHideScores>Hide highscores</cmdHideScores>
+	<cmdRestart>Restart game</cmdRestart>
+	<cmdRollStep1>Roll the dice (first time)</cmdRollStep1>
+	<cmdRollStep2>Roll the dice (second time)</cmdRollStep2>
+	<cmdRollStep3>Roll the dice (last time)</cmdRollStep3>
+	<cmdShowScores>Show highscores</cmdShowScores>
+	<confirmRemoteWantsRestart>{0} wants to restart this game, are you ok with that?</confirmRemoteWantsRestart>
+	<confirmZeroOut>Are you sure you want to zero out {0}?</confirmZeroOut>
+	<connectionDirect>direct</connectionDirect>
+	<connectionDisconnected>disconnected</connectionDisconnected>
+	<connectionIndirect>indirect</connectionIndirect>
+	<errorDataSend>Data error; unable to send data. Game stopped.</errorDataSend>
+	<errorDisconnected>Disconnected.</errorDisconnected>
+	<errorUserLeft>{0} has left the game. The game is over.</errorUserLeft>
+	<infoClickToPlayAgain>Click 'Restart game' to play again.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} doesn't want to restart this game.</infoRestartDenied>
+	<infoMyTurnStep1>It's your turn, roll the dice.</infoMyTurnStep1>
+	<infoMyTurnStep2>Select the dice you wish to remove and roll again or select a score.</infoMyTurnStep2>
+	<infoMyTurnStep3>Select the dice you wish to remove and roll for the last time or select a score.</infoMyTurnStep3>
+	<infoMyTurnStep4>Select a score now on the score board.</infoMyTurnStep4>
+	<infoRemoteTurn>Please wait for your opponent...</infoRemoteTurn>
+	<infoSelectDice>You need to select one or more dice you wish to reroll.</infoSelectDice>
+	<lblBroughtToYouBy>Brought to you by {0}</lblBroughtToYouBy>
+	<lblConnectionType>Connection type</lblConnectionType>
+	<lblOpponent>Opponent</lblOpponent>
+	<lblTopTotal>Top total</lblTopTotal>
+	<lblVersion>Yahtzee {0}</lblVersion>
+	<lblYou>You</lblYou>
+	<lblOnes>Ones</lblOnes>
+	<lblTwos>Twos</lblTwos>
+	<lblThrees>Threes</lblThrees>
+	<lblFours>Fours</lblFours>
+	<lblFives>Fives</lblFives>
+	<lblSixes>Sixes</lblSixes>
+	<lblBonus>Bonus</lblBonus>
+	<lblThreeOfAKind>Three of a Kind</lblThreeOfAKind>
+	<lblFourOfAKind>Four of a Kind</lblFourOfAKind>
+	<lblFullHouse>Full House</lblFullHouse>
+	<lblSmallStraight>Small Straight</lblSmallStraight>
+	<lblLargeStraight>Large Straight</lblLargeStraight>
+	<lblYahtzee>Yahtzee</lblYahtzee>
+	<lblChance>Chance</lblChance>
+	<lblBottomTotal>Bottom Total</lblBottomTotal>
+	<lblGameTotal>Game Total</lblGameTotal>
+	<lblOverallTotal>Overall Total</lblOverallTotal>
+	<lblGamesWon>Games won</lblGamesWon>
+	<stateDraw>It's a draw!</stateDraw>
+	<stateFinishedMyTurn>{0} is finished, it's your turn again.</stateFinishedMyTurn>
+	<stateFinishedRemoteTurn>You are finished, {0} gets to move again.</stateFinishedRemoteTurn>
+	<stateInitializing>Initializing game...</stateInitializing>
+	<stateLost>Too bad, you lost.</stateLost>
+	<stateMyTurn>It's your turn.</stateMyTurn>
+	<stateRemoteTurn>Waiting for {0} to make a move.</stateRemoteTurn>
+	<stateStartMyTurn>Game started, it's your turn.</stateStartMyTurn>
+	<stateStartRemoteTurn>Game started, waiting for {0} to make a move.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Waiting for your opponent to join</stateWaitOnJoin>
+	<stateWon>Congratulations, you have won!</stateWon>
+</words>

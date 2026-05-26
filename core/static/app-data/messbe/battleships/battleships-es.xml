@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<boat0>Portaaviones</boat0>
+	<boat1>Acorazado</boat1>
+	<boat2>Crucero</boat2>
+	<boat3>Submarino</boat3>
+	<boat4>Destructor</boat4>
+	<cmdDone>Listo</cmdDone>
+	<cmdHelp>Ayuda</cmdHelp>
+	<cmdPlaceRandomly>Situar barcos aleatoriamente</cmdPlaceRandomly>
+	<cmdRestart>Reiniciar</cmdRestart>
+	<confirmRemoteWantsRestart>{0} quiere reiniciar el juego, ¿estás de acuerdo?</confirmRemoteWantsRestart>
+	<connectionDirect>directa</connectionDirect>
+	<connectionDisconnected>desconectado</connectionDisconnected>
+	<connectionIndirect>indirecta</connectionIndirect>
+	<errorDataSend>Se ha producido un error; imposible enviar datos. El juego se ha interrumpido.</errorDataSend>
+	<errorDisconnected>Desconectado.</errorDisconnected>
+	<errorUserLeft>{0} ha abandonado el juego. La partida ha finalizado.</errorUserLeft>
+	<infoHit>Tocado</infoHit>
+	<infoMiss>Agua</infoMiss>
+	<infoLostBoat>Has perdido {0}.</infoLostBoat>
+	<infoNoRestart>No reiniciar.</infoNoRestart>
+	<infoPlaceShips>Coloca tus barcos haciendo clic en el botón 'Situar barcos aleatoriamente'. Puedes pulsar tantas veces como quieras hasta que estés satisfecho con la colocación de tu flota. Pulsa 'Listo' para comenzar la partida.</infoPlaceShips>
+	<infoRequestRestart>Solicitando reiniciar...</infoRequestRestart>
+	<infoRemoteTurn>Esperando a que tu oponente mueva.</infoRemoteTurn>
+	<infoRestartDenied>{0} no quiere reiniciar la partida.</infoRestartDenied>
+	<infoSunkBoat>Has hundido un {0}.</infoSunkBoat>
+	<infoWaitPlacing>Esperando a que tu oponente termine de situar su flota.</infoWaitPlacing>
+	<infoYourTurn>Es tu turno. Pulsa sobre un espacio libre en el tablero de tu oponente y trata de hundir sus barcos.</infoYourTurn>
+	<lblBroughtToYouBy>Juego patrocinado por {0}</lblBroughtToYouBy>
+	<lblConnectionType>Tipo de conexión</lblConnectionType>
+	<lblEnemyNavy>Flota enemiga</lblEnemyNavy>
+	<lblVersion>Hundir la flota {0}</lblVersion>
+	<lblYourNavy>Tu flota</lblYourNavy>
+	<stateGameOverLost>El juego ha finalizado. Has perdido.</stateGameOverLost>
+	<stateGameOverWon>El juego ha finalizado. Has ganado.</stateGameOverWon>
+	<stateInitializing>Iniciando juego...</stateInitializing>
+	<stateMyTurn>Es tu turno.</stateMyTurn>
+	<statePlacingShips>Sitúa tus barcos</statePlacingShips>
+	<stateRemoteTurn>Esperando a que {0} mueva.</stateRemoteTurn>
+	<stateStartMyTurn>El juego ha comenzado, es tu turno.</stateStartMyTurn>
+	<stateStartRemoteTurn>El juego ha comenzado, esperando a que {0} mueva.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Esperando a que se una tu oponente</stateWaitOnJoin>
+	<stateWaitOnPlacing>Esperando a tu oponente...</stateWaitOnPlacing>
+</words>
+

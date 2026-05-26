@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<cmdHelp>Súgó</cmdHelp>
+	<cmdHideScores>Pontlista elrejtése</cmdHideScores>
+	<cmdRestart>Újrakezdés</cmdRestart>
+	<cmdRollStep1>Kocka eldobása (elöször)</cmdRollStep1>
+	<cmdRollStep2>Kocka eldobása (másodszor)</cmdRollStep2>
+	<cmdRollStep3>Kocka eldobása (utoljára)</cmdRollStep3>
+	<cmdShowScores>Pontlista mutatása</cmdShowScores>
+	<confirmRemoteWantsRestart>{0} újra szeretné kezdeni a játékot, egyet ért ezzel?</confirmRemoteWantsRestart>
+	<confirmZeroOut>Bizos, hogy le akarod nullázni: {0}?</confirmZeroOut>
+	<connectionDirect>közvetlen</connectionDirect>
+	<connectionDisconnected>megszakadt</connectionDisconnected>
+	<connectionIndirect>közvetett</connectionIndirect>
+	<errorDataSend>Adat hiba; nem lehet adatot küldeni. A játék leállt.</errorDataSend>
+	<errorDisconnected>Megszakadt.</errorDisconnected>
+	<errorUserLeft>{0} elhagyta a játékot. A játék véget ért.</errorUserLeft>
+	<infoClickToPlayAgain>Kattints az 'Újrakezdés' gombra az új játékhoz.</infoClickToPlayAgain>
+	<infoRestartDenied>{0} nem akarja újrakezdeni a játékot.</infoRestartDenied>
+	<infoMyTurnStep1>Te jössz, dobd el a kockát.</infoMyTurnStep1>
+	<infoMyTurnStep2>Válaszd ki a kockát, hogy elmozdísd és újra görgess, vagy válassz egy pontot.</infoMyTurnStep2>
+	<infoMyTurnStep3>Válaszd ki a kockát, hogy elmozdísd és görgess az legutóbbi idõért vagy a válassz egy pontot.</infoMyTurnStep3>
+	<infoMyTurnStep4>Válassz egy pontot a pontlistából.</infoMyTurnStep4>
+	<infoRemoteTurn>Várakozás az ellenfélre...</infoRemoteTurn>
+	<infoSelectDice>Ki kell választanod egy vagy több kockát, hogy újra jöjjél.</infoSelectDice>
+	<lblBroughtToYouBy>Kihívó: {0}</lblBroughtToYouBy>
+	<lblConnectionType>Kapcsolat típusa</lblConnectionType>
+	<lblOpponent>Ellenfél</lblOpponent>
+	<lblTopTotal>Összesen</lblTopTotal>
+	<lblVersion>Yahtzee {0}</lblVersion>
+	<lblYou>Te</lblYou>
+	<lblOnes>Egyesek</lblOnes>
+	<lblTwos>Kettesek</lblTwos>
+	<lblThrees>Hármasok</lblThrees>
+	<lblFours>Négyesek</lblFours>
+	<lblFives>Ötösök</lblFives>
+	<lblSixes>Hatosok</lblSixes>
+	<lblBonus>Bonus</lblBonus>
+	<lblThreeOfAKind>Három az egyhez</lblThreeOfAKind>
+	<lblFourOfAKind>Négy az egyhez</lblFourOfAKind>
+	<lblFullHouse>Teltház</lblFullHouse>
+	<lblSmallStraight>Kicsi egyenes</lblSmallStraight>
+	<lblLargeStraight>Nagy egyenes</lblLargeStraight>
+	<lblYahtzee>Yahtzee</lblYahtzee>
+	<lblChance>Kockázat</lblChance>
+	<lblBottomTotal>Bottom Total</lblBottomTotal>
+	<lblGameTotal>Összes játék</lblGameTotal>
+	<lblOverallTotal>Átfogó eredmény</lblOverallTotal>
+	<lblGamesWon>Gyõzelmek</lblGamesWon>
+	<stateDraw>Döntetlen!</stateDraw>
+	<stateFinishedMyTurn>{0} befejezte, újra te jössz.</stateFinishedMyTurn>
+	<stateFinishedRemoteTurn>Befejezted, {0} kön újra.</stateFinishedRemoteTurn>
+	<stateInitializing>Játék betöltése...</stateInitializing>
+	<stateLost>Túl rossz, vesztettél.</stateLost>
+	<stateMyTurn>Te jössz.</stateMyTurn>
+	<stateRemoteTurn>Várakozás {0} lépésére.</stateRemoteTurn>
+	<stateStartMyTurn>A játék elindult, te jössz.</stateStartMyTurn>
+	<stateStartRemoteTurn>A játék elindult, várakozás {0} lépésére.</stateStartRemoteTurn>
+	<stateWaitOnJoin>Várakozás az ellenfélre</stateWaitOnJoin>
+	<stateWon>Gratulálok, te nyertél!</stateWon>
+</words>
+
+

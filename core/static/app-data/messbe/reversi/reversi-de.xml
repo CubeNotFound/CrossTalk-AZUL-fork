@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<cmdHelp>Hilfe</cmdHelp>
+	<cmdRestart>Neustart</cmdRestart>
+	<confirmRemoteWantsRestart>{0} möchte das Spiel neu starten, geht das in Ordnung?</confirmRemoteWantsRestart>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>getrennt</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<errorDataSend>Datenfehler; Die Daten können nicht gesendet werden. Spiel gestoppt.</errorDataSend>
+	<errorDisconnected>Getrennt.</errorDisconnected>
+	<errorUserLeft>{0} hat das Spiel verlassen. Das Spiel wurde beendet.</errorUserLeft>
+	<infoRestartDenied>{0} möchte das Spiel nicht neu starten.</infoRestartDenied>
+	<infoClickToPlayAgain>Klicken Sie auf 'Neustart' für ein neues Spiel.</infoClickToPlayAgain>
+	<lblBroughtToYouBy>Wird Ihnen präsentiert von {0}</lblBroughtToYouBy>
+	<lblConnectionType>Verbindungsart</lblConnectionType>
+	<lblPlayers>Spieler</lblPlayers>
+	<lblColor>Farbe</lblColor>
+	<lblGamePoints>Spielpunkte</lblGamePoints>
+	<lblGameTotalPoints>Gesamtpunkte</lblGameTotalPoints>
+	<lblGamesWon>Spiele gewonnen</lblGamesWon>
+	<lblRed>rot</lblRed>
+	<lblVersion>Reversi {0}</lblVersion>
+	<lblWhite>weiß</lblWhite>
+	<stateAnotherMyTurn>{0} kann nicht, Sie sind dran.</stateAnotherMyTurn>
+	<stateAnotherRemoteTurn>Sie können nicht, {0} ist wieder dran.</stateAnotherRemoteTurn>
+	<stateInitializing>Starte Spiel...</stateInitializing>
+	<stateGameOverDraw>Spiel beendet! Es ist ein Unentschieden.</stateGameOverDraw>
+	<stateGameOverLost>Was für ein Pech! Sie haben verloren.</stateGameOverLost>
+	<stateGameOverWon>Gratulation, Sie haben gewonnen!</stateGameOverWon>
+	<stateMyTurn>Sie sind dran.</stateMyTurn>
+	<stateRemoteTurn>Bitte warten Sie bis {0} einen Zug gemacht hat.</stateRemoteTurn>
+	<stateStartMyTurn>Spiel gestartet. Sie sind dran.</stateStartMyTurn>
+	<stateStartRemoteTurn>Spiel gestartet. Bitte warten Sie bis {0} einen Zug gemacht hat.</stateStartRemoteTurn>
+</words>
+

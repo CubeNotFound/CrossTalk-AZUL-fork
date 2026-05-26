@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<cmdHelp>Hjälp</cmdHelp>
+	<cmdRestart>Starta om</cmdRestart>
+	<confirmRemoteWantsRestart>{0} vill starta om omgången, är det okej med dig?</confirmRemoteWantsRestart>
+	<connectionDirect>direkt</connectionDirect>
+	<connectionDisconnected>anslutning bruten</connectionDisconnected>
+	<connectionIndirect>indirekt</connectionIndirect>
+	<errorDataSend>Data fel; omöjligt att skicka data. Spelet har stoppats.</errorDataSend>
+	<errorDisconnected>Anslutning bruten.</errorDisconnected>
+	<errorUserLeft>{0} har lämnat spelet. Spelet är över.</errorUserLeft>
+	<infoRestartDenied>{0} vill inte starta om spelet.</infoRestartDenied>
+	<infoClickToPlayAgain>Klicka på 'Starta om' för att spela igen.</infoClickToPlayAgain>
+	<lblBroughtToYouBy>Framtaget till dig av {0}</lblBroughtToYouBy>
+	<lblConnectionType>Anslutnings typ</lblConnectionType>
+	<lblPlayers>Spelare</lblPlayers>
+	<lblColor>Färg</lblColor>
+	<lblGamePoints>Antal Spel poäng</lblGamePoints>
+	<lblGameTotalPoints>Antal Poäng totalt</lblGameTotalPoints>
+	<lblGamesWon>Antal vunna spel</lblGamesWon>
+	<lblRed>röd</lblRed>
+	<lblVersion>Reversi {0}</lblVersion>
+	<lblWhite>vit</lblWhite>
+	<stateAnotherMyTurn>{0} kan inte flytta, det är din tur igen.</stateAnotherMyTurn>
+	<stateAnotherRemoteTurn>Du kan inte flytta, {0} får flytta igen.</stateAnotherRemoteTurn>
+	<stateInitializing>Påbörjar spel...</stateInitializing>
+	<stateGameOverDraw>Spelet över, det blev lika!</stateGameOverDraw>
+	<stateGameOverLost>Spelet över, du har förlorat!</stateGameOverLost>
+	<stateGameOverWon>Spelet över, du har vunnit!</stateGameOverWon>
+	<stateMyTurn>Det är din tur.</stateMyTurn>
+	<stateRemoteTurn>Väntar på att {0} ska göra sitt drag.</stateRemoteTurn>
+	<stateStartMyTurn>Spelet har börjat, det är din tur.</stateStartMyTurn>
+	<stateStartRemoteTurn>Spelet har startat, väntar på att {0} ska göra sitt drag.</stateStartRemoteTurn>
+</words>
+
+

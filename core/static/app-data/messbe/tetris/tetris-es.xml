@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<words>
+	<cmdHelp>Ayuda</cmdHelp>
+	<cmdMute>Silencio</cmdMute>
+	<cmdStart>Comenzar</cmdStart>
+	<connectionDirect>directa</connectionDirect>
+	<connectionDisconnected>desconectado</connectionDisconnected>
+	<connectionIndirect>indirecta</connectionIndirect>
+	<errorDataSend>Se ha producido un error; imposible enviar datos. El juego se ha interrumpido.</errorDataSend>
+	<errorDisconnected>Desconectado.</errorDisconnected>
+	<errorUserLeft>{0} ha abandonado el juego. La partida ha finalizado.</errorUserLeft>
+	<lblBroughtToYouBy>Juego patrocinado por {0}</lblBroughtToYouBy>
+	<lblConnectionType>Tipo de conexión</lblConnectionType>
+	<lblGameLevel>Nivel</lblGameLevel>
+	<lblGameLines>Líneas</lblGameLines>
+	<lblGameScore>Puntuación</lblGameScore>
+	<lblPlayers>Jugadores</lblPlayers>
+	<lblVersion>Tetris {0}</lblVersion>
+	<stateInitializing>Iniciando juego...</stateInitializing>
+	<stateGameOverCalc>El juego ha terminado, calculando puntuación..</stateGameOverCalc>
+	<stateGameOverDraw>El juego ha terminado en empate. Pulsa 'Comenzar' para jugar de nuevo.</stateGameOverDraw>
+	<stateGameOverLost>El juego ha terminado. Has perdido. Pulsa 'Comenzar' para jugar de nuevo.</stateGameOverLost>
+	<stateGameOverWon>El juego ha terminado. Has ganado. Pulsa 'Comenzar' para jugar de nuevo.</stateGameOverWon>
+	<statePlaying>Jugando</statePlaying>
+	<stateWaitOnJoin>Esperando a tu oponente</stateWaitOnJoin>
+	<stateWaitForStart>Pulsa 'Comenzar' para jugar.</stateWaitForStart>
+</words>
+

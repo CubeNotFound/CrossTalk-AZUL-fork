@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<cmdHelp>Aide</cmdHelp>
+	<cmdRestart>Recommencer</cmdRestart>
+	<confirmRemoteWantsRestart>{0} désire recommencer la partie, êtes-vous d'accord?</confirmRemoteWantsRestart>
+	<connectionDirect>direct</connectionDirect>
+	<connectionDisconnected>déconnecté</connectionDisconnected>
+	<connectionIndirect>indirect</connectionIndirect>
+	<errorDataSend>Erreur de données; impossible d'envoyer les données. Jeu arrêté.</errorDataSend>
+	<errorDisconnected>Déconnecté.</errorDisconnected>
+	<errorUserLeft>{0} a quitté la partie. Le jeu est terminé.</errorUserLeft>
+	<infoRestartDenied>{0} ne veut pas redémarrer la partie.</infoRestartDenied>
+	<infoClickToPlayAgain>Cliquez sur "Redémarrer" pour rejouer.</infoClickToPlayAgain>
+	<lblBroughtToYouBy>Offert par {0}</lblBroughtToYouBy>
+	<lblConnectionType>Type de connexion</lblConnectionType>
+	<lblPlayers>Joueurs</lblPlayers>
+	<lblColor>Couleur</lblColor>
+	<lblGamesLost>Perdues</lblGamesLost>
+	<lblGamesWon>Gagnées</lblGamesWon>
+	<lblGamesDrawn>Match nul</lblGamesDrawn>
+	<lblOrange>orange</lblOrange>
+	<lblRed>rouge</lblRed>
+	<lblVersion>Puissance 4 {0}</lblVersion>
+	<stateGameOverDraw>Partie terminée, c'ets un match nul!</stateGameOverDraw>
+	<stateGameOverLost>Partie terminée, vous avez perdu!</stateGameOverLost>
+	<stateGameOverWon>Partie terminée, vous avez gagné!</stateGameOverWon>
+	<stateInitializing>Initialisation du jeu en cours...</stateInitializing>
+	<stateMyTurn>A vous de jouer.</stateMyTurn>
+	<stateRemoteTurn>En attente d'un mouvement de {0}</stateRemoteTurn>
+	<stateStartMyTurn>Début du jeu, à vous de jouer.</stateStartMyTurn>
+	<stateStartRemoteTurn>Début du jeu, attente d'un mouvement de {0}</stateStartRemoteTurn>
+</words>
+

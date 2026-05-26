@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="iso-8859-1" ?> 
+<words>
+	<boat0>Porta-aviões</boat0>
+	<boat1>Navio de Guerra</boat1>
+	<boat2>Cruzeiro</boat2>
+	<boat3>Submarino</boat3>
+	<boat4>Barco</boat4>
+	<cmdDone>Feito</cmdDone>
+	<cmdHelp>Ajuda</cmdHelp>
+	<cmdPlaceRandomly>Dispôr os navios aleatóriamente</cmdPlaceRandomly>
+	<cmdRestart>Recomeçar</cmdRestart>
+	<confirmRemoteWantsRestart>{0} quer recomeçar o jogo, está de acordo?</confirmRemoteWantsRestart>
+	<connectionDirect>directo</connectionDirect>
+	<connectionDisconnected>desconectar</connectionDisconnected>
+	<connectionIndirect>indirecto</connectionIndirect>
+	<errorDataSend>Erro de comunicação. Jogo parado.</errorDataSend>
+	<errorDisconnected>Desconectado.</errorDisconnected>
+	<errorUserLeft>{0} saiu. O jogo acabou.</errorUserLeft>
+	<infoHit>Acertou!</infoHit>
+	<infoMiss>Falhou.</infoMiss>
+	<infoLostBoat>Acabou de perder {0}.</infoLostBoat>
+	<infoNoRestart>Sem recomeçar.</infoNoRestart>
+	<infoPlaceShips>Posicione os seus navios clicando no botão 'Dispôr os navios aleatóriamente'. Se não ficar satisfeito com as posições clique de novo. Por fim, clique em 'Feito' para começar a jogar.</infoPlaceShips>
+	<infoRequestRestart>A pedir o recomeço..</infoRequestRestart>
+	<infoRemoteTurn>À espera que o adversário jogue.</infoRemoteTurn>
+	<infoRestartDenied>{0} não quer recomeçar o jogo.</infoRestartDenied>
+	<infoSunkBoat>Você afundou {0}.</infoSunkBoat>
+	<infoWaitPlacing>À espera que o adversário posicione a sua frota.</infoWaitPlacing>
+	<infoYourTurn>É a sua vez. Clique num quadrado livre no tabuleiro do adversário e tente afundar os navios dele.</infoYourTurn>
+	<lblBroughtToYouBy>Produzido por {0}</lblBroughtToYouBy>
+	<lblConnectionType>Tipo de ligação</lblConnectionType>
+	<lblEnemyNavy>Marinha do Adversário</lblEnemyNavy>
+	<lblVersion>Batalha Naval {0}</lblVersion>
+	<lblYourNavy>Sua Marinha</lblYourNavy>
+	<stateGameOverLost>Jogo terminado, você perceu!</stateGameOverLost>
+	<stateGameOverWon>Jogo terminado, você ganhou!</stateGameOverWon>
+	<stateInitializing>A iniciar o jogo...</stateInitializing>
+	<stateMyTurn>É a sua vez.</stateMyTurn>
+	<statePlacingShips>Posicione os seus navios.</statePlacingShips>
+	<stateRemoteTurn>À espera que {0} jogue.</stateRemoteTurn>
+	<stateStartMyTurn>Jogo começado, é a sua vez.</stateStartMyTurn>
+	<stateStartRemoteTurn>Jogo começado, à espera que {0} jogue.</stateStartRemoteTurn>
+	<stateWaitOnJoin>À espera que o seu adversário chegue.</stateWaitOnJoin>
+	<stateWaitOnPlacing>Á espera do seu adversario...</stateWaitOnPlacing>
+</words>
+
