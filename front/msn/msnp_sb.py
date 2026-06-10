@@ -464,7 +464,7 @@ def messagedata_from_msnp(sender: User, sender_pop_id: Optional[str], ack: str, 
 	else:
 		#type = MessageType.Chat
 		#text = "CrossTalk System Message: This message cannot be viewed on the client you're currently using."
-    	pass
+		pass
 
 	message = MessageData(sender = sender, sender_pop_id = sender_pop_id, type = type, text = text)
 	message.front_cache['msnp'] = data
