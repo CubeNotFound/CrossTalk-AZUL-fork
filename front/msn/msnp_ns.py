@@ -2690,8 +2690,9 @@ def messagedata_from_sdg(sender: User, sender_pop_id: Optional[str], data: bytes
 		type = type_mapping.get(message_type_str, MessageType.Chat)
 		text = body_raw.decode('utf-8') if type == MessageType.Chat or MessageType.MSNP2P else ''
 	except Exception:
-		type = MessageType.Chat
-		text = "CrossTalk System Message: This message cannot be viewed on the client you're currently using."
+		#type = MessageType.Chat
+		#text = "CrossTalk System Message: This message cannot be viewed on the client you're currently using."
+		pass
 
 	message = MessageData(sender=sender, sender_pop_id=sender_pop_id, type=type, text=text)
 	message.front_cache['msnp_sdg'] = data
