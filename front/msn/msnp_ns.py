@@ -538,7 +538,7 @@ class MSNPCtrlNS(MSNPCtrl):
 			if real_email_domain in restricted_emails or real_email_domain in disposable_emails:
 				self.send_reply('NOT', encode_payload(PAYLOAD_MSG_10,
 					email = email, icon = '', url = 'https://crosstalk.im/alias-prep',
-					msg = "Your e-mail address contains a disallowed domain and needs to be changed before you can log in. Click this alert to learn more.",
+					msg = "Your e-mail address contains a blacklisted domain and needs to be changed before you can log in. Click this alert to learn more. Change your e-mail in your CrossTalk account settings.",
 				))
 				self.close()
 				return

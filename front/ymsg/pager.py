@@ -299,7 +299,7 @@ class YMSGCtrlPager(YMSGCtrlBase):
 			restricted_emails = json.load(file)
 			email_domain = email.lower().split('@')[-1]
 			if email_domain in restricted_emails or email_domain in disposable_emails:
-				send_system_message(self, "Your e-mail address contains a disallowed domaiin and needs to be changed before you can log in. Go to https://crosstalk.im/alias-prep to learn more. Change your e-mail in your CrossTalk account settings.")
+				send_system_message(self, "Your e-mail address contains a blacklisted domain and needs to be changed before you can log in. Go to https://crosstalk.im/alias-prep to learn more. Change your e-mail in your CrossTalk account settings.")
 			
 				authresp_error = int(YMSGStatus.Bad)
 				self.close()
