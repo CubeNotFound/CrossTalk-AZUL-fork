@@ -25,7 +25,7 @@ SMTP_USERNAME = 'administration@ugnet.gay'
 SMTP_PASSWORD = ''
 ENABLE_NAT_RELAY = False
 CF_REALTIME_API_KEY = ''
-VERSION = '0.5.22'
+VERSION = '0.5.23'
 # While not necessary for debugging, it is recommended you change the password variables in production for obvious security reasons.
 INS_LINK_PASSWORD = 'password'
 STRESS_TEST_ACTIVE = False

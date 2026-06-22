@@ -78,5 +78,20 @@
 		"id": 16,
 		"image": "banner/bluebrixhq.gif",
 		"link": "https://brix.neocities.org"
+    },
+	{
+		"id": 17,
+		"image": "banner/thebrothers.png",
+		"link": "https://the-brothers.neocities.org"
+    },
+	{
+		"id": 18,
+		"image": "banner/action97.gif",
+		"link": "https://bloxy97.nekoweb.org"
+    },
+	{
+		"id": 19,
+		"image": "banner/barco.gif",
+		"link": "https://barcohot.nekoweb.org"
     }
 ]

@@ -292,7 +292,7 @@ class YMSGCtrlPager(YMSGCtrlBase):
 			restricted_emails = json.load(file)
 			email_domain = email.lower().split('@')[-1]
 			if email_domain in restricted_emails or email_domain in disposable_emails:
-				send_system_message(self, "Your e-mail address contains a disallowed domaiin and needs to be changed before you can log in. Go to https://crosstalk.im/alias-prep to learn more. Change your e-mail in your CrossTalk account settings.")
+				send_system_message(self, "Your e-mail address contains a blacklisted domain and needs to be changed before you can log in. Go to https://crosstalk.im/alias-prep to learn more. Change your e-mail in your CrossTalk account settings.")
 			
 				authresp_error = int(YMSGStatus.Bad)
 				self.close()
@@ -390,7 +390,7 @@ class YMSGCtrlPager(YMSGCtrlBase):
 		# Yahoo! Messenger has a function that lets you add people by email address (a.k.a. stripping the "@domain.tld" part of the address and
 		# filling that out in the "Yahoo! ID" section of the contact add dialog). Treat as is.
 		contact_uuid = backend.util_get_uuid_from_username(contact_yahoo_id)
-		if contact_uuid is None or contact_uuid == user.uuid:
+		if contact_uuid is None:
 			add_request_response.add(b'66', b'3') # User doesn't exist in database
 			self.send_reply(YMSGService.FriendAdd, YMSGStatus.BRB, self.sess_id, add_request_response)
 			return
@@ -781,7 +781,7 @@ class YMSGCtrlPager(YMSGCtrlBase):
 		action_group_refresh = False
 
 		contact_uuid = backend.util_get_uuid_from_username(contact_yahoo_id)
-		if contact_uuid is None or contact_uuid == user.uuid:
+		if contact_uuid is None:
 			return
 
 		bs = self.bs

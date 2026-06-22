@@ -287,9 +287,6 @@ def ab_ABContactAdd(req: web.Request, header: Any, action: Any, bs: BackendSessi
 		return render(req, 'msn:abservice/Fault.emailmissingatsign.xml', status = 500)
 	elif '.' not in email:
 		return render(req, 'msn:abservice/Fault.emailmissingdot.xml', status = 500)
-	# fuck it we're inventing our own ABCH error codes today
-	if email == user.email:
-		return render(req, 'msn:abservice/Fault.cantaddyourself.xml', status = 500)
 	
 	contact_uuid = backend.util_get_uuid_from_email(email)
 	if contact_uuid is None:
