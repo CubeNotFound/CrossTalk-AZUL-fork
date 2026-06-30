@@ -236,6 +236,11 @@ class INSCtrl:
 		self.send_numeric(StatusCode.CircleActionSuccessful, ':CIRCLE {}'.format(ts))
 
 	def _m_alert(self, ts: str, type: str, content: str = '', url: str = '', targets: str = 'all', icon: str = '') -> None:
+		if not self.authenticated:
+			self.send_numeric(Err.NotAuthenticated)
+			self.close()
+			return
+
 		def _quote_circumcision(s: str) -> str:
 			if not s or len(s) < 2:
 				return s
@@ -289,6 +294,11 @@ class INSCtrl:
 
 
 	def _m_user(self, ts: str, action: str, uuid: str, field: str = '', *args: str) -> None:
+		if not self.authenticated:
+			self.send_numeric(Err.NotAuthenticated)
+			self.close()
+			return
+
 		def _parse_value_for_column(col, value_str):
 			py_type = getattr(col.type, 'python_type', None)
 			if py_type is not None:
@@ -658,6 +668,10 @@ class INSCtrl:
 
 	def _m_allthesessions(self, ts: str, email_filter: str = '') -> None:
 		# TODO: make this a payload command
+		if not self.authenticated:
+			self.send_numeric(Err.NotAuthenticated)
+			self.close()
+			return
 		sessions_info = []
 		for bs in self.backend._sc.iter_sessions():
 			if email_filter and bs.user.email != email_filter:
@@ -667,6 +681,10 @@ class INSCtrl:
 		self.send_reply('ALLTHESESSIONS', ts, *sessions_info)
 
 	def _m_session(self, ts: str, sess_id: str, method: str) -> None:
+		if not self.authenticated:
+			self.send_numeric(Err.NotAuthenticated)
+			self.close()
+			return
 		target = None
 		for bs in self.backend._sc.iter_sessions():
 			if str(id(bs)) == sess_id:
