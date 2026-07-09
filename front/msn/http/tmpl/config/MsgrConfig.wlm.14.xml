@@ -102,7 +102,7 @@
 			<Device VID="0x045e" PID="0x0722"/>
 			<Device VID="0x041e" PID="0x4080"/>
 		</USBDevices>
-		<CirclesWeb General="https://crosstalk.im/circles/$CIRCLECID$/settings/" General-SiteId="73625" Management="https://crosstalk.im/circles/$CIRCLECID$/settings/" Management-SiteId="73625" Membership="https://crosstalk.im/circles/$CIRCLECID$/settings/" Membership-SiteId="73625" Leave="https://crosstalk.im/circles/$CIRCLECID$/settings/" Leave-SiteId="73625" Disc="https://discord.gg/dumJwXTPxX" />
+		<CirclesWeb General="https://crosstalk.im/circles/$CIRCLECID$/settings/" General-SiteId="73625" Management="https://crosstalk.im/circles/$CIRCLECID$/settings/" Management-SiteId="73625" Membership="https://crosstalk.im/circles/$CIRCLECID$/settings/" Membership-SiteId="73625" Leave="https://crosstalk.im/circles/$CIRCLECID$/settings/" Leave-SiteId="73625" Disc="https://crosstalk.im/" />
 		<AnonymousIMSettings>
 			<SettingsPage URL="http://settings.messenger.live.com/applications/WebSettings.aspx" SiteID="76215" />
 		</AnonymousIMSettings>
