@@ -7,5 +7,14 @@ __all__ = [
 	'stats',
 	'feedbag',
 	'popup',
-	'bucp'
+	'bucp',
+	'directory',
+	'email',
+	'icq',
+	'admin',
+	'bart',
+	'chat',
+	'chatnav',
+	'user_lookup',
+	'invite'
 ]

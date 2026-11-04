@@ -1,3 +1,4 @@
+			
 			<wst:RequestSecurityTokenResponse>
 				<wst:TokenType>urn:passport:compact</wst:TokenType>
 				<wsp:AppliesTo xmlns:wsa="http://www.w3.org/2005/08/addressing">
@@ -28,3 +29,4 @@
 				</wst:RequestedProofToken>
 				{% endif %}
 			</wst:RequestSecurityTokenResponse>
+

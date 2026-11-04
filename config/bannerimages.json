@@ -21,72 +21,52 @@
 	},
 	{
 		"id": 5,
-		"image": "banner/cobbclub.png",
-		"link": "http://cobb.club"
-	},
-	{
-		"id": 6,
 		"image": "banner/maymundere.gif",
 		"link": "https://maymundere.org"
 	},
 	{
-		"id": 7,
-		"image": "banner/macsecret.png",
-		"link": "http://macsecret.com"
-	},
-	{
-		"id": 8,
+		"id": 6,
 		"image": "banner/leefy.png",
 		"link": "https://leefymoons-room.net"
 	},
 	{
-		"id": 9,
-		"image": "banner/srcfreak.jpg",
-		"link": "http://srcfreaks.ddns.net"
-	},
-	{
-		"id": 10,
+		"id": 7,
 		"image": "banner/kakworm.gif",
 		"link": "https://fusionstrike.neocities.org"
 	},
 	{
-		"id": 11,
+		"id": 8,
 		"image": "banner/gdsk.gif",
 		"link": "https://gdsk.retrosite.org"
 	},
 	{
-		"id": 12,
+		"id": 9,
 		"image": "banner/kooper.png",
 		"link": "http://kooper.online"
 	},
 	{
-		"id": 13,
-		"image": "banner/imsnp.png",
-		"link": "http://kooper.online/blog/pages/imsnp.html"
-	},
-	{
-		"id": 14,
+		"id": 10,
 		"image": "banner/aomeix.jpg",
 		"link": "http://aomeix.eu.org"
 	},
-    {
-		"id": 15,
+	{
+		"id": 11,
 		"image": "banner/bluebrixhq.gif",
 		"link": "https://brix.neocities.org"
-    },
+	},
 	{
-		"id": 16,
-		"image": "banner/thebrothers.png",
-		"link": "https://the-brothers.neocities.org"
-    },
-	{
-		"id": 17,
+		"id": 12,
 		"image": "banner/action97.gif",
 		"link": "https://bloxy97.nekoweb.org"
-    },
+	},
 	{
-		"id": 18,
+		"id": 13,
 		"image": "banner/barco.gif",
 		"link": "https://barcohot.nekoweb.org"
-    }
+	},
+	{
+		"id": 14,
+		"image": "banner/pentralink.gif",
+		"link": "https://pentalink.yooco.org/"
+	}
 ]

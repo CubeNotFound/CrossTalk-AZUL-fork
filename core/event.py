@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Optional, Dict, Any, List
 from abc import ABCMeta, abstractmethod
 
 from .models import User, Contact, OIM, Circle, CircleRole, MessageData, TextWithData, Substatus, LoginOption
+from .alerts import Alert
 from util.misc import MultiDict
 
 if TYPE_CHECKING:
@@ -26,12 +27,15 @@ class BackendEventHandler(metaclass = ABCMeta):
 	def on_maintenance_message(self, *args: Any, **kwargs: Any) -> None:
 		pass
 
-	def on_client_alert(self, icon_url: Optional[str], url: Optional[str], message: str = '') -> None:
-		pass
+	def on_client_alert(self, alert: Alert) -> bool:
+		return False
 	
 	def on_maintenance_boot(self) -> None:
 		pass
-	
+
+	def on_warning_level_changed(self, level: int, warner: Optional[User]) -> None:
+		pass
+
 	@abstractmethod
 	def on_presence_notification(
 		self, ctc: Contact, on_contact_add: bool, old_substatus: Substatus, *,
@@ -92,16 +96,22 @@ class BackendEventHandler(metaclass = ABCMeta):
 		pass
 	
 	def msn_on_uun_sent(
-		self, sender: User, type: int, data: Optional[bytes], *,
-		pop_id_sender: Optional[str] = None, pop_id: Optional[str] = None,
+		self, sender: User, type: Optional[int], data: Optional[bytes], *,
+		pop_id_sender: Optional[str] = None, pop_id: Optional[str] = None, sdg: Optional[bytes] = None,
 	) -> None:
 		pass
 	
 	def msn_on_notify_ab(self) -> None:
 		pass
 	
+	def msn_on_whats_new(self, publisher: User) -> None:
+		pass
+	
 	def msn_on_notify_circle_ab(self, chat_id: str) -> None:
 		pass
+
+	def msn_on_page(self, sender: User, text: str) -> bool:
+		return False
 
 	
 	def ymsg_on_p2p_msg_request(self, sess_id: int, yahoo_data: MultiDict[bytes, bytes]) -> None:
@@ -115,7 +125,74 @@ class BackendEventHandler(metaclass = ABCMeta):
 	
 	def ymsg_on_upload_file_ft(self, recipient: str, message: str) -> None:
 		pass
+	
+	def ymsg_on_friend_icon(self, yahoo_id_sender: str, yahoo_id_receiver: str, checksum: bytes) -> None:
+		pass
 
+	def ymsg_on_friend_icon_download(self, yahoo_id_sender: str, yahoo_id_receiver: str, url: str, checksum: bytes) -> None:
+		pass
+
+	def ymsg_on_friend_icon_file_transfer(self, yahoo_id_sender: str, yahoo_id_receiver: str, url: str, filename: str, ts: str) -> None:
+		pass
+	
+	def ymsg_on_friend_icon_flag(self, yahoo_id_sender: str, yahoo_id_receiver: str, icon_flag: bytes) -> None:
+		pass
+	
+	def ymsg_on_audible(self, sender: str, receiver: str, audible_id: bytes, text: bytes, checksum: bytes) -> None:
+		pass
+	
+	def ymsg_on_im_panel_feature(self, sender: str, receiver: str, feature: bytes, state: bytes) -> None:
+		pass
+	
+	def ymsg_on_im_session(self, sender: str, receiver: str, flag: bytes) -> None:
+		pass
+	
+	def ymsg_on_message_ack(self, sender: str, receiver: str, msg_id: bytes) -> None:
+		pass
+	
+	def ymsg_on_imvironment(self, sender: str, receiver: str, imv: bytes, state: bytes) -> None:
+		pass
+
+	def ymsg_on_buddy_response(self, buddy: User, accepted: bool, message: str = '') -> None:
+		pass
+
+	def ymsg_on_photo_add(
+		self, sender: str, receiver: str, photo_id: bytes,
+		name: Optional[bytes], thumbnail: Optional[bytes], url: Optional[bytes],
+	) -> None:
+		pass
+	
+	def ymsg_on_photo_ack(self, sender: str, receiver: str, photo_id: bytes) -> None:
+		pass
+	
+	def ymsg_on_photo_select(self, sender: str, receiver: str, photo_id: bytes, action: bytes) -> None:
+		pass
+	
+	def ymsg_on_photo_relay(
+		self, sender: str, receiver: str, photo_id: bytes, token: bytes, *,
+		relay_host: bytes, filesize: Optional[bytes], ack: bool,
+	) -> None:
+		pass
+	
+	def ymsg_on_ft_invite(self, sender: str, receiver: str, cookie: bytes, yahoo_data: MultiDict[bytes, bytes]) -> None:
+		pass
+	
+	def ymsg_on_ft_setup(
+		self, sender: str, receiver: str, cookie: bytes, *,
+		filename: bytes, relay_host: bytes, peer_path: bytes, transfer_type: bytes,
+	) -> None:
+		pass
+	
+	def ymsg_on_ft_init(
+		self, sender: str, receiver: str, cookie: bytes, yahoo_data: MultiDict[bytes, bytes], *, cancelled: bool = False,
+	) -> None:
+		pass
+	
+	def ymsg_on_sip_invite(self, caller: str, callee: str, call_id: str, sdp: str, *, video: bool = False) -> None:
+		pass
+	
+	def ymsg_on_sip_bye(self, caller: str, callee: str, call_id: str) -> None:
+		pass
 class ChatEventHandler(metaclass = ABCMeta):
 	__slots__ = ('cs',)
 	

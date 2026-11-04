@@ -10,8 +10,8 @@ from .msnp import MSNPCtrl
 
 def register(loop: asyncio.AbstractEventLoop, backend: Backend, http_app: web.Application) -> None:
 	from util.misc import ProtocolRunner
-	from . import msnp_dp, msnp_ns, msnp_sb
-	from .http import appdirectory, abservice, gateway, other
+	from . import msnp_dp, msnp_ns, msnp_sb#, spotlife, turn
+	from .http import appdirectory, abservice, gateway, other, schematizedstore, sharingservice
 	
 	backend.add_runner(ProtocolRunner('0.0.0.0', 1863, ListenerMSNP, args = ['MSNP Dispatch', backend, msnp_dp.MSNPCtrlDP], service = 'MSNP Dispatch'))
 	backend.add_runner(ProtocolRunner('0.0.0.0', 1864, ListenerMSNP, args = ['MSNP Notification', backend, msnp_ns.MSNPCtrlNS], service = 'MSNP Notification'))
@@ -19,7 +19,11 @@ def register(loop: asyncio.AbstractEventLoop, backend: Backend, http_app: web.Ap
 	appdirectory.register(http_app)
 	other.register(http_app)
 	abservice.register(http_app)
+	sharingservice.register(http_app)
+	schematizedstore.register(http_app)
 	gateway.register(loop, http_app)
+	#spotlife.register(loop, backend, http_app)
+	#turn.register(loop, backend)
 
 class ListenerMSNP(asyncio.Protocol):
 	logger: Logger

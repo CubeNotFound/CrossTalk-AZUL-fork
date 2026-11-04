@@ -1,6 +1,6 @@
 from typing import FrozenSet, Any, Iterable, Optional, TypeVar, List, Dict, Tuple, Generic, TYPE_CHECKING
 from abc import ABCMeta, abstractmethod
-import asyncio, functools, itertools, traceback, ssl, jinja2, settings, sys, platform
+import asyncio, functools, itertools, traceback, ssl, jinja2, settings, sys, platform, re
 from datetime import datetime
 from uuid import uuid4
 from aiohttp import web
@@ -15,6 +15,11 @@ else:
 
 def gen_uuid() -> str:
 	return str(uuid4())
+
+_VALID_OSCAR_RE = re.compile(r'^[A-Za-z0-9]+$')
+
+def is_valid_oscar_screenname(name: str) -> bool:
+	return bool(name) and _VALID_OSCAR_RE.match(name) is not None
 
 T = TypeVar('T')
 def first_in_iterable(iterable: Iterable[T]) -> Optional[T]:
@@ -72,6 +77,39 @@ class ProtocolRunner(Runner):
 	
 	def create_servers(self, loop: asyncio.AbstractEventLoop) -> List[Any]:
 		return [loop.create_server(self._protocol, self.host, self.port, ssl = self.ssl_context)]
+
+class DatagramRunner(Runner):
+	__slots__ = ('_protocol',)
+
+	_protocol: Any
+
+	def __init__(self, host: str, port: int, protocol: Any, *, args: Optional[List[Any]] = None, service: str) -> None:
+		super().__init__(host, port, service = service)
+		if args:
+			protocol = functools.partial(protocol, *args)
+		self._protocol = protocol
+
+	def create_servers(self, loop: asyncio.AbstractEventLoop) -> List[Any]:
+		return [self._create_endpoint(loop)]
+
+	async def _create_endpoint(self, loop: asyncio.AbstractEventLoop) -> 'DatagramServer':
+		transport, _ = await loop.create_datagram_endpoint(self._protocol, local_addr = (self.host, self.port))
+		return DatagramServer(transport)
+
+class DatagramServer:
+	__slots__ = ('_transport',)
+
+	_transport: asyncio.BaseTransport
+
+	def __init__(self, transport: asyncio.BaseTransport) -> None:
+		self._transport = transport
+
+	def close(self) -> None:
+		self._transport.close()
+
+	async def wait_closed(self) -> None:
+		# a datagram endpoint has nothing to drain once it's closed
+		return None
 
 class AIOHTTPRunner(Runner):
 	__slots__ = ('app', '_handler')

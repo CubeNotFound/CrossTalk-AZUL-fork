@@ -12,6 +12,7 @@ from core.models import (
 )
 from core.backend import Backend, BackendSession, Chat, ChatSession
 from core.client import Client
+from core.alerts import Alert, irc_lines
 
 class IRCCtrl:
 	__slots__ = (
@@ -241,8 +242,10 @@ class BackendEventHandler(event.BackendEventHandler):
 	def __init__(self, ctrl: IRCCtrl) -> None:
 		self.ctrl = ctrl
 	
-	def on_client_alert(self, icon_url: Optional[str], url: Optional[str], message: str = '') -> None:
-		self.ctrl.send_reply('PRIVMSG', '$*', ':' + message, source = "System")
+	def on_client_alert(self, alert: Alert) -> bool:
+		for line in irc_lines(alert.paragraphs) + ([alert.url] if alert.url else []):
+			self.ctrl.send_reply('PRIVMSG', '$*', ':' + line, source = "System")
+		return True
 
 	def on_maintenance_message(self, *args: Any, **kwargs: Any) -> None:
 		if args[1] is not None:

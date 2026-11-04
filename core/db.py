@@ -48,9 +48,9 @@ class User(WithFrontData):
 	uuid = Col(sa.String(50), unique = True)
 	email = Col(sa.String(80, collation='utf8mb4_unicode_ci'), nullable=False, unique=True)
 	username = Col(sa.String(40, collation='utf8mb4_unicode_ci'), nullable=False, unique=True)
-	first_name = Col(sa.String(50), default = 'John')
+	first_name = Col(sa.String(50), nullable = True)
 	middle_name = Col(sa.String(50), nullable = True)
-	last_name = Col(sa.String(50), default = 'Doe')
+	last_name = Col(sa.String(50), nullable = True)
 	# specifically used for social features/member directory
 	nickname = Col(sa.String(60), nullable = True)
 	uin = Col(sa.BigInteger, nullable = True)
@@ -68,6 +68,7 @@ class User(WithFrontData):
 	groups = Col(JSONType)
 	settings = Col(JSONType)
 	suspended = Col(sa.Boolean)
+	suspended_at = Col(sa.DateTime, nullable = True)
 	is_tester = Col(sa.Boolean)
 	is_mvp = Col(sa.Boolean)
 	show_in_dir = Col(sa.Boolean)
@@ -76,6 +77,7 @@ class User(WithFrontData):
 	alias_active = Col(sa.Boolean, default=False)
 	did_firsttime_email_change = Col(sa.Boolean, default=False)
 	account_verified = Col(sa.Boolean, default=False) # for e-mail address verification
+	is_admin = Col(sa.Boolean, default = False, server_default = sa.false())
 	lang = Col(sa.String(10), nullable = True)
 	avatar = Col(sa.String(16), nullable = True)
 	profile = relationship("UserProfile", backref="user", uselist=False, cascade="all, delete-orphan")
@@ -131,7 +133,7 @@ class UserProfile(WithFrontData):
 	state = Col(sa.String(80), nullable = True)
 	zip = Col(sa.Integer, nullable = True)
 	country = Col(sa.String(60), nullable = True)
-	language = Col(sa.String(50), nullable = True)
+	language = Col(JSONType, nullable = True)
 	interests = Col(JSONType, nullable = True, default = {})
 	visibility = Col(sa.String(25), default='public')
 
@@ -172,6 +174,68 @@ class Sound(Base):
 	is_public = Col(sa.Boolean)
 	hits = Col(sa.Integer, default = 0)
 
+class Activity(Base):
+	__tablename__ = 'user_activity'
+	
+	id = Col(sa.Integer, primary_key = True)
+	# `None` for service announcements
+	user_uuid = Col(sa.String(50), sa.ForeignKey('user.uuid'), nullable = True, index = True)
+	type = Col(sa.Integer)
+	title = Col(sa.String(100), nullable = True)
+	text = Col(sa.String(255), nullable = True)
+	url = Col(sa.String(255), nullable = True)
+	date_created = Col(sa.DateTime, default = datetime.utcnow, index = True)
+	
+class ActivityReaction(Base):
+	__tablename__ = 'user_activity_reaction'
+	__table_args__ = (sa.UniqueConstraint('activity_id', 'user_uuid', 'reaction'),)
+	
+	id = Col(sa.Integer, primary_key = True)
+	activity_id = Col(sa.Integer, index = True)
+	user_uuid = Col(sa.String(50), index = True)
+	reaction = Col(sa.String(64))
+	date_created = Col(sa.DateTime, default = datetime.utcnow)
+
+class ActivityComment(Base):
+	__tablename__ = 'user_activity_comment'
+	
+	id = Col(sa.Integer, primary_key = True)
+	activity_id = Col(sa.Integer, index = True)
+	user_uuid = Col(sa.String(50), index = True)
+	text = Col(sa.String(255, collation='utf8mb4_unicode_ci'))
+	date_created = Col(sa.DateTime, default = datetime.utcnow)
+
+class InsClient(Base):
+	__tablename__ = 'ins_client'
+	
+	id = Col(sa.Integer, primary_key = True)
+	identifier = Col(sa.String(64))
+	label = Col(sa.String(100), default = '')
+	transport_public = Col(sa.String(64), unique = True)
+	auth_public = Col(sa.String(64))
+	machine = Col(sa.String(64))
+	addresses = Col(JSONType)
+	date_created = Col(sa.DateTime, default = datetime.utcnow)
+	date_last_seen = Col(sa.DateTime, nullable = True)
+	last_address = Col(sa.String(64), nullable = True)
+	revoked = Col(sa.Boolean, default = False)
+	date_revoked = Col(sa.DateTime, nullable = True)
+
+class InsEnrollment(Base):
+	__tablename__ = 'ins_enrollment'
+	
+	id = Col(sa.Integer, primary_key = True)
+	code_id = Col(sa.String(32), unique = True)
+	secret_hash = Col(sa.String(64))
+	identifier = Col(sa.String(64))
+	label = Col(sa.String(100), default = '')
+	address = Col(sa.String(64), nullable = True)
+	created_by = Col(sa.String(50), nullable = True)
+	date_created = Col(sa.DateTime, default = datetime.utcnow)
+	date_expires = Col(sa.DateTime)
+	date_used = Col(sa.DateTime, nullable = True)
+	client_id = Col(sa.Integer, nullable = True)
+
 class LoginToken(Base):
 	__tablename__ = 'login_token'
 	
@@ -194,6 +258,29 @@ def _simplify_json_data(data: Any) -> Any:
 	if isinstance(data, (list, tuple)):
 		return [_simplify_json_data(x) for x in data]
 	return data
+
+def ensure_schema(engine: Any) -> list[str]:
+	changed: list[str] = []
+	inspector = sa.inspect(engine)
+	tables = set(inspector.get_table_names())
+	for table in (InsClient.__table__, InsEnrollment.__table__):
+		if table.name not in tables:
+			table.create(engine)
+			changed.append(table.name)
+	if 'user' in tables:
+		columns = { column['name'] for column in inspector.get_columns('user') }
+		quote = engine.dialect.identifier_preparer.quote
+		if 'is_admin' not in columns:
+			false = str(sa.false().compile(dialect = engine.dialect))
+			with engine.begin() as conn:
+				conn.execute(sa.text('ALTER TABLE {} ADD COLUMN {} BOOLEAN NOT NULL DEFAULT {}'.format(quote('user'), quote('is_admin'), false)))
+			changed.append('user.is_admin')
+		if 'suspended_at' not in columns:
+			kind = sa.DateTime().compile(dialect = engine.dialect)
+			with engine.begin() as conn:
+				conn.execute(sa.text('ALTER TABLE {} ADD COLUMN {} {} NULL'.format(quote('user'), quote('suspended_at'), kind)))
+			changed.append('user.suspended_at')
+	return changed
 
 engine = sa.create_engine(settings.DB, echo='debug' if settings.DEBUG and settings.DEBUG_FULL and settings.DEBUG_LOG_SQL_QUERIES else None)
 session_factory = sessionmaker(bind = engine)

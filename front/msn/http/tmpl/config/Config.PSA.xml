@@ -1792,12 +1792,12 @@
 			<AppId>1140906031</AppId>
 			<ThumbNailUrl>https://{{ settings.USERSTORAGE_HOST }}/static/social/ugnetthumb.gif</ThumbNailUrl>
 			<MiniPhotoUrl>https://{{ settings.USERSTORAGE_HOST }}/static/social/mini.gif</MiniPhotoUrl>
-			<Domain>^https?://.*\.hiden\.cc/.*$</Domain>
-			<EmailDomain>mail.ugnet.gay</EmailDomain>
-			<WebDomain>ugnet.gay</WebDomain>
-			<Name>the undergr0und</Name>
+			<Domain>^https?://.*\.ugnet\.xyz/.*$</Domain>
+			<EmailDomain>mail.ugnet.xyz</EmailDomain>
+			<WebDomain>ugnet.xyz</WebDomain>
+			<Name>Testing...</Name>
 			<Summary>Making the internet fun again.</Summary>
-			<SiteUrl>http://ugnet.gay/</SiteUrl>
+			<SiteUrl>http://ugnet.xyz/</SiteUrl>
 			<PSARank>1</PSARank>
 			<Connected>true</Connected>
 			<AppState>

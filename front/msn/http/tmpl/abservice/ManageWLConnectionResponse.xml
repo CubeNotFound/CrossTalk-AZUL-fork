@@ -19,15 +19,15 @@
 				{% endif %}
 				{% if not error %}
 					<clientErrorData />
-					<contactId>{% if ab_id == '00000000-0000-0000-0000-000000000000' %}00000000-0000-0000-0009-{{ circle.chat_id }}{% else %}{{ head.uuid }}{% endif %}</contactId>
+					<contactId>{% if circle is not none and ab_id == '00000000-0000-0000-0000-000000000000' %}00000000-0000-0000-0009-{{ circle.chat_id }}{% else %}{{ head.uuid }}{% endif %}</contactId>
 					<contactInfo>
-						<contactType>{% if ab_id == '00000000-0000-0000-0000-000000000000' %}Circle{% else %}{% if circle.memberships[head.uuid].state == CircleState.WaitingResponse or circle.memberships[head.uuid].state == CircleState.Rejected or (circle.memberships[head.uuid].role == CircleRole.Empty or circle.memberships[head.uuid].state == CircleState.Empty) %}LivePending{% else %}Live{% endif %}{% endif %}</contactType>
-						<quickName>{% if ab_id == '00000000-0000-0000-0000-000000000000' %}circle{% else %}{{ head.email }}{% endif %}</quickName>
-						<passportName>{% if ab_id == '00000000-0000-0000-0000-000000000000' %}00000000-0000-0000-0009-{{ circle.chat_id.upper() }}@hotmail.com{% else %}{{ head.email }}{% endif %}</passportName>
+						<contactType>{% if circle is not none and ab_id == '00000000-0000-0000-0000-000000000000' %}Circle{% elif circle is not none %}{% if circle.memberships[head.uuid].state == CircleState.WaitingResponse or circle.memberships[head.uuid].state == CircleState.Rejected or (circle.memberships[head.uuid].role == CircleRole.Empty or circle.memberships[head.uuid].state == CircleState.Empty) %}LivePending{% else %}Live{% endif %}{% else %}Live{% endif %}</contactType>
+						<quickName>{% if circle is not none and ab_id == '00000000-0000-0000-0000-000000000000' %}circle{% else %}{{ head.email }}{% endif %}</quickName>
+						<passportName>{% if circle is not none and ab_id == '00000000-0000-0000-0000-000000000000' %}00000000-0000-0000-0009-{{ circle.chat_id.upper() }}@hotmail.com{% else %}{{ head.email }}{% endif %}</passportName>
 						<IsPassportNameHidden>false</IsPassportNameHidden>
-						<displayName>{% if ab_id == '00000000-0000-0000-0000-000000000000' %}{{ circle.name }}{% else %}{{ head.email }}{% endif %}</displayName>
+						<displayName>{% if circle is not none and ab_id == '00000000-0000-0000-0000-000000000000' %}{{ circle.name }}{% else %}{{ head.email }}{% endif %}</displayName>
 						<puid>{{ puid_format(user.uuid) }}</puid>
-						<CID>{{ cid_format('00000000-0000-0000-0009-' + circle.chat_id, decimal = True) }}</CID>
+						<CID>{% if circle is not none %}{{ cid_format('00000000-0000-0000-0009-' + circle.chat_id, decimal = True) }}{% else %}{{ cid_format(head.uuid, decimal = True) }}{% endif %}</CID>
 						<IsNotMobileVisible>false</IsNotMobileVisible>
 						<isMobileIMEnabled>false</isMobileIMEnabled>
 						<isMessengerUser>false</isMessengerUser>
@@ -40,10 +40,10 @@
 						<PrimaryLocation>ContactLocationPersonal</PrimaryLocation>
 						<PrimaryPhone>ContactPhonePersonal</PrimaryPhone>
 						<IsPrivate>false</IsPrivate>
-						<IsHidden>{% if ab_id == '00000000-0000-0000-0000-000000000000' %}true{% else %}false{% endif %}</IsHidden>
+						<IsHidden>{% if circle is not none and ab_id == '00000000-0000-0000-0000-000000000000' %}true{% else %}false{% endif %}</IsHidden>
 						<Gender>Unspecified</Gender>
 						<TimeZone>None</TimeZone>
-						{% if (ab_id == '00000000-0000-0000-0000-000000000000' or ab_id.startswith('00000000-0000-0000-0009-')) and not (circle.memberships[head.uuid].role == CircleRole.Empty or circle.memberships[head.uuid].state == CircleState.Empty) %}
+						{% if circle is not none and (ab_id == '00000000-0000-0000-0000-000000000000' or ab_id.startswith('00000000-0000-0000-0009-')) and not (circle.memberships[head.uuid].role == CircleRole.Empty or circle.memberships[head.uuid].state == CircleState.Empty) %}
 							<NetworkInfoList>
 								<NetworkInfo>
 									<DomainId>1</DomainId>

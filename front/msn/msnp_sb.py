@@ -1,16 +1,21 @@
-from typing import Tuple, Any, Optional, List, Set
+from typing import Tuple, Any, Optional, List, Set, Dict, cast
 import time, asyncio
 from email.parser import Parser
 
-from util.misc import Logger, VoidTaskType
+from util.misc import Logger, VoidTaskType, gen_uuid
 from core.models import User, MessageData, MessageType, Substatus
 from core.backend import Backend, BackendSession, ChatSession, Chat
 from core import event, error
-from .misc import Err, encode_capabilities_capabilitiesex, decode_email_pop, encode_email_pop, normalize_pop_id, MAX_CAPABILITIES_BASIC
 from .msnp import MSNPCtrl
-
+from .misc import (
+	Err, encode_capabilities_capabilitiesex, decode_email_pop, encode_email_pop, normalize_pop_id, get_session_capabilities,
+	CAPABILITIESEX_P2PV2, DATACAST_MSNOBJ, DATACAST_ACTION, UNSUPPORTED_MESSAGE_TEXT, is_null_epid,
+)
+from .p2p_bridge import (
+	get_p2p_state, chunk_p2p, translate_p2pv2_ack, build_sb_p2p_headers, sb_p2p_is_v2, neutralize_direct_p2p, sb_p2p_messages,
+)
 class MSNPCtrlSB(MSNPCtrl):
-	__slots__ = ('backend', 'dialect', 'loop', 'counter_task', 'auth_sent', 'bs', 'cs')
+	__slots__ = ('backend', 'dialect', 'loop', 'counter_task', 'auth_sent', 'bs', 'cs', 'chunks')
 	
 	backend: Backend
 	dialect: int
@@ -19,6 +24,7 @@ class MSNPCtrlSB(MSNPCtrl):
 	auth_sent: bool
 	bs: Optional[BackendSession]
 	cs: Optional[ChatSession]
+	chunks: Dict[str, Dict[str, Any]]
 	
 	def __init__(self, logger: Logger, via: str, backend: Backend) -> None:
 		super().__init__(logger)
@@ -29,6 +35,7 @@ class MSNPCtrlSB(MSNPCtrl):
 		self.auth_sent = False
 		self.bs = None
 		self.cs = None
+		self.chunks = {}
 	
 	def on_connect(self) -> None:
 		self.counter_task = self.loop.create_task(self._conn_auth_limit_counter())
@@ -171,17 +178,14 @@ class MSNPCtrlSB(MSNPCtrl):
 			for other_cs in tmp:
 				other_user = other_cs.user
 				other_user_display_email = self.backend.util_get_display_email(other_user)
-				capabilities = encode_capabilities_capabilitiesex(
-					((other_cs.bs.front_data.get('msn_capabilities') or 0) if other_cs.bs.front_data.get('msn') is True else MAX_CAPABILITIES_BASIC),
-					other_cs.bs.front_data.get('msn_capabilitiesex') or 0,
-				)
+				capabilities = encode_capabilities_capabilitiesex(*get_session_capabilities(other_cs.bs, dialect))
 				self.send_reply(
 					'IRO', trid, i, l, encode_email_pop(other_user_display_email, other_cs.bs.front_data.get('msn_pop_id')),
-					other_user.status.name, capabilities,
+					_friendly_name(self.backend, other_user), capabilities,
 				)
 				if other_cs.primary_pop and other_cs.bs.front_data.get('msn_pop_id') is not None:
 					i += 1
-					self.send_reply('IRO', trid, i, l, other_user_display_email, other_user.status.name, capabilities)
+					self.send_reply('IRO', trid, i, l, other_user_display_email, _friendly_name(self.backend, other_user), capabilities)
 				i += 1
 		else:
 			roster_one_per_user = [] # type: List[ChatSession]
@@ -197,15 +201,9 @@ class MSNPCtrlSB(MSNPCtrl):
 				if dialect >= 12:
 					# Capability flags in IRO were technically introduced by MSNP13, but there are MSNP12 logs that show that they
 					# had been introduced in that protocol version by then
-					extra = (
-						(
-							(other_cs.bs.front_data.get('msn_capabilities') or 0)
-							if other_cs.bs.front_data.get('msn') is True
-							else MAX_CAPABILITIES_BASIC
-						),
-					)
-				self.send_reply('IRO', trid, i + 1, l, self.backend.util_get_display_email(other_user), other_user.status.name, *extra)
-		
+					extra = (get_session_capabilities(other_cs.bs, dialect)[0],)
+				self.send_reply('IRO', trid, i + 1, l, self.backend.util_get_display_email(other_user), _friendly_name(self.backend, other_user), *extra)
+						
 		self.send_reply('ANS', trid, 'OK')
 		
 		chat.send_participant_joined(cs)
@@ -276,20 +274,71 @@ class MSNPCtrlSB(MSNPCtrl):
 			self.close()
 			return
 		
+		chunks = self._collect_chunk(data)
+		if chunks is None:
+			if ack in ('A', 'D'):
+				self.send_reply('ACK', trid)
+			return
+		
 		try:
-			cs.send_message_to_everyone(messagedata_from_msnp(cs.user, bs.front_data.get('msn_pop_id'), ack, data))
+			message = messagedata_from_msnp(cs.user, bs.front_data.get('msn_pop_id'), ack, b''.join(_chunk_body(chunk, i) for i, chunk in enumerate(chunks)) if len(chunks) > 1 else data)
 		except error.SpecialMessageNotSentWithDType:
 			self.close()
 			return
+		if len(chunks) > 1:
+			message.front_cache['msnp_chunks'] = chunks
+		
+		if message.type is MessageType.MSNP2P:
+			p2pv2 = sb_p2p_is_v2(message.front_cache.get('msn_p2p_dest'))
+			message.front_cache['msn_p2pv2'] = p2pv2
+			packet = neutralize_direct_p2p(cast(bytes, message.text), p2pv2)
+			if packet != message.text:
+				i = data.index(b'\r\n\r\n') + 4
+				message.text = cast(Any, packet)
+				message.front_cache['msnp'] = data[:i] + packet
+		
+		(p2p_dest, p2p_dest_pop_id) = decode_email_pop(message.front_cache.get('msn_p2p_dest') or '')
+		if p2p_dest_pop_id is not None:
+			p2p_dest_uuid = self.backend.util_get_uuid_from_email(p2p_dest)
+			if p2p_dest_uuid is not None:
+				message.text = translate_p2pv2_ack(message.text, get_p2p_state(cs.chat.front_data, p2p_dest_uuid, bs.user.uuid))
+		delivered = cs.send_message_to_everyone(message)
 		
 		# TODO: Implement ACK/NAK
 		if ack == 'U':
 			return
-		any_failed = False
+		any_failed = not delivered
 		if any_failed: # ADN
 			self.send_reply('NAK', trid)
 		elif ack != 'N': # AD
 			self.send_reply('ACK', trid)
+	
+	def _collect_chunk(self, data: bytes) -> Optional[List[bytes]]:
+		try:
+			i = data.index(b'\r\n\r\n') + 4
+			headers = Parser().parsestr(data[:i].decode('utf-8'))
+		except (ValueError, UnicodeDecodeError):
+			return [data]
+		message_id = headers.get('Message-ID')
+		if message_id is None or (headers.get('Chunks') is None and headers.get('Chunk') is None):
+			return [data]
+		pending = self.chunks.setdefault(str(message_id), { 'total': 0, 'parts': {} })
+		try:
+			if headers.get('Chunks') is not None:
+				pending['total'] = int(str(headers.get('Chunks')))
+				pending['parts'][0] = data
+			else:
+				pending['parts'][int(str(headers.get('Chunk')))] = data
+		except ValueError:
+			del self.chunks[str(message_id)]
+			return [data]
+		total = pending['total']
+		if not total or len(pending['parts']) < total or total > MAX_CHUNKS:
+			if total > MAX_CHUNKS or len(self.chunks) > MAX_CHUNKED_MESSAGES:
+				del self.chunks[str(message_id)]
+			return None
+		del self.chunks[str(message_id)]
+		return [pending['parts'][n] for n in range(total) if n in pending['parts']]
 	
 	async def _conn_auth_limit_counter(self) -> None:
 		counter = 0
@@ -336,29 +385,14 @@ class ChatEventHandler(event.ChatEventHandler):
 		# Capability flags in JOI were technically introduced by MSNP13, but there are MSNP12 logs that show that they
 		# had been introduced in that protocol version by then
 		if 12 <= ctrl.dialect <= 15:
-			extra = (
-				(
-					(cs_other.bs.front_data.get('msn_capabilities') or 0)
-					if cs_other.bs.front_data.get('msn') is True
-					else MAX_CAPABILITIES_BASIC
-				),
-			) # type: Tuple[Any, ...]
+			extra = (get_session_capabilities(cs_other.bs, ctrl.dialect)[0],) # type: Tuple[Any, ...]
 		elif ctrl.dialect >= 16:
-			extra = (
-				encode_capabilities_capabilitiesex(
-					(
-						(cs_other.bs.front_data.get('msn_capabilities') or 0)
-						if cs_other.bs.front_data.get('msn') is True
-						else MAX_CAPABILITIES_BASIC
-					),
-					cs_other.bs.front_data.get('msn_capabilitiesex') or 0,
-				),
-			)
+			extra = (encode_capabilities_capabilitiesex(*get_session_capabilities(cs_other.bs, ctrl.dialect)),)
 		else:
 			extra = ()
-		ctrl.send_reply('JOI', email, user.status.name, *extra)
+		ctrl.send_reply('JOI', email, _friendly_name(ctrl.backend, user), *extra)
 		if cs_other.user is not cs.user and pop_id_other is not None and first_pop and ctrl.dialect >= 16:
-			ctrl.send_reply('JOI', user_display_email, user.status.name, *extra)
+			ctrl.send_reply('JOI', user_display_email, _friendly_name(ctrl.backend, user), *extra)
 	
 	def on_participant_left(self, cs_other: ChatSession, last_pop: bool) -> None:
 		ctrl = self.ctrl
@@ -388,8 +422,53 @@ class ChatEventHandler(event.ChatEventHandler):
 		pass
 	
 	def on_message(self, data: MessageData) -> None:
-		if data.type is not MessageType.TypingDone:
-			self.ctrl.send_reply('MSG', self.ctrl.backend.util_get_display_email(data.sender), data.sender.status.name, messagedata_to_msnp(data))
+		if data.type in (MessageType.TypingDone, MessageType.Ignored): return
+		if data.type is MessageType.MSNP2P and 'msn_p2p' in data.front_cache:
+			self._send_p2p(data)
+			return
+		ctrl = self.ctrl
+		sender_email = ctrl.backend.util_get_display_email(data.sender)
+		if 'msnp_chunks' in data.front_cache:
+			for chunk in data.front_cache['msnp_chunks']:
+				ctrl.send_reply('MSG', sender_email, data.sender.status.name, chunk)
+			return
+		payload = messagedata_to_msnp(data, sender_email = sender_email)
+		if payload is None: return
+		for chunk in chunk_msnp(payload):
+			ctrl.send_reply('MSG', sender_email, data.sender.status.name, chunk)
+	
+	def _send_p2p(self, data: MessageData) -> None:
+		ctrl = self.ctrl
+		bs = ctrl.bs
+		assert bs is not None
+		
+		pop_id = bs.front_data.get('msn_pop_id')
+		dest_pop_id = data.front_cache.get('msn_p2p_dest_pop_id')
+		if is_null_epid(dest_pop_id): dest_pop_id = None
+		if dest_pop_id is not None and pop_id is not None and normalize_pop_id(dest_pop_id).lower() != pop_id.lower(): return
+		
+		sender_email = ctrl.backend.util_get_display_email(data.sender)
+		user_email = ctrl.backend.util_get_display_email(bs.user)
+		dest_email = data.front_cache.get('msn_p2p_dest_email')
+		if dest_email is not None and dest_email.lower() not in (user_email.lower(), bs.user.email.lower()): return
+		p2pv2 = data.front_cache.get('msn_p2pv2')
+		if p2pv2 is None:
+			p2pv2 = (ctrl.dialect >= 16 and bool(get_session_capabilities(bs, ctrl.dialect)[1] & CAPABILITIESEX_P2PV2))
+		if p2pv2 and (ctrl.dialect < 16 or pop_id is None): return
+		if p2pv2:
+			dest = encode_email_pop(user_email, dest_pop_id or pop_id)
+			src = encode_email_pop(sender_email, data.sender_pop_id) # type: Optional[str]
+		else:
+			dest = user_email
+			src = None
+		
+		state = get_p2p_state(self.cs.chat.front_data, data.sender.uuid, bs.user.uuid)
+		if data.front_cache.get('msn_sdg_pipe'):
+			state['pipe'] = data.front_cache['msn_sdg_pipe']
+		state['pop_id'] = data.sender_pop_id
+		for packet in data.front_cache['msn_p2p']:
+			for payload in sb_p2p_messages(packet, dest, src, p2pv2, state):
+				ctrl.send_reply('MSG', sender_email, data.sender.status.name, payload)
 	
 	def on_close(self) -> None:
 		self.ctrl.close()
@@ -433,73 +512,127 @@ def messagedata_from_msnp(sender: User, sender_pop_id: Optional[str], ack: str, 
 		i = data.index(b'\r\n\r\n') + 4
 		headers = Parser().parsestr(data[:i].decode('utf-8'))
 		body_raw = data[i:]
-	except:
-		type = MessageType.Chat
-		text = "CrossTalk System Message: This message cannot be viewed on the client you're currently using."
+	except Exception:
+		message = MessageData(sender = sender, sender_pop_id = sender_pop_id, type = MessageType.Chat, text = UNSUPPORTED_MESSAGE_TEXT)
+		message.front_cache['msnp'] = data
+		return message
 	
+	front_cache: dict[str, Any] = {}
+	text: Any = body_raw
 	content_type = headers.get_content_type()
-	if content_type is not None:
-		if content_type == 'text/x-msmsgscontrol':
-			type = MessageType.Typing
+	if content_type == 'text/x-msmsgscontrol':
+		type = MessageType.Typing
+		text = ''
+	elif content_type == 'text/x-msnmsgr-datacast':
+		body = body_raw.decode('utf-8', 'replace')
+		fields = _parse_body_fields(body)
+		id = (fields.get('ID') or '').strip()
+		if id == '1':
+			type = MessageType.Nudge
 			text = ''
-		elif content_type == 'text/x-msnmsgr-datacast':
-			body = body_raw.decode('utf-8')
-			id_start = body.index('ID:') + 3
-			id_end = body.index('\r\n', id_start)
-			id = body[id_start:id_end].strip()
-			if id == '1':
-				type = MessageType.Nudge
-				text = ''
-			else:
-				type = MessageType.Chat
-				text = "CrossTalk System Message: This message cannot be viewed on the client you're currently using."
-		elif content_type == 'application/x-msnmsgrp2p':
-			if ack != 'D':
-				raise error.SpecialMessageNotSentWithDType()
-			type = MessageType.MSNP2P
-			text = body_raw
-		elif content_type == "text/x-mms-emoticon":
-			type = MessageType.Emoticon
-			text = body_raw
-		elif content_type == "text/x-mms-animemoticon":
-			type = MessageType.Emoticon
-			text = body_raw	
-		elif content_type == 'text/x-msmsgsinvite':
-			type = MessageType.MSNP2PInvite
-			text = body_raw
-		elif content_type == 'text/x-clientcaps':
+		elif id in DATACAST_MSNOBJ:
 			type = MessageType.Other
-			text = body_raw
-		elif content_type == 'text/x-msnmsgr-roster-change':
-			type = MessageType.Other
-			text = body_raw
-		elif content_type == 'application/x-ms-ink':
-			type = MessageType.Ink
-			text = body_raw
-		elif content_type == 'text/plain':
+			text = (fields.get('Data') or '').strip()
+		elif id == DATACAST_ACTION:
 			type = MessageType.Chat
-			text = body_raw.decode('utf-8')
+			front_cache['msn_action'] = (fields.get('Data') or '').strip()
+			text = '* {} {}'.format(sender.status.name or sender.email, front_cache['msn_action'])
 		else:
-			pass
-	else:
+			type = MessageType.Chat
+			text = UNSUPPORTED_MESSAGE_TEXT
+	elif content_type == 'application/x-msnmsgrp2p':
+		if ack != 'D':
+			raise error.SpecialMessageNotSentWithDType()
+		type = MessageType.MSNP2P
+	elif content_type == 'text/x-msmsgsinvite':
+		type = MessageType.MSNP2PInvite
+	elif content_type in ('application/x-ms-ink', 'image/gif'):
+		type = MessageType.Ink
+	elif content_type in ('text/x-mms-emoticon', 'text/x-mms-animemoticon'):
+		type = MessageType.Emoticon
+	elif content_type == 'text/plain':
 		type = MessageType.Chat
-		text = "CrossTalk System Message: This message cannot be viewed on the client you're currently using."
+		text = body_raw.decode('utf-8', 'replace')
+		im_format = headers.get('X-MMS-IM-Format')
+		if im_format is not None:
+			front_cache['msn_im_format'] = str(im_format)
+	else:
+		type = MessageType.Other
 
 	message = MessageData(sender = sender, sender_pop_id = sender_pop_id, type = type, text = text)
 	message.front_cache['msnp'] = data
+	message.front_cache.update(front_cache)
+	if type is MessageType.MSNP2P:
+		message.front_cache['msn_p2p_dest'] = str(headers.get('P2P-Dest') or '')
+	elif type is MessageType.Emoticon:
+		message.front_cache['msn_emoticon'] = content_type
+	elif type is MessageType.Other and content_type == 'text/x-msnmsgr-datacast':
+		message.front_cache['msn_datacast'] = id
+	elif type is MessageType.Chat and 'msn_action' in front_cache:
+		message.front_cache['msn_datacast'] = DATACAST_ACTION
 	return message
 
-def messagedata_to_msnp(data: MessageData) -> bytes:
+def messagedata_to_msnp(data: MessageData, *, sender_email: Optional[str] = None) -> Optional[bytes]:
 	if 'msnp' not in data.front_cache:
 		if data.type is MessageType.Typing:
-			s = F'MIME-Version: 1.0\r\nContent-Type: text/x-msmsgscontrol\r\nTypingUser: {data.sender.email}\r\n\r\n\r\n'
+			s = F'MIME-Version: 1.0\r\nContent-Type: text/x-msmsgscontrol\r\nTypingUser: {sender_email or data.sender.email}\r\n\r\n\r\n'
 		elif data.type is MessageType.Nudge:
 			s = 'MIME-Version: 1.0\r\nContent-Type: text/x-msnmsgr-datacast\r\n\r\nID: 1\r\n\r\n'
-		elif data.type is MessageType.MSNP2P:
-			s = F'MIME-Version: 1.0\r\nContent-Type: application/x-msnmsgrp2p\r\nP2P-Dest: {other_user.email}\r\n\r\n{data.text}'
+		elif data.type is MessageType.Other and 'msn_datacast' in data.front_cache:
+			s = 'MIME-Version: 1.0\r\nContent-Type: text/x-msnmsgr-datacast\r\n\r\nID: {}\r\nData: {}\r\n\r\n'.format(data.front_cache['msn_datacast'], data.text)
+		elif data.type is MessageType.Emoticon:
+			emoticons = (data.text.decode('utf-8', 'replace') if isinstance(data.text, bytes) else (data.text or ''))
+			s = 'MIME-Version: 1.0\r\nContent-Type: {}\r\n\r\n'.format(data.front_cache.get('msn_emoticon') or 'text/x-mms-emoticon') + emoticons
+		elif data.type is MessageType.Chat and 'msn_action' in data.front_cache:
+			s = 'MIME-Version: 1.0\r\nContent-Type: text/x-msnmsgr-datacast\r\n\r\nID: {}\r\nData: {}\r\n\r\n'.format(DATACAST_ACTION, data.front_cache['msn_action'])
 		elif data.type is MessageType.Chat:
-			s = 'MIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n' + (data.text or '')
+			im_format = data.front_cache.get('msn_im_format')
+			s = 'MIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n{}\r\n'.format(
+				'X-MMS-IM-Format: {}\r\n'.format(im_format) if im_format else '',
+			) + (data.text or '')
 		else:
-			raise ValueError("unknown message type", data.type)
+			return None
 		data.front_cache['msnp'] = s.encode('utf-8')
 	return data.front_cache['msnp']
+
+def chunk_msnp(payload: bytes) -> List[bytes]:
+	if len(payload) <= SB_MSG_LIMIT:
+		return [payload]
+	i = payload.index(b'\r\n\r\n') + 4
+	headers = payload[:i - 2]
+	body = payload[i:]
+	message_id = '{' + gen_uuid().upper() + '}'
+	room = SB_MSG_LIMIT - len(headers) - 80
+	parts = [body[n:n + room] for n in range(0, len(body), room)]
+	chunks = [headers + 'Message-ID: {}\r\nChunks: {}\r\n\r\n'.format(message_id, len(parts)).encode('ascii') + parts[0]]
+	content_type = (b'Content-Type: ' + headers.split(b'Content-Type: ', 1)[1].split(b'\r\n', 1)[0] + b'\r\n') if b'Content-Type: ' in headers else b''
+	for n, part in enumerate(parts[1:], 1):
+		chunks.append(b'MIME-Version: 1.0\r\n' + content_type + 'Message-ID: {}\r\nChunk: {}\r\n\r\n'.format(message_id, n).encode('ascii') + part)
+	return chunks
+
+def _chunk_body(chunk: bytes, n: int) -> bytes:
+	if n == 0: return chunk
+	try:
+		return chunk[chunk.index(b'\r\n\r\n') + 4:]
+	except ValueError:
+		return b''
+
+def _parse_body_fields(body: str) -> Dict[str, str]:
+	fields = {} # type: Dict[str, str]
+	for line in body.split('\r\n'):
+		if ':' not in line: continue
+		key, value = line.split(':', 1)
+		fields.setdefault(key.strip(), value.strip())
+	return fields
+
+SB_MSG_LIMIT = 1664
+MAX_CHUNKS = 64
+MAX_CHUNKED_MESSAGES = 16
+	
+def _encode_participant_capabilities(cs_other: ChatSession, dialect: int) -> int | str:
+	if dialect < 16:
+		return get_session_capabilities(cs_other.bs, dialect)[0]
+	return encode_capabilities_capabilitiesex(*get_session_capabilities(cs_other.bs, dialect))
+
+def _friendly_name(backend: Backend, user: User) -> str:
+	return user.status.name or backend.util_get_display_email(user)

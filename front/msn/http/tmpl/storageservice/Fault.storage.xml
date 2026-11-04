@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<soap:Body>
+		<soap:Fault>
+			<faultcode>soap:Client</faultcode>
+			<faultstring>{{ errorstring }}</faultstring>
+			<faultactor>http://www.msn.com/webservices/storage/{{ storage_ns }}/{{ action_str }}</faultactor>
+			<detail>
+				<errorcode xmlns="http://www.msn.com/webservices/storage/v1">{{ errorcode }}</errorcode>
+				<errorstring xmlns="http://www.msn.com/webservices/storage/v1">{{ errorstring }}</errorstring>
+				<machineName xmlns="http://www.msn.com/webservices/storage/v1">BL2STRWBA103</machineName>
+			</detail>
+		</soap:Fault>
+	</soap:Body>
+</soap:Envelope>

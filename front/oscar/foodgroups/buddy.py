@@ -1,15 +1,45 @@
 import struct
-import time
 
-from core.models import Contact
+from typing import Any, List, Optional, TYPE_CHECKING
+
+from core.models import AIM_SSI_KEY, Contact, ContactList, Substatus, User
+from util.icq import requires_authorization
 from util.misc import Logger
 
+from ..proto import names
+from ..proto.delivery import oscar_sessions
 from ..proto.snac import OSCARClient, OSCARContext, SNACMessage, Foodgroup, Subgroup
-from ..proto.tlv import TLV, unmarshal_tlvs
+from ..proto.tlv import TLV
+from ..proto.userinfo import build_userinfo, pick_session
+
+if TYPE_CHECKING:
+	from core.backend import Backend, BackendSession
+
+PENDING_ATTRIBUTE = 0x0066
 
 
-# should be piped to .ctrl.send_snac()
-def build_presence_notif(contact: Contact) -> SNACMessage:
+def buddy_pending(viewer: User, contact: User) -> bool:
+	# whether `viewer`'s feedbag still marks `contact` as waiting on authorization (stored like feedbag.py keeps it)
+	store = viewer.settings.get(AIM_SSI_KEY)
+	if not isinstance(store, dict):
+		return False
+	suffix = ':' + contact.username.lower()
+	for key, attrs in (store.get('battrs') or {}).items():
+		if key.endswith(suffix) and any(tag == PENDING_ATTRIBUTE for tag, _ in attrs):
+			return True
+	return False
+
+def watching(bs: 'BackendSession', contact: User) -> bool:
+	# whether this session's client has `contact` on its buddy list: the stored one for feedbag clients, its own otherwise
+	if contact.uuid in bs.backend.util_get_watched(bs):
+		return True
+	if not bs.front_data.get('oscar0_feedbag'):
+		return False
+	detail = bs.user.detail
+	ctc = detail.contacts.get(contact.uuid) if detail is not None else None
+	return ctc is not None and bool(ctc.lists & ContactList.FL)
+
+def build_presence_notif(contact: Contact, backend: Any = None, viewer: Optional['BackendSession'] = None) -> SNACMessage:
 	# Packet dump from NINA's servers when a contact goes online:
 	# ===
 	# 0000   04 64 6b 61 79 00 00 00 07 00 30 00 04 67 19 67   .dkay.....0..g.g
@@ -42,54 +72,131 @@ def build_presence_notif(contact: Contact) -> SNACMessage:
 	#   - TLV 0x0005: account creation time (value = 1652325069, in UNIX time)
 	#
 
-	msg = SNACMessage(0x0003, 0x000B if not contact.status.is_offlineish() else 0x000C)
+	offline = contact.status.is_offlineish()
 
-	msg.write_string_u8(contact.head.username)
-	msg.write_u16(0)
+	if not offline and backend is not None and not backend.util_get_sessions_by_user(contact.head):
+		offline = True
+		contact.status.substatus = Substatus.Offline
 
-	if contact.status.is_offlineish():
-		msg.write_tlv(TLV(0x0001, struct.pack('>L', 0x0008)))  # User class (bitfield)
-	else:
-		capabilities = [
-			"{09461345-4C7F-11D1-8222-444553540000}",   # Direct ICBM
-			"{094601FF-4C7F-11D1-8222-444553540000}",   # Smart caps
-			"{748F2420-6287-11D1-8222-444553540000}",   # Chat
-			"{09461343-4C7F-11D1-8222-444553540000}",   # File transfer
-			"{09461341-4C7F-11D1-8222-444553540000}",   # Voice chat
-			"{09460104-4C7F-11D1-8222-444553540000}",   # RTC audio
-			"{09460105-4C7F-11D1-8222-444553540000}",   # Unknown
-			"{09460102-4C7F-11D1-8222-444553540000}",   # Camera
-			"{09460103-4C7F-11D1-8222-444553540000}",   # Microphone
-			"{09460101-4C7F-11D1-8222-444553540000}",   # RTC video
-			"{0946134A-4C7F-11D1-8222-444553540000}",   # Games
-			"{09461346-4C7F-11D1-8222-444553540000}"	# BART
-		]
-		capabilities_bytes = b''
+	# a buddy whose authorization the viewer is still waiting on stays offline to them until it's granted
+	if not offline and viewer is not None and buddy_pending(viewer.user, contact.head):
+		offline = True
 
-		for capability in capabilities:
-			capabilities_bytes += bytes.fromhex(capability
-												.lstrip('{')
-												.rstrip('}')
-												.replace('-', ''))
+	# each client gets the name it knows the buddy by (a UIN for ICQ, a screen name for AIM)
+	name = names.name_for(viewer, contact.head)
+	msg = SNACMessage(0x0003, 0x000B if not offline else 0x000C)
 
-		date_created_unix = int(time.mktime(contact.head.date_created.timetuple()))
-		date_login_unix = int(time.mktime(contact.head.date_login.timetuple())) if contact.head.date_login else 0
+	if offline:
+		# BUDDY__DEPARTED: an OSERVICE__USERINFO with its TLV count; ICQ only takes it with a (zero) user class inside
+		msg.write_string_u8(name)
+		msg.write_u16(0)
+		msg.write_tlv_block([TLV(0x0001, struct.pack('>H', 0x0000))])  # User class (bitfield)
+		return msg
 
-		# usually would include 0x001D (BART info), but since CrossTalk doesn't support
-		# it rn I've decided to omit it
-		msg.write_tlv_block([
-			TLV(0x3000, struct.pack('>L', 0x6719674C)),		 # Unknown
-			TLV(0x000D, capabilities_bytes),					# Capability info
-			TLV(0x0001, struct.pack('>H', 0x0008)),			 # User class (bitfield)
-			TLV(0x0003, struct.pack('>L', date_login_unix)),	# Account signon time (unix time_t)
-			TLV(0x000F, struct.pack('>L', 0)),				  # Session length
-			TLV(0x0005, struct.pack('>L', date_created_unix)),  # Account creation time (unix time_t)
-		])
-
-	print('Subgroup:', hex(msg.subgroup))
-	print('TLVs:', unmarshal_tlvs(msg.data))
+	bs = pick_session(backend, contact.head) if backend is not None else None
+	msg.write_bytes(build_userinfo(
+		contact.head, bs, substatus = contact.status.substatus, name = name, viewer_icq = names.is_icq_session(viewer),
+	))
 
 	return msg
+
+def push_presence(bs: 'BackendSession', contact_user: User) -> None:
+	# tell one session where `contact_user` stands right now (the arrival a buddy list add or a sign-on needs)
+	from core.backend import _watch_contact
+	ctrl = getattr(bs.evt, 'ctrl', None)
+	if ctrl is None or contact_user is bs.user or not names.representable(contact_user):
+		return
+	detail = bs.user.detail
+	ctc = detail.contacts.get(contact_user.uuid) if detail is not None else None
+	if ctc is None or not ctc.lists & ContactList.FL:
+		ctc = _watch_contact(contact_user, bs.user)
+	else:
+		ctc.compute_visible_status(bs.user)
+	if ctc.status.is_offlineish():
+		return
+	ctrl.send_snac(build_presence_notif(ctc, bs.backend, bs))
+
+def push_buddy_list(bs: 'BackendSession') -> None:
+	# everyone on the client's buddy list who's online, at sign-on: the stored list for feedbag clients, the client's own
+	# (BUDDY__ADD_BUDDIES) otherwise
+	backend = bs.backend
+	seen = set()
+	if bs.front_data.get('oscar0_feedbag') and bs.user.detail is not None:
+		for ctc in bs.user.detail.get_contacts_by_list(ContactList.FL):
+			seen.add(ctc.head.uuid)
+			push_presence(bs, ctc.head)
+	for uuid in backend.util_get_watched(bs):
+		if uuid in seen:
+			continue
+		contact_user = backend._load_user_record(uuid)
+		if contact_user is not None:
+			push_presence(bs, contact_user)
+
+def refresh_contact(backend: 'Backend', user: User) -> None:
+	# something only OSCAR shows (a buddy icon) changed for `user`: OSCAR sessions with them on their list get a new arrival
+	detail = user.detail
+	viewers = []
+	if detail is not None:
+		for ctc in detail.contacts.values():
+			if ctc.lists & ContactList.RL:
+				viewers.extend(oscar_sessions(backend, ctc.head))
+	viewers.extend(bs for bs in backend.util_get_watchers(user.uuid) if bs.front_data.get('oscar0'))
+	for bs in set(viewers):
+		if bs.front_data.get('oscar0_ready') and watching(bs, user):
+			push_presence(bs, user)
+	for bs in oscar_sessions(backend, user):
+		ctrl = getattr(bs.evt, 'ctrl', None)
+		if ctrl is not None and bs.front_data.get('oscar0_ready'):
+			from .oservice import build_self_info
+			ctrl.send_snac(build_self_info(bs))
+
+def _read_buddies(message: SNACMessage) -> List[str]:
+	# BUDDY__ADD_BUDDIES and friends: string08 names, one after another until the SNAC runs out
+	buddies = []
+	while len(message) > 0:
+		try:
+			length = message.read_u8()
+			buddies.append(message.read_bytes(length).decode('latin-1'))
+		except struct.error:
+			break
+	return buddies
+
+def add_buddies(client: OSCARClient, context: OSCARContext, message: SNACMessage) -> None:
+	bs = context.bs
+	backend = context.backend
+	rejected = []
+
+	for name in _read_buddies(message):
+		contact_user = names.resolve_user(backend, name)
+		if contact_user is None or contact_user is bs.user:
+			rejected.append(name)
+			continue
+		# a client-side list can't take part in ICQ authorization, so whoever asks to be asked first can't go on one
+		if requires_authorization(contact_user, bs.user):
+			rejected.append(name)
+			continue
+		names.remember(bs, contact_user, name)
+		backend.util_watch(bs, contact_user.uuid)
+		# before OSERVICE__CLIENT_READY the client would drop arrivals, so those wait for the sign-on push
+		if bs.front_data.get('oscar0_ready'):
+			push_presence(bs, contact_user)
+
+	if rejected:
+		# BUDDY__REJECT_NOTIFICATION: the names that didn't make it onto the list
+		reply = SNACMessage(0x0003, 0x000A, 0x0000, message.request_id)
+		for name in rejected:
+			encoded = name.encode('latin-1', errors = 'replace')
+			reply.write_u8(len(encoded))
+			reply.write_bytes(encoded)
+		client.send_snac(reply)
+
+def del_buddies(client: OSCARClient, context: OSCARContext, message: SNACMessage) -> None:
+	bs = context.bs
+	backend = context.backend
+	for name in _read_buddies(message):
+		uuid = names.resolve(backend, name)
+		if uuid is not None:
+			backend.util_unwatch(bs, uuid)
 
 
 @Foodgroup(0x0003)
@@ -100,12 +207,34 @@ class BuddyFoodgroup:
 	def rights_query(self, client: OSCARClient, context: OSCARContext, message: SNACMessage) -> None:
 		self.logger.info('[Client] BUDDY_RIGHTS_QUERY')
 
-		response_msg = SNACMessage(0x0003, 0x0003)
+		response_msg = SNACMessage(0x0003, 0x0003, 0x0000, message.request_id)
 		response_msg.write_tlvs([
 			TLV(0x0001, struct.pack('>H', 1000)),  # max buddies
 			TLV(0x0002, struct.pack('>H', 3000)),  # max watchers
+			TLV(0x0003, struct.pack('>H', 1000)),  # max ICQ broadcast recipients
 			TLV(0x0004, struct.pack('>H', 160))  # max temp buddies
 		])
 
 		self.logger.info('[Server] BUDDY_RIGHTS_REPLY')
 		client.send_snac(response_msg)
+
+	@Subgroup(0x0004)
+	def add_buddies(self, client: OSCARClient, context: OSCARContext, message: SNACMessage) -> None:
+		self.logger.info('[Client] BUDDY__ADD_BUDDIES')
+		add_buddies(client, context, message)
+
+	@Subgroup(0x0005)
+	def del_buddies(self, client: OSCARClient, context: OSCARContext, message: SNACMessage) -> None:
+		self.logger.info('[Client] BUDDY__DEL_BUDDIES')
+		del_buddies(client, context, message)
+
+	@Subgroup(0x000F)
+	def add_temp_buddies(self, client: OSCARClient, context: OSCARContext, message: SNACMessage) -> None:
+		# temp buddies only ever last the session, which is all a client-side buddy is here anyway
+		self.logger.info('[Client] BUDDY__ADD_TEMP_BUDDIES')
+		add_buddies(client, context, message)
+
+	@Subgroup(0x0010)
+	def del_temp_buddies(self, client: OSCARClient, context: OSCARContext, message: SNACMessage) -> None:
+		self.logger.info('[Client] BUDDY__DEL_TEMP_BUDDIES')
+		del_buddies(client, context, message)

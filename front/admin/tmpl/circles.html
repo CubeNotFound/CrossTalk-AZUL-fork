@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% from '_ui.html' import hub %}
+{% block content %}
+{{ hub('circles', '{:,}'.format(circles | length) ~ ' group chats on the server.') }}
+
+{% if circles %}
+<ul class="adm-people ct-card">
+	{% for c in circles %}
+	<li>
+		<a class="adm-person" href="/circles/{{ c.chat_id }}" data-ct-swap-link>
+			<span class="adm-glyph" aria-hidden="true">{{ (c.name or '?')[:1] }}</span>
+			<span class="adm-person-body">
+				<span class="adm-person-name">{{ c.name }}</span>
+				<span class="adm-person-meta">started by {{ c.owner_friendly or c.owner_uuid }}</span>
+			</span>
+			<span class="adm-person-when ct-muted">{{ c.members_count }} member{{ 's' if c.members_count != 1 else '' }}<br><code>{{ c.chat_id }}</code></span>
+		</a>
+	</li>
+	{% endfor %}
+</ul>
+{% else %}
+<p class="ct-muted">No circles yet.</p>
+{% endif %}
+{% endblock %}

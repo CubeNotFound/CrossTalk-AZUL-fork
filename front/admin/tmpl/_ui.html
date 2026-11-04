@@ -1,0 +1,71 @@
+{% macro hub(title, sub=None) -%}
+<header class="ct-hub adm-hub">
+	<h1 class="ct-hub-title">{{ title }}</h1>
+	{% if sub %}<p class="ct-hub-sub">{{ sub }}</p>{% endif %}
+	{% if caller %}{{ caller() }}{% endif %}
+</header>
+{%- endmacro %}
+
+{% macro flash_list(flashes) -%}
+{% for kind, text in flashes %}
+<div class="alert alert-{{ kind }}" role="{{ 'alert' if kind == 'danger' else 'status' }}">
+	<i class="bi bi-{{ 'exclamation-triangle-fill' if kind == 'danger' else ('info-circle-fill' if kind == 'info' else 'check-circle-fill') }}" aria-hidden="true"></i>
+	<div>{{ text }}</div>
+</div>
+{% endfor %}
+{%- endmacro %}
+
+{% macro csrf_field(csrf) -%}
+<input type="hidden" name="csrf" value="{{ csrf }}">
+{%- endmacro %}
+
+{% macro copy_field(id, value, label) -%}
+<div class="adm-copy">
+	<label class="visually-hidden" for="{{ id }}">{{ label }}</label>
+	<input class="form-control" id="{{ id }}" value="{{ value }}" readonly spellcheck="false">
+	<button type="button" class="btn btn-primary" data-ct-copy="{{ value }}" aria-label="Copy the {{ label | lower }}">Copy</button>
+</div>
+{%- endmacro %}
+
+{% macro flags(user) -%}
+{%- if user.is_admin %}<span class="ct-chip ct-chip-accent">admin</span>{% endif -%}
+{%- if user.suspended %}<span class="ct-chip ct-chip-danger">suspended</span>{% endif -%}
+{#{%- if not user.verified_to_login %}<span class="ct-chip ct-chip-warning">can't sign in</span>{% endif -%}#}
+{%- if not user.account_verified %}<span class="ct-chip">unverified e-mail</span>{% endif -%}
+{%- if user.show_in_dir %}<span class="ct-chip">listed in directory</span>{% endif -%}
+{%- if user.is_tester %}<span class="ct-chip">tester</span>{% endif -%}
+{%- if user.is_mvp %}<span class="ct-chip">MVP</span>{% endif -%}
+{%- endmacro %}
+
+{% macro pager(page, pages, base) -%}
+{% if pages > 1 %}
+<nav class="mt-4" aria-label="Pages">
+	<ul class="pagination flex-wrap">
+		<li class="page-item {% if page <= 1 %}disabled{% endif %}"><a class="page-link" href="{{ base }}page={{ page - 1 }}" aria-label="Previous page"{% if page <= 1 %} aria-disabled="true" tabindex="-1"{% endif %} data-ct-swap-link>«</a></li>
+		{% for p in range([1, page - 2] | max, [pages, page + 2] | min + 1) %}
+		<li class="page-item {% if p == page %}active{% endif %}"><a class="page-link" href="{{ base }}page={{ p }}"{% if p == page %} aria-current="page"{% endif %} data-ct-swap-link>{{ p }}</a></li>
+		{% endfor %}
+		<li class="page-item {% if page >= pages %}disabled{% endif %}"><a class="page-link" href="{{ base }}page={{ page + 1 }}" aria-label="Next page"{% if page >= pages %} aria-disabled="true" tabindex="-1"{% endif %} data-ct-swap-link>»</a></li>
+	</ul>
+</nav>
+{% endif %}
+{%- endmacro %}
+
+{% macro tile(href, icon, big, name, note=None, tone=1, wide=False) -%}
+<a class="ct-tile adm-tile {{ 'adm-tile-hero' if tone == 'hero' else 'ct-tile-' ~ tone }}{% if wide %} ct-tile-wide{% endif %}" href="{{ href }}" data-ct-swap-link>
+	<i class="bi {{ icon }} ct-tile-icon" aria-hidden="true"></i>
+	<span class="adm-tile-big">{{ big }}</span>
+	<span class="adm-tile-name">{{ name }}</span>
+	{% if note %}<span class="adm-tile-note">{{ note }}</span>{% endif %}
+</a>
+{%- endmacro %}
+
+{% macro alert_row(alert) -%}
+<li class="adm-alert">
+	<span class="adm-alert-icon" aria-hidden="true">{% if alert.icon %}<img src="{{ alert.icon }}" alt="" width="32" height="32" loading="lazy">{% else %}<i class="bi {{ {'stocks': 'bi-graph-up-arrow', 'calendar': 'bi-calendar-event-fill'}.get(alert.kind, 'bi-bell-fill') }}"></i>{% endif %}</span>
+	<div class="adm-alert-body">
+		<p class="adm-alert-text">{{ alert.text }}</p>
+		<p class="adm-alert-meta">{{ alert.date | ago }} by {{ alert.by }} · {{ alert.reach }}{% if alert.url %} · <a href="{{ alert.url }}" rel="noreferrer" target="_blank">link<span class="visually-hidden"> (opens in a new tab)</span></a>{% endif %}</p>
+	</div>
+</li>
+{%- endmacro %}

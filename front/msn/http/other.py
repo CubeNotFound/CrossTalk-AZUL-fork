@@ -1,4 +1,4 @@
-from typing import Optional, Any, Tuple
+from typing import Optional, Any, Tuple, Literal, List, Dict
 from datetime import datetime, timedelta
 from io import BytesIO
 from email.parser import Parser
@@ -6,21 +6,23 @@ from email.header import decode_header
 from email.utils import parsedate_to_datetime
 from urllib.parse import unquote, parse_qsl
 from pathlib import Path
-import re, secrets, base64, random, json, mimetypes, uuid, PyRSS2Gen, settings, util.misc
+import asyncio, re, secrets, base64, random, json, mimetypes, uuid, PyRSS2Gen, settings, util.misc
 from markupsafe import Markup
 from aiohttp import web
-
+ 
 from core import models
+from core.user import beacon_enabled
 from core.backend import Backend, BackendSession
-from util.avatar import get_img_type, find_avatar_file
-from ..misc import gen_mail_data, format_oim, cid_format, puid_format
+from util.avatar import get_img_type, store_photo_file, get_photo_data
+from ..misc import gen_mail_data, format_oim, cid_format, puid_format, encode_xml_ne
 from .util import find_element, get_tag_localname, render, preprocess_soap, unknown_soap, bool_to_str
-
-LOGIN_PATH = '/login.srf'
+ 
+LOGIN_PATH = '/login2.srf'
 TMPL_DIR = 'front/msn/http/tmpl'
 ETC_DIR = 'front/msn/etc'
 PP = 'Passport1.4'
-
+PHOTO_MAX_SIZE = 10 * 1024 * 1024
+ 
 def register(app: web.Application) -> None:
 	util.misc.add_to_jinja_env(app, 'msn', TMPL_DIR, globals = {
 		'date_format': util.misc.date_format,
@@ -29,6 +31,7 @@ def register(app: web.Application) -> None:
 		'bool_to_str': bool_to_str,
 		'contact_is_favorite': _contact_is_favorite,
 		'datetime': datetime,
+		'settings': settings
 	})
 	
 	# MSN >= 5
@@ -57,242 +60,73 @@ def register(app: web.Application) -> None:
 	app.router.add_post('/RST2.srf', lambda req: handle_rst(req, rst2 = True))
 	
 	# MSN >= 8
-	app.router.add_post('/storageservice/SchematizedStore.asmx', handle_storageservice)
 	app.router.add_post('/ppsecure/sha1auth.srf', handle_sha1auth)
 	app.router.add_post('/rsi/rsi.asmx', handle_rsi)
 	app.router.add_post('/OimWS/oim.asmx', handle_oim)
 	app.router.add_get('/svcs/msn-video-feeds/', handle_videofeed)
 	app.router.add_get('/svcs/feed', lambda req: handle_videofeed(req, get_videos = True))
-
+ 
 	# MSN >= 14
 	app.router.add_post('/whatsnew/whatsnewservice.asmx', handle_whatsnew)
 	app.router.add_get('/svcs/tab={id}', handle_tabs_newer)
-
+ 
 	# MSN >= 15
 	app.router.add_post('/sqm/messenger/sqmserver.dll', handle_blankok)
 	app.router.add_post('/sqm/WindowsLive/sqmserver.dll', handle_blankok)
 	app.router.add_post('/uploaddata.aspx', handle_blankok)
 	app.router.add_get('/ppcrlcheck.srf', handle_ppcrlcheck)
-	app.router.add_post('/profile/profile.asmx', handle_blankok) # TODO: do the thing
+	app.router.add_post('/profile/profile.asmx', handle_profile)
 	app.router.add_get(r'/~Live.ConfigServer/{junk:.*}/~op-GetClientConfig/{tail:.*}', handle_msgrconfig16)
 	app.router.add_get(r'/~Live.ConfigServer.SuiteUpdate/{tail:.*}', handle_suiteupdate)
 	app.router.add_get(r'/~Live.ConfigServer.PSA/{tail:.*}', handle_socialint)
 	app.router.add_get('/svcs/GameBrowser', handle_gamebrowser)
-
+	app.router.add_post('/Users({cid})/Status', handle_user_status)
+	app.router.add_post('/Users({cid})/files/{folder}', handle_user_files)
+	app.router.add_get('/photos/{uuid}/{name}', handle_photo)
+	
 	# Misc
 	app.router.add_get('/{i}meen_{locale}/{id}', handle_msn_redirect)
-
+ 
 async def handle_blankok(req: web.Request) -> web.Response:
 	return web.Response(status = 200)
-
-async def handle_storageservice(req: web.Request) -> web.Response:
+ 
+async def handle_profile(req: web.Request) -> web.Response:
 	backend = req.app['backend']
-	header, action, bs, token = await preprocess_soap(req)
-	assert bs is not None
-	soapaction = (req.headers.get('SOAPAction') or '')
-	if soapaction.startswith('"') and soapaction.endswith('"'):
-		soapaction = soapaction[1:-1]
-	storage_ns = ('w10' if soapaction.startswith('http://www.msn.com/webservices/storage/w10/') else '2008')
+	header, action, bs, token = await preprocess_soap(req)  # was missing entirely
+	user = _get_user_from_token(backend, bs, token)
+	if user is None:
+		raise web.HTTPInternalServerError()
+
 	action_str = get_tag_localname(action)
 	now_str = util.misc.date_format(datetime.utcnow())
-	user = bs.user
 	cachekey = secrets.token_urlsafe(172)
-	
-	cid = cid_format(user.uuid)
-	
-	if action_str == 'GetProfile':
-		roaming_info = backend.user_service.get_roaming_info(user)
-		assert roaming_info is not None
 
-		# Resolve the active avatar using the md5 stored in users.avatar.
-		# find_avatar_file returns None if no avatar has been uploaded yet.
-		avatar_md5 = user.avatar
-		mime		= None
-		image_size  = 0
-		image_thumb_size = 0
+	if action_str in ('Get', 'GetMany'):
+		heads = { cid_format(head.uuid, decimal = True): head for head in [user] + [ctc.head for ctc in backend._load_detail(user).contacts.values()] }
+		if action_str == 'Get':
+			requested = [(heads.get(str(find_element(action, 'V1'))) or user, str(find_element(action, 'V2')))]
+		else:
+			requested = [(heads[str(v1)], None) for v1 in action.findall('.//{*}ProfileId/{*}V1') if str(v1) in heads]
 
-		if avatar_md5:
-			full_file  = find_avatar_file(user.uuid, avatar_md5, small=False)
-			thumb_file = find_avatar_file(user.uuid, avatar_md5, small=True)
+		profiles = [] # type: List[Dict[str, Any]]
+		for head, puid in requested:
+			roaming_info = backend.user_service.get_roaming_info(head)
+			if roaming_info is None: continue
+			profiles.append({ 'user': head, 'cid': cid_format(head.uuid), 'puid': puid, 'roaming_info': roaming_info })
+		if not profiles and action_str == 'Get':
+			raise web.HTTPInternalServerError()
 
-			if full_file and full_file.is_file():
-				ext  = full_file.suffix.lstrip('.').lower()
-				mime = ext
-				image_size = full_file.stat().st_size
-
-			if thumb_file and thumb_file.is_file():
-				image_thumb_size = thumb_file.stat().st_size
-
-		return render(req, 'msn:storageservice/GetProfileResponse.xml', {
-			'storage_ns': storage_ns,
+		return render(req, 'msn:profile/ProfileResponse.xml', {
+			'action': action_str,
+			'profiles': profiles,
 			'cachekey': cachekey,
-			'cid': cid,
 			'pptoken1': token,
-			'user': user,
 			'now': now_str,
-			'mime': mime,
-			'size_static': image_size,
-			'size_small': image_thumb_size,
-			'roaming_info': roaming_info,
 			'host': settings.USERSTORAGE_HOST,
 		})
-	if action_str == 'FindDocuments':
-		# TODO: FindDocuments
-		return render(req, 'msn:storageservice/FindDocumentsResponse.xml', {
-			'storage_ns': storage_ns,
-			'cachekey': cachekey,
-			'cid': cid,
-			'pptoken1': token,
-			'user': user,
-		})
-	if action_str == 'UpdateProfile':
-		delete_psm = False
-		delete_name = False
-		delete_avatar = False
-		
-		# TODO: More properties?
-		
-		# Update to roaming name/message
-		# ```
-		# <UpdateProfile xmlns="http://www.msn.com/webservices/storage/w10">
-		#   <profile>
-		#	 <ResourceID>862d987eb60b7a63!106</ResourceID>
-		#	 <ExpressionProfile>
-		#	   <FreeText>Update</FreeText>
-		#	   <DisplayName>Society is betrayal</DisplayName>
-		#	   <PersonalStatus>Prosperity is the best medicine. :)</PersonalStatus>
-		#	 </ExpressionProfile>
-		#   </profile>
-		# </UpdateProfile>
-		# ```
-		
-		# Remove roaming message
-		# ```
-		# <UpdateProfile xmlns="http://www.msn.com/webservices/storage/w10">
-		#   <profile>
-		#	 <ResourceID>bb4542ce2eacdbde!106</ResourceID>
-		#	 <ExpressionProfile>
-		#	   <FreeText>Update</FreeText>
-		#	   <DisplayName>%walkingphas3r%</DisplayName>
-		#	   <Flags>0</Flags>
-		#	 </ExpressionProfile>
-		#   </profile>
-		#   <profileAttributesToDelete>
-		#	 <ExpressionProfileAttributes>
-		#	   <PersonalStatus>true</PersonalStatus>
-		#	 </ExpressionProfileAttributes>
-		#   </profileAttributesToDelete>
-		# </UpdateProfile>
-		# ```
-		
-		expression_profile = find_element(action, 'ExpressionProfile')
-		name = find_element(expression_profile, 'DisplayName')
-		message = find_element(expression_profile, 'PersonalStatus')
-		
-		attributes_to_delete = find_element(action, 'profileAttributesToDelete/ExpressionProfileAttributes')
-		if attributes_to_delete is not None:
-			# `PersonalStatus` and `DisplayName` is the only known attribute that has the ability to be deleted
-			delete_psm = find_element(attributes_to_delete, 'PersonalStatus') or False
-			assert isinstance(delete_psm, bool)
-			delete_name = find_element(attributes_to_delete, 'DisplayName') or False
-			assert isinstance(delete_name, bool)
-		
-		name = find_element(action, 'DisplayName')
-		message = find_element(action, 'PersonalStatus')
-		
-		if name:
-			backend.user_service.save_single_roaming(user, { 'name': name })
-		if message and not delete_psm:
-			backend.user_service.save_single_roaming(user, { 'message': message })
-		
-		if delete_psm:
-			backend.user_service.save_single_roaming(user, { 'message': '' })
-		if delete_name:
-			backend.user_service.save_single_roaming(user, { 'name': '' })
-		
-		return render(req, 'msn:storageservice/UpdateProfileResponse.xml', {
-			'storage_ns': storage_ns,
-			'cachekey': cachekey,
-			'cid': cid,
-			'pptoken1': token,
-			'user': user
-		})
-	if action_str == 'DeleteRelationships':
-		# TODO: DeleteRelationships
-		return render(req, 'msn:storageservice/DeleteRelationshipsResponse.xml', {
-			'storage_ns': storage_ns,
-			'cachekey': cachekey,
-			'cid': cid,
-			'pptoken1': token,
-			'user': user,
-		})
-	if action_str in ('CreateDocument', 'UpdateDocument'):
-		op = 'Update' if action_str == 'UpdateDocument' else 'Create'
-		return handle_document(req, action, op, storage_ns, user, cid, token, backend)
-	if action_str == 'CreateRelationships':
-		# TODO: CreateRelationships
-		return render(req, 'msn:storageservice/CreateRelationshipsResponse.xml', {
-			'storage_ns': storage_ns,
-			'cachekey': cachekey,
-			'cid': cid,
-			'pptoken1': token,
-			'user': user,
-		})
-	if action_str in { 'ShareItem' }:
-		# TODO: ShareItem
-		return unknown_soap(req, header, action, expected = True)
+
 	return unknown_soap(req, header, action)
-
-
-def handle_document(
-	req: web.Request,
-	action: Any,
-	op_type: str,		  # 'Create' or 'Update'
-	storage_ns: str,
-	user: models.User,
-	cid: str,
-	token: str,
-	backend: Backend,
-) -> web.Response:
-	streamtype = find_element(action, 'DocumentStreamType')
-
-	if streamtype == 'UserTileStatic':
-		raw_b64 = find_element(action, 'Data')
-		if raw_b64:
-			try:
-				data = base64.b64decode(raw_b64)
-			except Exception:
-				return web.HTTPInternalServerError(text='')
-
-			err = _store_avatar_from_bytes(backend, user, data)
-			if err is not None:
-				return err
-
-	return render(req, 'msn:storageservice/{}DocumentResponse.xml'.format(op_type), {
-		'storage_ns': storage_ns,
-		'cid': cid,
-		'pptoken1': token,
-		'user': user,
-	})
-
-
-def _store_avatar_from_bytes(
-	backend: Backend,
-	user: models.User,
-	data: bytes,
-) -> Optional[web.Response]:
-	ext = get_img_type(data)
-	if ext is None:
-		return web.HTTPInternalServerError(text='AZUL: Unsupported image format')
-
-	try:
-		backend.user_service.save_avatar(user, data, ext)
-	except Exception:
-		return web.HTTPInternalServerError(text='')
-
-	return None
-
-
+ 
 async def handle_sha1auth(req: web.Request) -> web.Response:
 	post = await req.post()
 	
@@ -305,11 +139,11 @@ async def handle_sha1auth(req: web.Request) -> web.Response:
 		return web.HTTPInternalServerError()
 	
 	return web.HTTPFound(token_fields['ru'])
-
+ 
 async def handle_ppcrlcheck(req: web.Request) -> web.Response:
 	response = '<config>\r\n\t<deviceid minversion="16.000.26889.00"/>\r\n\t<mobilecfg minversion="16.000.26208.0"/>\r\n</config>'
 	return web.HTTPOk(body=response)
-
+ 
 async def handle_rsi(req: web.Request) -> web.Response:
 	_, action, bs, token = await preprocess_soap_rsi(req)
 	
@@ -345,7 +179,7 @@ async def handle_rsi(req: web.Request) -> web.Response:
 		return render(req, 'msn:oim/DeleteMessagesResponse.xml')
 	
 	return render(req, 'msn:Fault.doesnotexist.xml', { 'action': action_str })
-
+ 
 async def handle_oim(req: web.Request) -> web.Response:
 	header, _, body_content, bs, _ = await preprocess_soap_oimws(req)
 	soapaction = (req.headers.get('SOAPAction') or '')
@@ -472,6 +306,20 @@ async def handle_oim(req: web.Request) -> web.Response:
 				}, status = 500)
 		oim_body_normal = oim_body.strip()
 		oim_body_normal = base64.b64decode(oim_body_normal).decode('utf-8')
+		if len(oim_body_normal.encode('utf-8')) > OIM_MAX_SIZE:
+			return render(req, 'msn:oim/Fault.messagetoolarge.xml', {
+				'owsns': owsns,
+			}, status = 500)
+		
+		# An offline message is a message like any other: over the sender's rate (or at the maximum warning level) it's
+		# refused, and its recipient may warn (vote) its sender for it
+		if not backend.util_message_allowed(user, models.MessageData(sender = user, type = models.MessageType.Chat, text = oim_body_normal)):
+			return render(req, 'msn:oim/Fault.throttle.xml', {
+				'owsns': owsns,
+			}, status = 500)
+		recipient_user = backend._load_user_record(recipient_uuid)
+		if recipient_user is not None:
+			backend.abuse.track_message(user, recipient_user)
 		
 		backend.user_service.save_oim(
 			bs, recipient_uuid, oim_run_id, host, oim_body_normal, True, from_friendly = friendlyname_str,
@@ -486,6 +334,8 @@ async def handle_oim(req: web.Request) -> web.Response:
 		'seq': oim_msg_seq,
 		'owsns': owsns,
 	})
+ 
+OIM_MAX_SIZE = 64 * 1024
 
 def _is_on_al(uuid: str, backend: Backend, user: models.User, detail: models.UserDetail) -> bool:
 	contact = detail.contacts.get(uuid)
@@ -504,7 +354,7 @@ def _is_on_al(uuid: str, backend: Backend, user: models.User, detail: models.Use
 		if ctc_me is not None and not ctc_me.lists & models.ContactList.BL:
 			return True
 	return False
-
+ 
 async def preprocess_soap_rsi(req: web.Request) -> Tuple[Any, Any, Optional[BackendSession], str]:
 	from lxml.objectify import fromstring as parse_xml
 	
@@ -526,7 +376,7 @@ async def preprocess_soap_rsi(req: web.Request) -> Tuple[Any, Any, Optional[Back
 	#if settings.DEBUG: print('Action: {}'.format(get_tag_localname(action)))
 	
 	return header, action, bs, token
-
+ 
 async def preprocess_soap_oimws(req: web.Request) -> Tuple[Any, str, str, Optional[BackendSession], str]:
 	from lxml.objectify import fromstring as parse_xml
 	
@@ -545,28 +395,175 @@ async def preprocess_soap_oimws(req: web.Request) -> Tuple[Any, str, str, Option
 	body_content = str(find_element(root, 'Body/Content')).replace('\r\n', '\n')
 	
 	return header, body_msgtype, body_content, bs, token
-
-# TODO: Make this actually accurate
+ 
 async def handle_whatsnew(req: web.Request) -> web.Response:
-	whatsnew = ''
-	with open('config/whatsnew.json', 'rb') as f:
-		whatsnew_list = json.loads(f.read()) 
-		f.close()
-	
-	if len(whatsnew_list) > 0:
-		whatsnew_dict = whatsnew_list[0]
-		with open(TMPL_DIR + '/whatsnew/WhatsNewResponse.xml') as fh:
-			whatsnew = fh.read()
-		whatsnew = whatsnew.format(
-			date=whatsnew_dict['date'],
-			url=whatsnew_dict['url'],
-			title=whatsnew_dict['title'],
-			appName=whatsnew_dict['appName'],
-			content=whatsnew_dict['content']
-		)
-	
-	return web.HTTPOk(content_type = 'text/xml', text = whatsnew)
+	backend: Backend = req.app['backend']
+	header, action, bs, token = await preprocess_soap(req)
+	user = _get_user_from_token(backend, bs, token)
+	if user is None:
+		raise web.HTTPInternalServerError()
 
+	action_str = get_tag_localname(action)
+	if action_str not in ('GetContactsRecentActivity', 'GetBatchRecentActivity'):
+		return unknown_soap(req, header, action)
+
+	detail = backend._load_detail(user)
+	if action_str == 'GetContactsRecentActivity':
+		# The user's own activities, their contacts' and service announcements
+		publishers = [user] + [
+			ctc.head for ctc in detail.contacts.values() if ctc.lists & models.ContactList.FL and not ctc.lists & models.ContactList.BL
+		]
+		if not beacon_enabled(user):
+			publishers = []
+	else:
+		# Activities of specific people (contact card, own profile)
+		cids = { cid.text for cid in action.findall('.//{*}Cid') }
+		publishers = [head for head in [user] + [ctc.head for ctc in detail.contacts.values()] if cid_format(head.uuid, decimal = True) in cids]
+
+	activities = backend.user_service.get_activities(
+		[head.uuid for head in publishers], int(str(find_element(action, 'count') or 10)),
+		announcements = (action_str == 'GetContactsRecentActivity'),
+	)
+
+	return render(req, 'msn:whatsnew/WhatsNewResponse.xml', {
+		'action': action_str,
+		'owner_cid': cid_format(user.uuid, decimal = True),
+		'locale': str(find_element(action, 'locales/string') or 'en-us'),
+		'activities': activities,
+		'types': { int(activity.type) for activity in activities },
+		'detail': detail,
+		'now': datetime.utcnow(),
+	})
+
+async def handle_user_status(req: web.Request) -> web.Response:
+	# WLM 2011 shares status messages to "What's New" through the Live Atom API
+	from lxml.etree import fromstring as parse_xml
+	
+	backend: Backend = req.app['backend']
+	user, bs = _get_live_api_user(req)
+	cid = req.match_info['cid']
+	
+	try:
+		message = parse_xml(await req.read()).findtext('{http://www.w3.org/2005/Atom}title') or ''
+	except Exception:
+		raise web.HTTPBadRequest()
+	
+	_set_status_message(backend, user, bs, message)
+	
+	message_xml = encode_xml_ne(message)
+	return web.HTTPOk(content_type = 'application/atom+xml', text = (
+		'<?xml version="1.0" encoding="utf-8"?><entry xmlns="http://www.w3.org/2005/Atom" xmlns:live="http://api.live.com/schemas">'
+		f'<id>{req.url}</id><updated>{util.misc.date_format(datetime.utcnow())}</updated>'
+		f'<live:legacyPsm>{message_xml}</live:legacyPsm><title>{message_xml}</title>'
+		f'<author><name>{encode_xml_ne(user.status.name)}</name><live:cid>{cid}</live:cid></author></entry>'
+	))
+
+def _get_live_api_user(req: web.Request) -> Tuple[models.User, Optional[BackendSession]]:
+	backend: Backend = req.app['backend']
+	auth = req.headers.get('Authorization') or ''
+	token = (auth.split('t=', 1)[1][:20] if 't=' in auth else '')
+	bs = backend.util_get_sess_by_token(token)
+	user = _get_user_from_token(backend, bs, token)
+	if user is None or cid_format(user.uuid, decimal = True) != req.match_info['cid']:
+		raise web.HTTPUnauthorized()
+	return user, bs
+
+def _set_status_message(backend: Backend, user: models.User, bs: Optional[BackendSession], message: str) -> None:
+	activity_added = backend.user_service.save_single_roaming(user, { 'message': message })
+	sessions = backend.util_get_sessions_by_user(user)
+	if bs is None or bs not in sessions:
+		bs = (sessions[0] if sessions else None)
+	if bs is not None and message != bs.user.status.message:
+		bs.me_update({ 'message': message, 'notify_self': True })
+	if activity_added:
+		backend.notify_whats_new(user)
+
+async def handle_user_files(req: web.Request) -> web.Response:
+	from lxml.etree import fromstring as parse_xml, XMLSyntaxError
+	
+	backend: Backend = req.app['backend']
+	user, _ = _get_live_api_user(req)
+	cid = req.match_info['cid']
+	
+	if not req.content_type.startswith('multipart/'):
+		raise web.HTTPUnsupportedMediaType()
+	entry = None # type: Optional[Any]
+	data = None # type: Optional[bytes]
+	try:
+		reader = await req.multipart()
+		while True:
+			part = await reader.next()
+			if part is None: break
+			body = await _read_part(part, PHOTO_MAX_SIZE)
+			if entry is None and 'atom+xml' in (part.headers.get('Content-Type') or ''):
+				entry = parse_xml(body)
+			elif data is None:
+				data = body
+	except (ValueError, XMLSyntaxError):
+		raise web.HTTPBadRequest()
+	if entry is None or not data:
+		raise web.HTTPBadRequest()
+	ext = get_img_type(data)
+	if ext is None:
+		raise web.HTTPUnsupportedMediaType()
+	
+	title = entry.findtext('{http://www.w3.org/2005/Atom}title') or ''
+	summary = entry.findtext('{http://www.w3.org/2005/Atom}summary') or ''
+	name = await asyncio.get_running_loop().run_in_executor(None, store_photo_file, user.uuid, data, ext)
+	media_url = 'https://{}/photos/{}/{}'.format(settings.USERSTORAGE_HOST, user.uuid, name)
+	if backend.user_service.add_activity(user, models.ActivityType.Photo, title = title, text = summary, url = media_url):
+		backend.notify_whats_new(user)
+	
+	location = '{}/{}'.format(str(req.url).rstrip('/'), name)
+	entry_url = encode_xml_ne(location)
+	media_url_xml = encode_xml_ne(media_url)
+	mime = 'image/' + ext
+	now_str = util.misc.date_format(datetime.utcnow())
+	return web.Response(status = 201, content_type = 'application/atom+xml', headers = { 'Location': location }, text = (
+		'<?xml version="1.0" encoding="utf-8"?><entry xmlns="http://www.w3.org/2005/Atom" xmlns:live="http://api.live.com/schemas">'
+		f'<id>{entry_url}</id><title>{encode_xml_ne(title)}</title><summary>{encode_xml_ne(summary)}</summary>'
+		f'<published>{now_str}</published><updated>{now_str}</updated>'
+		f'<author><name>{encode_xml_ne(user.status.name or "")}</name><live:cid>{cid}</live:cid></author>'
+		f'<link rel="self" type="application/atom+xml" href="{entry_url}"/><link rel="edit" type="application/atom+xml" href="{entry_url}"/>'
+		f'<link rel="edit-media" type="{mime}" href="{media_url_xml}"/><link rel="alternate" type="{mime}" href="{media_url_xml}"/>'
+		f'<content type="{mime}" src="{media_url_xml}"/><live:type>photo</live:type></entry>'
+	))
+
+async def _read_part(part: Any, limit: int) -> bytes:
+	chunks = [] # type: List[bytes]
+	size = 0
+	while True:
+		chunk = await part.read_chunk()
+		if not chunk: break
+		size += len(chunk)
+		if size > limit:
+			raise web.HTTPRequestEntityTooLarge(max_size = limit, actual_size = size)
+		chunks.append(chunk)
+	return b''.join(chunks)
+
+async def handle_photo(req: web.Request) -> web.Response:
+	# Photos shared as a status, shown in "What's New"
+	user_uuid = req.match_info['uuid']
+	name = req.match_info['name']
+	if not (re.fullmatch(r'[0-9a-f-]{36}', user_uuid) and re.fullmatch(r'[0-9a-f]{16}\.(?:jpeg|png|gif)', name)):
+		raise web.HTTPNotFound()
+	result = await asyncio.get_running_loop().run_in_executor(None, get_photo_data, user_uuid, name)
+	if result is None:
+		raise web.HTTPNotFound()
+	photo, content_type = result
+	return web.Response(body = photo, content_type = content_type)
+
+def _get_user_from_token(backend: Backend, bs: Optional[BackendSession], token: Optional[str]) -> Optional[models.User]:
+	# Social services are also used before (or without) a notification server session
+	if bs is not None:
+		return bs.user
+	if not token:
+		return None
+	tpl = backend.login_auth_service.get_token('ns/login', token)
+	if tpl is None:
+		return None
+	return backend._load_user_record(tpl[0])
+ 
 async def handle_today(req: web.Request) -> web.Response:
 	return render(req, 'msn:svcs/MSNToday.html', {
 		'title': "CrossTalk Today",
@@ -574,21 +571,21 @@ async def handle_today(req: web.Request) -> web.Response:
 		'wlm': req.query.get('wlm') or False,
 		'windowslive': req.query.get('windowslive') or False
 	})
-
+ 
 async def handle_gamebrowser(req: web.Request) -> web.Response:
 	return render(req, 'msn:svcs/GameBrowser.html', {
 		'title': "Game Browser | CrossTalk",
 	})
-
+ 
 async def handle_portal(req: web.Request) -> web.Response:
-	return web.HTTPFound(f'http://{settings.TODAY_HOSTs}/start/msn')
-
+	return web.HTTPFound(f'http://{settings.TODAY_HOST}/start/msn')
+ 
 async def handle_textadredir(req: web.Request) -> web.Response:
 	return web.HTTPFound(f'http://{settings.AD_HOST}/ads/txt')
-
+ 
 async def handle_banneradredir(req: web.Request) -> web.Response:
 	return web.HTTPFound(f'http://{settings.AD_HOST}/ads/banner')
-
+ 
 async def handle_msn_redirect(req: web.Request) -> web.Response:
 	i = req.match_info['i']
 	id = req.match_info['id']
@@ -600,42 +597,42 @@ async def handle_msn_redirect(req: web.Request) -> web.Response:
 			return web.HTTPFound('/start')
 	
 	return web.HTTPFound('http://g.msn.com{}'.format(req.path_qs))
-
+ 
 async def handle_msn5ads(req: web.Request) -> web.Response:
 	response = '<?xml version="1.0"?><msn-data><RefreshLogin>False</RefreshLogin><RefreshInterval>10080</RefreshInterval></msn-data>'
 	return web.HTTPOk(body=response)
-
+ 
 async def handle_suiteupdate(req: web.Request) -> web.Response:
 	return render(req, 'msn:config/SuiteUpdate.xml')
-
+ 
 async def handle_socialint(req: web.Request) -> web.Response:
 	return render(req, 'msn:config/Config.PSA.xml')
-
+ 
 async def handle_tabs(req: web.Request) -> web.Response:	
 	with open('config/tabs.json') as fh:
 		tabs_data = json.load(fh)
-
+ 
 	tmpl = req.app['jinja_env'].get_template('msn:svcs/svcs_tabs.xml')
 	tab_tmpl = tmpl.render(tabs=tabs_data)
-
+ 
 	return web.HTTPOk(content_type='text/xml', text='<?xml version="1.0"?>\n' + tab_tmpl)
-
+ 
 # TODO: Unify the tabs handlers so spaghetti code isn't a problem
 async def handle_tabs_newer(req: web.Request) -> web.Response:
 	id = int(req.match_info['id'])
-
+ 
 	with open('config/tabs.json') as fh:
 		tabs_data = json.load(fh)
-
+ 
 	tab_data = next((tab for tab in tabs_data if tab["id"] == id), None)
 	if not tab_data:
 		return web.HTTPNotFound(text="Tab not found")
-
+ 
 	tmpl = req.app['jinja_env'].get_template('msn:svcs/svcs_tabs_newer.xml')
 	tab_tmpl = tmpl.render(tab=tab_data)
-
+ 
 	return web.HTTPOk(content_type='text/xml', text=tab_tmpl)
-
+ 
 async def handle_msgrconfig(req: web.Request) -> web.Response:
 	if req.method == 'POST':
 		body = await req.read() # type: Optional[bytes]
@@ -645,15 +642,14 @@ async def handle_msgrconfig(req: web.Request) -> web.Response:
 	if msgr_config == 'INVALID_VER':
 		return web.Response(status = 500)
 	return web.HTTPOk(content_type = 'text/xml', text = msgr_config)
+ 
+MsgrConfigVariant = Literal['msn', 'wlm8', 'wlm14', 'wlm16']
 
 async def handle_msgrconfig16(req: web.Request) -> web.Response:
-	body = await req.read()
-	msgr_config = _get_msgr_config_16(req, body)
-	return web.HTTPOk(content_type = 'text/xml', text = msgr_config)
+	return web.HTTPOk(content_type = 'text/xml', text = _render_msgr_config(req, 'wlm16'))
 
 def _get_msgr_config(req: web.Request, body: Optional[bytes]) -> str:
 	query = req.query
-	result = None # type: Optional[str]
 	ver = query.get('ver') or ''
 	
 	if ver:
@@ -662,56 +658,28 @@ def _get_msgr_config(req: web.Request, body: Optional[bytes]) -> str:
 		
 		config_ver = ver.split('.', 4)
 		if 8 <= int(config_ver[0]) <= 9:
-			with open(TMPL_DIR + '/config/MsgrConfig.wlm.8.xml') as fh:
-				config = fh.read()
-			with open('config/tabs.json') as fh:
-				with open(TMPL_DIR + '/svcs/svcs_tabs.xml') as th:
-					template = th.read()
-				tabs_data = json.load(fh)
-				tmpl_before = req.app['jinja_env'].from_string(template)
-				tab_tmpl = tmpl_before.render(tabs=tabs_data, settings=settings)
-			result = config.format(tabs = tab_tmpl)
+			return _render_msgr_config(req, 'wlm8')
 		elif int(config_ver[0]) >= 14:
-			with open(TMPL_DIR + '/config/MsgrConfig.wlm.14.xml') as fh:
-				template = fh.read()
-			with open('config/tabs.json') as fh:
-				tabs_data = json.load(fh)
-				tmpl_before = req.app['jinja_env'].from_string(template)
-				tmpl = tmpl_before.render(tabs=tabs_data, settings=settings)
-				result = tmpl
+			return _render_msgr_config(req, 'wlm14')
 	elif body is not None:
-		with open(TMPL_DIR + '/config/MsgrConfig.msn.envelope.xml') as fh:
-			envelope = fh.read()
-		with open(TMPL_DIR + '/config/MsgrConfig.msn.xml') as fh:
-			config = fh.read()
-		with open('config/tabs.json') as fh:
-			with open(TMPL_DIR + '/svcs/svcs_tabs.xml') as th:
-				template = th.read()
-			tabs_data = json.load(fh)
-			tmpl_before = req.app['jinja_env'].from_string(template)
-			tab_tmpl = tmpl_before.render(tabs=tabs_data)
-		result = envelope.format(MsgrConfig = config.format(tabs = tab_tmpl, settings = settings))
+		# MSN Messenger 6.0 - 7.5 only use the SOAP `GetClientConfig` action
+		return _render_msgr_config(req, 'msn', soap = True)
 	
-	return result or ''
+	return ''
 
-def _get_msgr_config_16(req: web.Request, body: Optional[bytes]) -> str:
-	with open(TMPL_DIR + '/config/MsgrConfig.wlm.16.xml') as fh:
-		template = fh.read()
+def _render_msgr_config(req: web.Request, variant: MsgrConfigVariant, *, soap: bool = False) -> str:
 	with open('config/tabs.json') as fh:
 		tabs_data = json.load(fh)
-	tmpl_before = req.app['jinja_env'].from_string(template)
-	tmpl = tmpl_before.render(tabs=tabs_data, settings=settings)
-	result = tmpl
-
-	return result or ''
-
+	tmpl = req.app['jinja_env'].get_template('msn:config/MsgrConfig.xml')
+	return tmpl.render(variant = variant, soap = soap, tabs = tabs_data, settings = settings)
+ 
 PassportURLs = 'PassportURLs'
-
+ 
 async def handle_nexus(req: web.Request) -> web.Response:
 	return web.HTTPOk(headers = {
 		PassportURLs: 'DALogin=https://{}{}'.format(settings.LOGIN_HOST, LOGIN_PATH),
 	})
-
+ 
 async def handle_login(req: web.Request) -> web.Response:
 	tmp = _extract_pp_credentials(req.headers.get('Authorization') or '')
 	if tmp is None:
@@ -727,7 +695,7 @@ async def handle_login(req: web.Request) -> web.Response:
 	return web.HTTPOk(headers={
 		'Authentication-Info': '{}da-status=success,from-PP=\'{}\''.format(PP, token),
 	})
-
+ 
 async def handle_not_rst(req: web.Request) -> web.Response:
 	if req.method == 'OPTIONS':
 		return web.HTTPOk(headers = {
@@ -750,6 +718,8 @@ async def handle_not_rst(req: web.Request) -> web.Response:
 		token, _, _ = token_tpl
 		headers['X-Token'] = token
 	return web.HTTPOk(headers = headers)
+ 
+DA_TOKEN_LIFETIME = 86400 * 30
 
 async def handle_rst(req: web.Request, rst2: bool = False) -> web.Response:
 	from lxml.objectify import fromstring as parse_xml
@@ -760,17 +730,27 @@ async def handle_rst(req: web.Request, rst2: bool = False) -> web.Response:
 	except:
 		return render(req, 'msn:RST/{}.error.xml'.format('RST2' if rst2 else 'RST'))
 	
-	email = find_element(root, 'Username')
-	pwd = str(find_element(root, 'Password'))
-
-	if email is None or pwd is None:
-		return render(req, 'msn:RST/{}.error.xml'.format('RST2' if rst2 else 'RST'))
-	
 	backend: Backend = req.app['backend']
 	
-	token_tpl = _login(req, email, pwd, binary_secret = True, lifetime = 86400)
+	email = find_element(root, 'Username')
+	pwd = str(find_element(root, 'Password'))
+	# Saved passwords: IDCRL signs in with the `http://Passport.NET/tb` token (`BinaryDAToken0`) from its last sign-in
+	# instead of a username and password
+	da_token = find_element(root, 'Security/EncryptedData/CipherData/CipherValue')
 	
-	uuid = backend.util_get_uuid_from_email(email)
+	if email is not None:
+		token_tpl = _login(req, email, pwd, binary_secret = True, lifetime = 86400)
+		uuid = backend.util_get_uuid_from_email(email)
+	elif da_token is not None:
+		uuid = _get_uuid_from_da_token(backend, str(da_token))
+		token_tpl = None
+		if uuid is not None:
+			user = backend._load_user_record(uuid)
+			if user is not None:
+				email = user.email
+				token_tpl = _create_login_token(backend, uuid, binary_secret = True, lifetime = 86400)
+	else:
+		return render(req, 'msn:RST/{}.error.xml'.format('RST2' if rst2 else 'RST'))
 	
 	if token_tpl is not None and uuid is not None:
 		token, expiry, bsecret = token_tpl
@@ -782,6 +762,11 @@ async def handle_rst(req: web.Request, rst2: bool = False) -> web.Response:
 		# load PUID and CID
 		cid = cid_format(uuid)
 		puid = puid_format(uuid)
+		
+		# The client stores this and sends it back to sign in again without the password
+		da_token_new, _ = backend.login_auth_service.create_token('rst/da', [uuid], lifetime = DA_TOKEN_LIFETIME)
+		datoken = base64.b64encode(da_token_new.encode('ascii')).decode('ascii')
+		dabinarysecret = base64.b64encode(secrets.token_bytes(24)).decode('ascii')
 		
 		assert req.transport is not None
 		peername = req.transport.get_extra_info('peername')
@@ -818,6 +803,8 @@ async def handle_rst(req: web.Request, rst2: bool = False) -> web.Response:
 				lastname = "Doe",
 				ip = req.headers.get('X-Forwarded-For', req.remote),
 				pptoken1 = token,
+				datoken = datoken,
+				dabinarysecret = dabinarysecret,
 				tokenxml = Markup(''.join(tokenxmls)),
 			) if rst2 else tmpl.render(
 				puidhex = puid,
@@ -829,6 +816,8 @@ async def handle_rst(req: web.Request, rst2: bool = False) -> web.Response:
 				lastname = "Doe",
 				ip = req.headers.get('X-Forwarded-For', req.remote),
 				pptoken1 = token,
+				datoken = datoken,
+				dabinarysecret = dabinarysecret,
 				tokenxml = Markup(''.join(tokenxmls)),
 			)),
 		)
@@ -836,7 +825,7 @@ async def handle_rst(req: web.Request, rst2: bool = False) -> web.Response:
 	return render(req, 'msn:RST/{}.authfailed.xml'.format('RST2' if rst2 else 'RST'), {
 		'timez': util.misc.date_format(datetime.utcnow()),
 	})
-
+ 
 async def handle_videofeed(req: web.Request, get_videos: bool = False) -> web.Response:
 	if not get_videos:
 		return render(req, 'msn:svcs/videofeedroot.xml')
@@ -869,18 +858,18 @@ async def handle_videofeed(req: web.Request, get_videos: bool = False) -> web.Re
 			language="en-us",
 			lastBuildDate=datetime.now(),
 			ttl=10,
-			copyright="&copy; 2023 - 2025 the undergr0und",
+			copyright="&copy; 2023 - 2026 hiden",
 			image=PyRSS2Gen.Image(
-				url="http://hiden.cc/static/icon/misc/hidnet.png",
-				title="CrossTalk Video - InDev",
-				link="http://crosstalk.im"
+				url="https://static.ugnet.xyz/svc/ct/logo/shadow.svg",
+				title="CrossTalk Videos",
+				link="https://crosstalk.im"
 			),
 			items=rss_items
 		)
-
+ 
 		rss_xml = rss_feed.to_xml(encoding="utf-8")
 		return web.HTTPOk(content_type="text/xml", text=rss_xml)
-
+ 
 def _extract_pp_credentials(auth_str: str) -> Optional[Tuple[str, str]]:
 	if not auth_str:
 		return None
@@ -893,7 +882,7 @@ def _extract_pp_credentials(auth_str: str) -> Optional[Tuple[str, str]]:
 	email = auth['sign-in']
 	pwd = auth['pwd']
 	return email, pwd
-
+ 
 def _login(req: web.Request, email: str, pwd: str, binary_secret: bool = False, lifetime: int = 30) -> Optional[Tuple[str, datetime, Optional[str]]]:
 	backend: Backend = req.app['backend']
 	uuid = backend.user_service.login(email, pwd)
@@ -901,11 +890,23 @@ def _login(req: web.Request, email: str, pwd: str, binary_secret: bool = False, 
 		username = email.lower()[:-len('@crosstalk.im')]
 		uuid = backend.user_service.login_with_username(username, pwd)
 	if uuid is None: return None
+	return _create_login_token(backend, uuid, binary_secret = binary_secret, lifetime = lifetime)
+
+def _create_login_token(backend: Backend, uuid: str, *, binary_secret: bool = False, lifetime: int = 30) -> Tuple[str, datetime, Optional[str]]:
 	bsecret = None
 	if binary_secret:
 		bsecret = base64.b64encode(secrets.token_bytes(24)).decode('ascii')
 	return (*backend.login_auth_service.create_token('ns/login', [uuid, bsecret], lifetime = lifetime), bsecret)
 
+def _get_uuid_from_da_token(backend: Backend, cipher_value: str) -> Optional[str]:
+	try:
+		token = base64.b64decode(cipher_value).decode('ascii')
+	except (ValueError, UnicodeDecodeError):
+		return None
+	tpl = backend.login_auth_service.get_token('rst/da', token)
+	if tpl is None: return None
+	return tpl[0]
+ 
 def _contact_is_favorite(user_detail: models.UserDetail, ctc: models.Contact) -> bool:
 	groups = user_detail._groups_by_uuid
 	for group in ctc._groups.copy():

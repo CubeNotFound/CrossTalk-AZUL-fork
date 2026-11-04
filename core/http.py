@@ -25,7 +25,9 @@ def register(loop: asyncio.AbstractEventLoop, backend: Backend, *, devmode: bool
 	backend.add_runner(AIOHTTPRunner(http_host, http_port, app, ssl_context=ssl_context, service='HTTP'))
 	app.router.add_get('/', handle_misc_conns)
 	app.router.add_post('/', handle_blankok)
+	# TODO: migrate to static.ugnet.xyz
 	app.router.add_static('/static', 'core/static')
+	# TODO: move ads / avatars out of azul and into their own svcs
 	app.router.add_get('/ads/txt', handle_textad)
 	app.router.add_get('/ads/banner', handle_bannerad)
 	app.router.add_get('/ads/banner-lg', lambda req: handle_bannerad(req, yuge=True))
@@ -34,8 +36,7 @@ def register(loop: asyncio.AbstractEventLoop, backend: Backend, *, devmode: bool
 	app.router.add_get('/svcs/mms/adxml_main.asp', lambda req: handle_bannerad(req, msnxml=True))
 	app.router.add_get('/avatar/{uuid}/static', handle_avatar)
 	app.router.add_get('/avatar/{uuid}/small', lambda req: handle_avatar(req, small=True))
-	app.router.add_get('/avatar/{uuid}/msn', lambda req: handle_avatar(req, msn=True))
-	app.router.add_route('*', '/{path:.*}', handle_notfound)
+	app.router.add_get('/avatar/{uuid}/im', lambda req: handle_avatar(req, im=True))
  
 	return app
 
@@ -48,10 +49,17 @@ def create_app(loop: asyncio.AbstractEventLoop, backend: Backend) -> Any:
 	)
 	
 	app.on_response_prepare.append(on_response_prepare)
+	app.middlewares.append(notfound_middleware)
 
 	util.misc.add_to_jinja_env(app, 'misc', MISC_TMPL_DIR)
 	
 	return app
+
+@web.middleware
+async def notfound_middleware(req: web.Request, handler: Any) -> web.StreamResponse:
+	if isinstance(req.match_info.http_exception, web.HTTPNotFound):
+		return await handle_notfound(req)
+	return await handler(req)
 
 async def on_response_prepare(req: web.Request, res: web.StreamResponse) -> None:
 	res.headers['X-Azul-Version'] = settings.VERSION 
@@ -86,7 +94,7 @@ async def handle_notfound(req: web.Request) -> web.Response:
 	return render(req, 'misc:miscconns.html', {
 		'settings': settings
 	}, status=404)
-	
+
 async def handle_bannerad(req: web.Request, yuge: bool = False, sq: bool = False, msnxml: bool = False) -> web.Response:
 	with open('config/big-bannerimages.json' if yuge else 'config/sq-bannerimages.json' if sq else 'config/bannerimages.json', 'r') as json_file:
 		data = json.load(json_file)
@@ -154,14 +162,21 @@ async def handle_blankok(req: web.Request) -> web.Response:
 	# MSN counts the login server as a "key port" by POSTing to the root of the server with no content.
 	return web.Response(status = 200)
 	
-async def handle_avatar(req: web.Request, small: bool = False, msn: bool = False) -> web.Response:
+async def handle_avatar(req: web.Request, small: bool = False, im: bool = False) -> web.Response:
 	uuid = req.match_info['uuid']
 	backend: Backend = req.app['backend']
 
 	user = backend.user_service.get(uuid)
 	avatar_md5 = user.avatar if user else None
 
-	result = get_avatar_data(uuid, avatar_md5, small=small, msn=msn)
+	md5_query = req.query.get('md5') or ''
+	if user is not None and 8 <= len(md5_query) <= 32 and all(c in '0123456789abcdef' for c in md5_query):
+		result = get_avatar_data(uuid, md5_query, small=small, im=im)
+		if result is not None:
+			data, content_type = result
+			return web.Response(status=200, body=data, content_type=content_type)
+
+	result = get_avatar_data(uuid, avatar_md5, small=small, im=im)
 	if result is not None:
 		data, content_type = result
 		return web.Response(status=200, body=data, content_type=content_type)

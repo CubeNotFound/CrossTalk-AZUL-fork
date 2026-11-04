@@ -20,3 +20,4 @@ argon2-cffi
 PyRSS2Gen
 pymysql
 disposable-email-domains
+emoji

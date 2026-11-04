@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+{%- macro profile_id(profile) %}
+		  <Ns1>Cid</Ns1>
+		  <V1 xsi:type="xsd:long">{{ cid_format(profile.user.uuid, decimal = True) }}</V1>
+		  {%- if profile.puid is none %}
+		  <Ns2>Unspecified</Ns2>
+		  <V2 xsi:nil="true"/>
+		  {%- else %}
+		  <Ns2>Puid</Ns2>
+		  <V2 xsi:type="xsd:long">{{ profile.puid }}</V2>
+		  {%- endif %}
+		  <Ns3>Unspecified</Ns3>
+		  <V3 xsi:nil="true"/>
+{%- endmacro %}
+{%- macro profile_view(profile) %}
+		<View>
+		  <ViewName>WLX.DC.CoreProfile</ViewName>
+		  <ViewVersion>1</ViewVersion>
+		  <Attributes>
+			<A><N>PublicProfile.ResourceId</N><V xsi:type="xsd:string">{{ profile.cid }}!106</V></A>
+			<A><N>PublicProfile.DisplayName</N><V xsi:type="xsd:string">{{ (profile.user.first_name or '')|e }}</V></A>
+			<A><N>PublicProfile.DisplayName.LastModified</N><V xsi:type="xsd:string">{{ now }}</V></A>
+			<A><N>PublicProfile.DisplayLastName</N><V xsi:type="xsd:string">{{ (profile.user.last_name or '')|e }}</V></A>
+			<A><N>PublicProfile.DisplayLastName.LastModified</N><V xsi:type="xsd:string">{{ now }}</V></A>
+			<A><N>ExpressionProfile.ResourceId</N><V xsi:type="xsd:string">{{ profile.cid }}!118</V></A>
+			<A><N>ExpressionProfile.DisplayName</N><V xsi:type="xsd:string">{{ (profile.roaming_info.name or profile.user.status.name or '')|e }}</V></A>
+			<A><N>ExpressionProfile.DisplayName.LastModified</N><V xsi:type="xsd:string">{{ date_format(profile.roaming_info.name_last_modified) }}</V></A>
+			<A><N>ExpressionProfile.PersonalStatus</N><V xsi:type="xsd:string">{{ (profile.roaming_info.message or '')|e }}</V></A>
+			<A><N>ExpressionProfile.PersonalStatus.LastModified</N><V xsi:type="xsd:string">{{ date_format(profile.roaming_info.message_last_modified) }}</V></A>
+			<A><N>ExpressionProfile.StaticUserTilePublicURL</N><V xsi:type="xsd:string">https://{{ host }}/avatar/{{ profile.user.uuid }}/im</V></A>
+			<A><N>UserTileStaticUrl</N><V xsi:type="xsd:string">https://{{ host }}/avatar/{{ profile.user.uuid }}/im</V></A>
+			<A><N>PictureProfile.UserTileStatic.ResourceId</N><V xsi:type="xsd:string">{{ profile.cid }}!205</V></A>
+			<A><N>LastModified</N><V xsi:type="xsd:string">{{ now }}</V></A>
+		  </Attributes>
+		</View>
+{%- endmacro %}
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <soap:Body>
+	<{{ action }}Response xmlns="http://profile.live.com/">
+	  <{{ action }}Result>
+		<CallStatistics>
+		  <ServerName>{{ host }}</ServerName>
+		  <ElapsedMilliseconds>0</ElapsedMilliseconds>
+		</CallStatistics>
+		{%- if action == 'GetMany' %}
+		<Ids>
+		{%- for profile in profiles %}
+		<ProfileId>{{ profile_id(profile) }}
+		</ProfileId>
+		{%- endfor %}
+		</Ids>
+		{%- else %}
+		<Id>{{ profile_id(profiles[0]) }}
+		</Id>
+		{%- endif %}
+		{%- if action == 'GetMany' %}
+		<Views>
+		{%- for profile in profiles %}{{ profile_view(profile) }}{%- endfor %}
+		</Views>
+		{%- else %}{{ profile_view(profiles[0]) }}{%- endif %}
+	  </{{ action }}Result>
+	</{{ action }}Response>
+  </soap:Body>
+</soap:Envelope>

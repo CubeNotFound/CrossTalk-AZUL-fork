@@ -3,12 +3,6 @@ __pycache__
 .mypy_cache
 *.sqlite
 settings_local.py
-etc/Caddyfile
-dev/cert
-tmp
-hosts.lnk
-storage
-front/ymsg/todo
 .mypy_cache
 .brutus_cache
 *.old
@@ -16,8 +10,9 @@ front/ymsg/todo
 .vs/
 .*_cache
 .DS_Store
-core/static/sounds/user/
 Thumbs.db
 .idea
 *.swp
 *.pem
+config/ins/
+storage/

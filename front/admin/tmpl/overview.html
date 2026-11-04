@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% from '_ui.html' import hub, tile, alert_row %}
+{% block content %}
+{% set online = stats.online or {} %}
+{% set accounts = stats.accounts or {} %}
+{% set maintenance = info.maintenance or {} %}
+{{ hub('overview', 'azul ' ~ info.version ~ ', up for ' ~ uptime ~ '.') }}
+
+{% if maintenance.active or maintenance.pending %}
+<div class="alert alert-info" role="status"><i class="bi bi-cone-striped" aria-hidden="true"></i><div>{% if maintenance.active %}The server is in maintenance mode.{% else %}Maintenance is coming up in about {{ maintenance.minutes }} minute{{ 's' if maintenance.minutes != 1 else '' }}.{% endif %}</div></div>
+{% endif %}
+
+<section aria-labelledby="admNow">
+	<h2 class="visually-hidden" id="admNow">Right now</h2>
+	<div class="ct-tiles adm-tiles">
+		{{ tile('/sessions', 'bi-plug-fill', '{:,}'.format(info.sessions or 0), 'sessions open', '{:,}'.format(info.users_online or 0) ~ (' person' if info.users_online == 1 else ' people') ~ ' signed in', tone='hero', wide=True) }}
+		{{ tile('/users', 'bi-people-fill', '{:,}'.format(accounts.total or 0), 'accounts', '{:,}'.format(accounts.new_week or 0) ~ ' new this week', tone=2) }}
+		{{ tile('/users?show=suspended', 'bi-person-fill-x', '{:,}'.format(suspended), 'suspended', ('deleted after ' ~ suspended_days ~ ' days') if suspended_days is not none else 'kept for good', tone=3) }}
+		{{ tile('/circles', 'bi-chat-square-dots-fill', '{:,}'.format(stats.circles or 0), 'circles', 'group chats', tone=4) }}
+		{{ tile('/broadcast#history', 'bi-bell-fill', '{:,}'.format(alerts_count), 'alerts', 'sent since azul started', tone=5) }}
+		{{ tile('/interservice', 'bi-diagram-3-fill', links | length, 'services linked', clients_active ~ ' enrolled', tone=6) }}
+		{% if maintenance.active %}
+		{{ tile('/broadcast#maintenance', 'bi-cone-striped', 'on', 'maintenance', 'the server is down for it', tone=3) }}
+		{% elif maintenance.pending %}
+		{{ tile('/broadcast#maintenance', 'bi-cone-striped', maintenance.minutes ~ ' min', 'maintenance', 'announced to everyone', tone=3) }}
+		{% else %}
+		{{ tile('/broadcast#maintenance', 'bi-cone-striped', 'none', 'maintenance', 'nothing planned', tone=1) }}
+		{% endif %}
+	</div>
+</section>
+
+<div class="adm-columns">
+	<section class="ct-card" aria-labelledby="admDay">
+		<h2 class="ct-card-title" id="admDay">the last 24 hours</h2>
+		{% if hourly %}
+		{% set busiest = hourly | map(attribute='value') | max %}
+		<div class="ct-chart-wrap">
+			<div class="ct-chart" style="--n: {{ hourly | length }}" role="img" aria-label="People active per hour over the last 24 hours. The busiest hour had {{ busiest }}.">
+				{% for h in hourly %}
+				<div class="ct-chart-col{% if h.is_now %} is-now{% endif %}" data-tip="{{ h.label }}: {{ h.value }} active"><div class="ct-chart-bar" style="--h: {{ h.pct }}%; --i: {{ loop.index0 }}"></div></div>
+				{% endfor %}
+			</div>
+			<div class="ct-chart-axis" aria-hidden="true"><span>{{ hourly[0].label }}</span><span>{{ hourly[(hourly | length) // 2].label }}</span><span>now</span></div>
+		</div>
+		<details class="ct-details adm-table-details">
+			<summary>show as a table</summary>
+			<div class="ct-details-body">
+				<div class="table-responsive">
+					<table class="ct-table">
+						<caption>Every hour of the last 24, times in UTC</caption>
+						<thead><tr><th scope="col">hour</th><th scope="col">active</th><th scope="col">most online</th><th scope="col">messages sent</th></tr></thead>
+						<tbody>
+							{% for h in hourly | reverse %}
+							<tr><th scope="row" class="fw-normal">{{ h.label }}{% if h.is_now %} <span class="ct-chip ct-chip-success">now</span>{% endif %}</th><td>{{ h.value }}</td><td>{{ h.peak }}</td><td>{{ h.messages }}</td></tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</details>
+		{% else %}
+		<p class="ct-muted mb-0">Nothing counted yet.</p>
+		{% endif %}
+	</section>
+
+	<section class="ct-card" aria-labelledby="admClients">
+		<h2 class="ct-card-title" id="admClients">clients</h2>
+		{% if programs %}
+		<ul class="ct-bars">
+			{% for p in programs %}
+			<li>
+				<div class="ct-bar-head"><strong>{{ p.name }}</strong><span>{{ '{:,}'.format(p.sessions) }} session{{ 's' if p.sessions != 1 else '' }} · {{ p.pct }}%</span></div>
+				<div class="ct-bar-track" aria-hidden="true"><div class="ct-bar-fill" style="--w: {{ p.pct }}%"></div></div>
+			</li>
+			{% endfor %}
+		</ul>
+		{% else %}
+		<p class="ct-muted">Nobody is signed in right now.</p>
+		{% endif %}
+		<dl class="ct-facts mt-3">
+			<div><dt>active today</dt><dd>{{ '{:,}'.format((stats.active or {}).today or 0) }}</dd></div>
+			<div><dt>sign-ins today</dt><dd>{{ '{:,}'.format(stats.logins_today or 0) }}</dd></div>
+			<div><dt>messages today</dt><dd>{{ '{:,}'.format(((stats.messages or {}).today or {}).sent or 0) }}</dd></div>
+			<div><dt>most online today</dt><dd>{{ '{:,}'.format((stats.peak_today or {}).value or 0) }}</dd></div>
+		</dl>
+	</section>
+
+	<section class="ct-card" aria-labelledby="admAlerts">
+		<h2 class="ct-card-title" id="admAlerts">latest alerts</h2>
+		{% if alerts %}
+		<ul class="adm-alerts">
+			{% for alert in alerts %}{{ alert_row(alert) }}{% endfor %}
+		</ul>
+		<p class="mt-3 mb-0"><a href="/broadcast#history" data-ct-swap-link>Every alert since azul started</a></p>
+		{% else %}
+		<p class="ct-muted mb-0">None sent since azul started.</p>
+		{% endif %}
+	</section>
+
+	<section class="ct-card" aria-labelledby="admLinks">
+		<h2 class="ct-card-title" id="admLinks">linked services</h2>
+		{% if links %}
+		<ul class="ct-list">
+			{% for link in links %}
+			<li class="ct-list-item">
+				<span class="ct-presence" aria-hidden="true"></span>
+				<span class="ct-list-body">
+					<span class="ct-list-title">{{ link.label or link.identifier }}</span>
+					<span class="ct-list-meta">{{ link.identifier }} from {{ link.peer }}{% if link.client and link.client.program %} · {{ link.client.program }} {{ link.client.version }}{% endif %}</span>
+				</span>
+			</li>
+			{% endfor %}
+		</ul>
+		{% else %}
+		<p class="ct-muted">Nothing is linked over InterService right now. The website needs its own link for accounts, the directory and CrossTalk Beacon.</p>
+		{% endif %}
+		<h3 class="ct-aside-title mt-3" id="admServices">listening</h3>
+		{% if info.services %}
+		<dl class="ct-facts">
+			{% for service in info.services %}
+			<div><dt>{{ service.name }}</dt><dd>{{ service.ports | join(', ') }}</dd></div>
+			{% endfor %}
+		</dl>
+		{% else %}
+		<p class="ct-muted mb-0">No IM services are listening (none are turned on in the settings).</p>
+		{% endif %}
+	</section>
+</div>
+
+<section class="mt-4" aria-labelledby="admQuick">
+	<h2 class="ct-section mt-0" id="admQuick">quick jobs</h2>
+	<div class="ct-actions">
+		<a class="btn btn-primary btn-sm" href="/broadcast#alert" data-ct-swap-link>Send an alert</a>
+		<a class="btn btn-outline-secondary btn-sm" href="/broadcast#maintenance" data-ct-swap-link>Schedule maintenance</a>
+		<a class="btn btn-outline-secondary btn-sm" href="/interservice#enroll" data-ct-swap-link>Enroll a service</a>
+		<a class="btn btn-outline-secondary btn-sm" href="/users?show=online" data-ct-swap-link>Who's signed in</a>
+	</div>
+</section>
+{% endblock %}

@@ -34,7 +34,7 @@
 									<DocumentStreamName>UserTileStatic</DocumentStreamName>
 									<MimeType>image/{{ mime }}</MimeType>
 									<DataSize>{{ size_static }}</DataSize>
-									<PreAuthURL>https://{{ host }}/avatar/{{ user.uuid }}/msn</PreAuthURL>
+									<PreAuthURL>https://{{ host }}/avatar/{{ user.uuid }}/im</PreAuthURL>
 									<WriteMode>Overwrite</WriteMode>
 									<StreamDataStatus>None</StreamDataStatus>
 									<StreamStatus>None</StreamStatus>
@@ -68,7 +68,7 @@
 						<DisplayName>{{ roaming_info.name }}</DisplayName>
 						<DisplayNameLastModified>{{ date_format(roaming_info.name_last_modified) }}</DisplayNameLastModified>
 					{% endif %}
-					<StaticUserTilePublicURL>https://{{ host }}/avatar/{{ user.uuid }}/msn</StaticUserTilePublicURL>
+					<StaticUserTilePublicURL>https://{{ host }}/avatar/{{ user.uuid }}/im</StaticUserTilePublicURL>
 				</ExpressionProfile>
 			</GetProfileResult>
 		</GetProfileResponse>

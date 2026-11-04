@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% from '_ui.html' import hub, csrf_field, copy_field %}
+{% block content %}
+{{ hub('interservice', 'The services linked to azul (the website, bots, tools). Each one has keys of its own that only work from the machine and address it enrolled from.') }}
+
+{% if not enabled %}
+<p class="ct-muted">InterService is turned off on this server (<code>ENABLE_INS</code>).</p>
+{% else %}
+
+{% if reveal and reveal.kind == 'code' %}
+<section class="ct-card adm-reveal" aria-labelledby="newCode">
+	<h2 class="ct-card-title" id="newCode">enrollment code for {{ reveal['for'] }}</h2>
+	<p>Put it in the service's settings (the website's is <code>INS_ENROLLMENT_CODE</code>) before {{ reveal.expires }}. It works once, and this is the only time it's shown.</p>
+	{{ copy_field('enrollCodeValue', reveal.value, 'Enrollment code') }}
+</section>
+{% endif %}
+
+<section aria-labelledby="insClients">
+	<h2 class="ct-section" id="insClients">enrolled services</h2>
+	{% if clients %}
+	<ul class="adm-keys">
+		{% for c in clients %}
+		{% set link = linked.get(c.id) %}
+		<li class="ct-card adm-key{% if c.revoked %} is-revoked{% endif %}">
+			<div class="adm-key-head">
+				<span class="ct-dot adm-key-state" aria-hidden="true" style="--ct-tone: {{ 'var(--ct-danger)' if c.revoked else ('var(--ct-online)' if link else '#8a8494') }}"></span>
+				<div class="min-w-0 flex-grow-1">
+					<h3 class="adm-key-name">{{ c.label or c.identifier }}</h3>
+					<p class="ct-muted mb-0">{{ c.identifier }} · {% if c.revoked %}revoked {{ c.revoked_at | ago }}{% elif link %}linked now{% else %}last seen {{ c.last_seen | ago }}{% endif %}</p>
+				</div>
+				{% if not c.revoked %}
+				<form method="post" class="m-0">
+					{{ csrf_field(csrf) }}
+					<input type="hidden" name="action" value="revoke">
+					<input type="hidden" name="client" value="{{ c.id }}">
+					<button type="submit" class="btn btn-sm btn-outline-danger">Revoke<span class="visually-hidden"> {{ c.label }}</span></button>
+				</form>
+				{% else %}
+				<form method="post" class="m-0">
+					{{ csrf_field(csrf) }}
+					<input type="hidden" name="action" value="delete">
+					<input type="hidden" name="client" value="{{ c.id }}">
+					<button type="submit" class="btn btn-sm btn-outline-secondary">Delete<span class="visually-hidden"> {{ c.label }}</span></button>
+				</form>
+				{% endif %}
+			</div>
+			<dl class="adm-key-facts">
+				<div><dt>key</dt><dd><code>{{ c.fingerprint }}</code></dd></div>
+				<div><dt>enrolled</dt><dd>{{ c.created | when }}</dd></div>
+				<div><dt>last address</dt><dd>{{ c.last_address or '-' }}</dd></div>
+			</dl>
+			{% if not c.revoked %}
+			<form method="post" class="adm-key-addresses">
+				{{ csrf_field(csrf) }}
+				<input type="hidden" name="action" value="addresses">
+				<input type="hidden" name="client" value="{{ c.id }}">
+				<label for="addr-{{ c.id }}" class="form-label">Works from</label>
+				<div class="d-flex flex-wrap gap-2">
+					<input type="text" class="form-control" id="addr-{{ c.id }}" name="addresses" value="{{ c.addresses | join(', ') }}" spellcheck="false" aria-describedby="addrHelp-{{ c.id }}">
+					<button type="submit" class="btn btn-outline-secondary">Save</button>
+				</div>
+				<small class="form-text" id="addrHelp-{{ c.id }}">Addresses or networks (CIDR), separated with commas. Anything else is turned away, even with the right keys.</small>
+			</form>
+			{% endif %}
+		</li>
+		{% endfor %}
+	</ul>
+	{% else %}
+	<p class="ct-muted">Nothing has enrolled yet. Make a code below for the website first.</p>
+	{% endif %}
+</section>
+
+<div class="adm-columns">
+	<section class="ct-card" id="enroll" aria-labelledby="insEnroll">
+		<h2 class="ct-card-title" id="insEnroll">enroll a service</h2>
+		<p class="ct-muted">A one-time code. The service makes its own keys the first time it connects with it, and they never leave that machine.</p>
+		<form method="post">
+			{{ csrf_field(csrf) }}
+			<input type="hidden" name="action" value="code">
+			<div class="row g-3">
+				<div class="col-sm-6 ct-field mb-0">
+					<label for="codeIdentifier" class="form-label">Identifier</label>
+					<select class="form-select" id="codeIdentifier" name="identifier">
+						{% for identifier in identifiers %}<option value="{{ identifier }}">{{ identifier }}</option>{% endfor %}
+					</select>
+				</div>
+				<div class="col-sm-6 ct-field mb-0">
+					<label for="codeLabel" class="form-label">Name it</label>
+					<input type="text" class="form-control" id="codeLabel" name="label" maxlength="100" placeholder="CrossTalk website">
+				</div>
+				<div class="col-sm-6 ct-field mb-0">
+					<label for="codeAddress" class="form-label">Only from <span class="ct-muted">(optional)</span></label>
+					<input type="text" class="form-control" id="codeAddress" name="address" placeholder="Any address" spellcheck="false">
+				</div>
+				<div class="col-sm-6 ct-field mb-0">
+					<label for="codeHours" class="form-label">Valid for (hours)</label>
+					<input type="number" class="form-control" id="codeHours" name="hours" min="1" max="720" value="24" required>
+				</div>
+			</div>
+			<button type="submit" class="btn btn-primary mt-3">Make a code</button>
+		</form>
+	</section>
+
+	<section class="ct-card" aria-labelledby="insCodes">
+		<h2 class="ct-card-title" id="insCodes">codes</h2>
+		{% set shown = codes[:12] %}
+		{% if shown %}
+		<ul class="ct-list">
+			{% for code in shown %}
+			<li class="ct-list-item">
+				<span class="ct-list-body">
+					<span class="ct-list-title">{{ code.label or code.identifier }}</span>
+					<span class="ct-list-meta">{{ code.identifier }}{% if code.address %} from {{ code.address }}{% endif %} · {% if code.state == 'used' %}used {{ code.used | ago }}{% elif code.state == 'expired' %}expired{% else %}waiting until {{ code.expires | when }}{% endif %}</span>
+				</span>
+				{% if code.state == 'waiting' %}
+				<form method="post" class="m-0">
+					{{ csrf_field(csrf) }}
+					<input type="hidden" name="action" value="cancel-code">
+					<input type="hidden" name="code" value="{{ code.id }}">
+					<button type="submit" class="btn btn-sm btn-outline-secondary">Cancel</button>
+				</form>
+				{% endif %}
+			</li>
+			{% endfor %}
+		</ul>
+		{% else %}
+		<p class="ct-muted">None made yet.</p>
+		{% endif %}
+		<p class="ct-muted small mt-3 mb-0">Server host key <code>{{ fingerprint }}</code></p>
+	</section>
+</div>
+{% endif %}
+{% endblock %}

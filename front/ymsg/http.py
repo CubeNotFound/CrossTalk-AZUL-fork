@@ -1,8 +1,8 @@
 from typing import Any, Dict, Optional, Tuple
 from aiohttp import web
-import asyncio, shutil, time, uuid, datetime, util.misc, settings
+import asyncio, shutil, time, uuid, datetime, util.misc, html, settings
 from markupsafe import Markup
-from urllib.parse import unquote, unquote_plus, quote
+from urllib.parse import unquote, unquote_plus, quote, parse_qs
 from pathlib import Path
 
 from core.backend import Backend, BackendSession
@@ -10,11 +10,12 @@ from core.models import Contact, Substatus, ContactList
 from util.hash import gen_salt
 from util.misc import Logger
 from .ymsg_ctrl import YMSGCtrlBase, _try_decode_ymsg
-from .misc import YMSGService
+from .misc import YMSGService, yahoo_avatar_url, yahoo_avatar_checksum, TOKEN_LIFETIME
 from .pager import _encode_yahoo_id, Y_COOKIE_TEMPLATE, T_COOKIE_TEMPLATE
+from . import avatar_sync
 
 YAHOO_TMPL_DIR = 'front/ymsg/tmpl'
-# https://github.com/ifwe/digsby/blob/f5fe00244744aa131e07f09348d10563f3d8fa99/digsby/src/yahoo/yahooutil.py#L33
+# https://github.com/ifwe/digsby/blob/master/digsby/src/yahoo/yahooutil.py
 FILE_STORE_PATH = '/storage/file/{filename}'
 _tasks_by_token = {} # type: Dict[str, asyncio.Task[None]]
 
@@ -53,6 +54,14 @@ def register(app: web.Application, *, devmode: bool = False) -> None:
 	# Misc stuff
 	app.router.add_get('/capacity', handle_capacity)
 	app.router.add_get('/nofriends/', handle_nofriends)
+	
+	# Yahoo! Address Book (address.yahoo.com)
+	app.router.add_get('/yab/{intl}', handle_yab)
+	app.router.add_post('/yab/{intl}', handle_yab)
+	
+	# Photo sharing and P2P file transfer body
+	app.router.add_post('/relay', handle_relay_upload)
+	app.router.add_get('/relay', handle_relay_download)
 
 async def handle_insider_ycontent(req: web.Request) -> web.Response:
 	backend = req.app['backend']
@@ -123,6 +132,20 @@ async def handle_insider_ycontent(req: web.Request) -> web.Response:
 						
 						config_xml.append(ab2_tmpl.render(epoch = round(time.time()), records = Markup(_gen_yab_record(target_ctc))))
 			continue
+		
+		if query_xml.startswith('getaudibles_'):
+			feed = _get_ycontent_feed('audibles', query_xml[len('getaudibles_'):])
+			if feed is not None:
+				config_xml.append(feed)
+			continue
+		if query_xml == 'getimv':
+			feed = _get_ycontent_feed('imvs', req.query.get('getimv') or '')
+			if feed is not None:
+				config_xml.append(feed)
+			continue
+		if query_xml in ('getgp', 'getwc'):
+			continue
+		
 		tmpl = req.app['jinja_env'].get_template('ymsg:Yinsider/Yinsider.' + query_xml + '.xml')
 		config_xml.append(tmpl.render())
 	
@@ -229,10 +252,13 @@ async def handle_ft_http(req: web.Request) -> web.Response:
 	
 	try:
 		# check version and vendorId
-		if y_ft_pkt[1] > 16 or y_ft_pkt[2] not in (0, 100):
+		if y_ft_pkt[1] > 18 or y_ft_pkt[2] not in (0, 100):
 			return web.HTTPInternalServerError(text = '')
 	except Exception:
 		return web.HTTPInternalServerError(text = '')
+	
+	if y_ft_pkt[0] is YMSGService.FriendIconFileTransfer:
+		return await _handle_picture_upload(req, backend, y_ft_pkt[5], stream)
 	
 	if y_ft_pkt[0] is not YMSGService.FileTransfer:
 		return web.HTTPInternalServerError(text = '')
@@ -268,7 +294,7 @@ async def handle_ft_http(req: web.Request) -> web.Response:
 	try:
 		filename = Path(file_path).name
 	except:
-		return web.HTTPInternalServerError(text = '')
+		return web.HTTPInternalServerError(text = 'File not found')
 	
 	token = gen_salt(length = 30)
 	path = _get_tmp_file_storage_path(token)
@@ -293,6 +319,58 @@ async def handle_ft_http(req: web.Request) -> web.Response:
 	bs.evt.ymsg_on_upload_file_ft(yahoo_id_recipient, message)
 	
 	return web.HTTPOk(text = '')
+
+async def handle_relay_upload(req: web.Request) -> web.Response:
+	backend = req.app['backend']
+	token = req.query.get('token')
+	if not token or not backend.auth_service.get_token('ymsg/relay', token):
+		return web.HTTPNotFound(text = 'Token invalid')
+	
+	body = await req.read()
+	if not body or len(body) > (2 ** 24):
+		return web.HTTPInternalServerError(text = 'No body')
+	
+	path = _get_tmp_file_storage_path(token)
+	path.mkdir(exist_ok = True, parents = True)
+	(path / 'blob').write_bytes(body)
+	
+	expiry_task = req.app.loop.create_task(_store_tmp_file_until_expiry(path))
+	_tasks_by_token[token] = expiry_task
+	
+	return web.HTTPOk(text = '')
+
+async def handle_relay_download(req: web.Request) -> web.Response:
+	backend = req.app['backend']
+	token = req.query.get('token')
+	if not token or not backend.auth_service.get_token('ymsg/relay', token):
+		return web.HTTPNotFound(text = 'Token invalid')
+	
+	blob = _get_tmp_file_storage_path(token) / 'blob'
+	if req.method == 'HEAD':
+		size = blob.stat().st_size if blob.is_file() else 0
+		return web.Response(status = 200, headers = {'Content-Length': str(size)})
+	
+	try:
+		data = blob.read_bytes()
+	except FileNotFoundError:
+		return web.HTTPNotFound(text = 'File not found')
+	
+	task = _tasks_by_token.pop(token, None)
+	if task is not None:
+		task.cancel()
+	shutil.rmtree(_get_tmp_file_storage_path(token), ignore_errors = True)
+	return web.Response(status = 200, body = data)
+
+IGNORED_QUERIES = {
+	'intl', 'os', 'ver', 'fmt', 't',
+	'imv', 'sms', 'system',
+	'countries', 'defaultcountry', 'filter', 'url', 'searchbar', 'games',
+	'fn', 'ln', 'yid',
+	'nn', 'e', 'hp',
+	'wp', 'mb', 'pp',
+	'ee', 'ow', 'id',
+}
+
 
 async def _store_tmp_file_until_expiry(path: Path) -> None:
 	await asyncio.sleep(86400)
@@ -326,7 +404,7 @@ async def handle_yahoo_filedl(req: web.Request) -> web.Response:
 	}, body = file_stream)
 
 async def handle_capacity(req: web.Request) -> web.Response:
-	return web.Response(text="COLO_CAPACITY=1\nCS_IP_ADDRESS={}".format(settings.TARGET_IP))
+	return web.Response(text = 'COLO_CAPACITY=1\r\nCS_IP_ADDRESS={}\r\n'.format(settings.TARGET_IP))
 
 async def handle_nofriends(req: web.Request) -> web.Response:
 	return render(req, 'ymsg:layout/nofriends.html')
@@ -350,7 +428,7 @@ async def handle_gettoken(req: web.Request) -> web.Response:
 	elif user.suspended:
 		error_int = "1218"
 	else:
-		token_tpl = _login(req, username, pwd, lifetime=86400)
+		token_tpl = _login(req, username, pwd, lifetime = TOKEN_LIFETIME)
 		if token_tpl is None:
 			error_int = "1212"
 		else:
@@ -394,6 +472,37 @@ async def handle_login(req: web.Request) -> web.Response:
 	else:
 		return web.Response(text="100")
 
+async def handle_yab(req: web.Request) -> web.Response:
+	backend = req.app['backend']
+	user = _resolve_user(req, backend)
+	if user is None:
+		return web.HTTPInternalServerError(text = '')
+	detail = user.detail
+	if detail is None:
+		return web.HTTPInternalServerError(text = '')
+	
+	esc = lambda s: html.escape(str(s), quote = True)
+	
+	wanted = None # type: Optional[set[str]]
+	if req.method == 'POST':
+		posted = (await req.read()).decode('utf-8', 'replace')
+		wanted = {yi.lower() for yi in re.findall(r'''\byi=["']([^"']+)["']''', posted)}
+	
+	records = ['<ct id="0" yi="{}" />\n'.format(esc(user.username))]
+	for ctc in detail.contacts.values():
+		if not ctc.lists & ContactList.FL:
+			continue
+		if wanted is not None and ctc.head.username.lower() not in wanted:
+			continue
+		attrs = ''
+		if ctc.detail.first_name: attrs += ' fn="{}"'.format(esc(ctc.detail.first_name))
+		if ctc.detail.last_name: attrs += ' ln="{}"'.format(esc(ctc.detail.last_name))
+		if ctc.detail.nickname: attrs += ' nn="{}"'.format(esc(ctc.detail.nickname))
+		records.append('<ct id="{}" yi="{}"{} />\n'.format(esc(ctc.detail.index_id), esc(ctc.head.username), attrs))
+	
+	body = '<?xml version="1.0" encoding="utf-8"?><ab k="{}" cc="{}">\n{}</ab>\r\n'.format(esc(user.username), len(records), ''.join(records))
+	return web.Response(status = 200, body = body.encode('utf-8'), content_type = 'text/html', charset = 'utf-8')
+
 async def handle_ncclogin(req: web.Request) -> web.Response:
 	backend = req.app['backend']
 	params = req.rel_url.query
@@ -404,13 +513,6 @@ async def handle_ncclogin(req: web.Request) -> web.Response:
 	uuid = backend.util_get_uuid_from_username(username)
 	user = backend.user_service.get(uuid) if uuid else None
 	detail = backend._load_detail(user)
-
-	if settings.DEBUG:
-		print(f"Username: {username}")
-		print(f"Encoded Password: {encoded_pwd}")
-		print(f"Decoded Password: {pwd}")
-		print(f"UUID: {uuid}")
-		print(f"User: {user}")
 
 	contacts = detail.contacts
 	cs = list(contacts.values())
@@ -449,8 +551,97 @@ async def handle_ncclogin(req: web.Request) -> web.Response:
 async def handle_banneradredir(req: web.Request) -> web.Response:
 	return web.HTTPFound(f'http://{settings.TARGET_HOST}/ads/banner')
 
+async def _handle_picture_upload(
+	req: web.Request, backend: Backend, ymsg_data: Any, stream: bytes,
+) -> web.Response:
+	from util.avatar import get_img_type
+	import traceback
+	
+	user = _resolve_user(req, backend)
+	if user is None:
+		return web.HTTPInternalServerError(text = '')
+	
+	try:
+		declared_len = int(util.misc.arbitrary_decode(ymsg_data.get(b'28') or b'0'))
+	except ValueError:
+		declared_len = 0
+	if declared_len <= 0 or len(stream) < declared_len or declared_len > (2 ** 22):
+		return web.HTTPInternalServerError(text = '')
+	stream = stream[:declared_len]
+	
+	ext = get_img_type(stream)
+	if ext is None:
+		return web.HTTPInternalServerError(text = '')
+	
+	try:
+		backend.user_service.save_avatar(user, stream, ext)
+	except Exception:
+		traceback.print_exc()
+		return web.HTTPInternalServerError(text = '')
+	avatar_sync.refresh_avatar(backend, user)
+	
+	filename_raw = ymsg_data.get(b'27')
+	filename = util.misc.arbitrary_decode(filename_raw) if filename_raw else 'im.{}'.format(ext)
+	try:
+		filename = Path(filename).name
+	except Exception:
+		filename = 'im.{}'.format(ext)
+	
+	try:
+		lifetime = int(util.misc.arbitrary_decode(ymsg_data.get(b'38') or b'604800'))
+	except ValueError:
+		lifetime = 604800
+	expiry = str(int(time.time()) + lifetime)
+	
+	url = yahoo_avatar_url(user)
+	if url is None or yahoo_avatar_checksum(user) is None:
+		return web.HTTPInternalServerError(text = '')
+	
+	for bs_self in backend.util_get_sessions_by_user(user):
+		bs_self.evt.ymsg_on_friend_icon_file_transfer(user.username, user.username, url.decode('utf-8'), filename, expiry)
+	avatar_sync.push_avatar_change(backend, user)
+	
+	return web.Response(status = 200, body = b'\x00\x00\x00\x00', content_type = 'text/html', charset = 'UTF-8')
+
 def _get_tmp_file_storage_path(token: str) -> Path:
 	return Path('storage/file') / token
+
+def _get_cookie(req: web.Request, name: str) -> Optional[str]:
+	value = req.cookies.get(name)
+	if value:
+		return value
+	for part in (req.headers.get('Cookie') or '').split(';'):
+		key, sep, val = part.strip().partition('=')
+		if sep and key == name:
+			return val
+	return None
+
+def _resolve_user(req: web.Request, backend: Backend) -> Optional[Any]:
+	y_cookie = _get_cookie(req, 'Y')
+	t_cookie = _get_cookie(req, 'T')
+	
+	(yahoo_id, bs) = _parse_cookies(req, backend, y = y_cookie or '', t = t_cookie or '')
+	if bs is not None and yahoo_id is not None:
+		return bs.user
+	
+	if not t_cookie:
+		return None
+	qs = parse_qs(t_cookie, keep_blank_values = True)
+	token = None
+	for key in ('z', 'sk', 'd'):
+		if qs.get(key) and qs[key][0]:
+			token = qs[key][0]
+			break
+	if not token:
+		return None
+	
+	tpl = backend.login_auth_service.get_token('ymsg/cookie', token)
+	if not tpl:
+		return None
+	user = backend._load_user_record(tpl[0])
+	if user is None or not backend.util_get_sessions_by_user(user):
+		return None
+	return user
 
 def _parse_cookies(
 	req: web.Request, backend: Backend, y: Optional[str] = None, t: Optional[str] = None,
@@ -466,7 +657,7 @@ def _parse_cookies(
 	
 	return (backend.auth_service.get_token('ymsg/cookie', y_cookie or ''), backend.auth_service.get_token('ymsg/cookie', t_cookie or ''))
 
-def _login(req: web.Request, username: str, pwd: str, lifetime: int = 86400) -> Optional[Tuple[str, datetime]]:
+def _login(req: web.Request, username: str, pwd: str, lifetime: int = TOKEN_LIFETIME) -> Optional[Tuple[str, datetime]]:
 	backend: Backend = req.app['backend']
 	uuid_val = backend.user_service.login_with_username(username, pwd)
 	if uuid_val is None:

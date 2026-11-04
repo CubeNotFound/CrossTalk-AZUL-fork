@@ -7,7 +7,7 @@ from core.models import User, Substatus, MessageData, MessageType
 from ..proto.snac import SNACMessage
 from ..proto.tlv import TLV
 from ..proto.buffer import Buffer
-from ..foodgroups.icbm import ICBMChannel, messagedata_to_icbm, messagedata_to_icbm_event
+from ..foodgroups.icbm import ICBMChannel, gen_cookie, messagedata_to_icbm, messagedata_to_icbm_event
 
 class ChatEventHandler(event.ChatEventHandler):
 	__slots__ = ('loop', 'ctrl', 'bs', 'cs', 'cookie', '_pending')
@@ -37,6 +37,15 @@ class ChatEventHandler(event.ChatEventHandler):
 
 	def on_participant_left(self, cs_other: 'ChatSession', last_pop: bool) -> None:
 		self.ctrl.logger.info('on_participant_left')
+		# once the other side is gone this chat can't reach them again (they'd be invited to a new one), so it's let go
+		if any(cs is not self.cs for cs in self.cs.chat.get_roster()):
+			return
+		chats = self.bs.front_data.get('oscar0_chats', {})
+		for uuid, (cs, _) in list(chats.items()):
+			if cs is self.cs:
+				del chats[uuid]
+		# (closed once the chat is done telling everyone, since it's still walking its roster)
+		self.loop.call_soon(self.cs.close)
 
 	def on_chat_invite_declined(self, chat: 'Chat', invitee: User, *, invitee_id: Optional[str] = None,
 								message: Optional[str] = None, circle: bool = False) -> None:
@@ -56,16 +65,20 @@ class ChatEventHandler(event.ChatEventHandler):
 		if data.sender is self.bs.user:
 			if data.front_cache.get('icbm_echo'):
 				original_cookie = data.front_cache.get('icbm_cookie', self.cookie)
-				self.ctrl.send_snac(messagedata_to_icbm(original_cookie, data, self.bs.user))
+				self.ctrl.send_snac(messagedata_to_icbm(original_cookie, data, self.bs))
 			return
 
 		if data.type in (MessageType.Typing, MessageType.TypingDone):
-			self.ctrl.send_snac(messagedata_to_icbm_event(data, self.bs.user))
+			self.ctrl.send_snac(messagedata_to_icbm_event(data, self.bs))
 			return
-
-		self.ctrl.logger.info('Got a message from', data.sender.username, 'saying:')
-		self.ctrl.logger.info(data.text.encode())
-		self.ctrl.send_snac(messagedata_to_icbm(self.cookie, data, self.bs.user))
+		elif data.type is MessageType.Chat:
+			self.ctrl.logger.info('Got a message from', data.sender.username, 'saying:')
+			self.ctrl.logger.info((data.text or '').encode())
+			# an OSCAR sender's own message cookie travels with the message, so acks and replies line up on both ends; anything
+			# else gets a fresh one, since clients take a repeated cookie for a repeated message
+			self.ctrl.send_snac(messagedata_to_icbm(data.front_cache.get('icbm_cookie') or gen_cookie(), data, self.bs))
+		else:
+			pass
 
 	def _send_when_user_joins(self, user_uuid: str, data: MessageData) -> None:
 		if self._user_in_chat(user_uuid):

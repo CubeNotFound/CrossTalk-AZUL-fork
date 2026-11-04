@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% from '_ui.html' import hub, flags, pager %}
+{% block content %}
+{{ hub('users', '{:,}'.format(total or 0) ~ ' accounts, ' ~ '{:,}'.format(online or 0) ~ ' signed in right now.') }}
+
+<form method="get" action="/users" class="adm-search" role="search" aria-label="Search users" data-ct-swap-form>
+	{% if show %}<input type="hidden" name="show" value="{{ show }}">{% endif %}
+	<div class="ct-search flex-grow-1">
+		<i class="bi bi-search" aria-hidden="true"></i>
+		<label for="userSearch" class="visually-hidden">Search by username, e-mail or UUID</label>
+		<input type="search" class="form-control" id="userSearch" name="q" value="{{ q }}" placeholder="Username, e-mail or UUID" autocomplete="off" spellcheck="false">
+	</div>
+	<button type="submit" class="btn btn-primary">Search</button>
+	{% if q %}<a class="btn btn-outline-secondary" href="/users{% if show %}?show={{ show }}{% endif %}" data-ct-swap-link>Clear</a>{% endif %}
+</form>
+
+{% set query = ('&q=' ~ (q | urlencode)) if q else '' %}
+<nav class="ct-pivot ct-pivot-sm adm-filters" aria-label="Show" data-ct-swap-pivot>
+	<a href="/users{% if q %}?q={{ q | urlencode }}{% endif %}" data-ct-swap-link{% if not show %} aria-current="page"{% endif %}>everyone</a>
+	{% for name, label, _ in filters %}
+	<a href="/users?show={{ name }}{{ query }}" data-ct-swap-link{% if show == name %} aria-current="page"{% endif %}>{{ label }}</a>
+	{% endfor %}
+</nav>
+
+{% if q or show %}<p class="ct-muted mb-3">{{ '{:,}'.format(matched) }} {{ 'account' if matched == 1 else 'accounts' }}{% if q %} matching "{{ q }}"{% endif %}</p>{% endif %}
+
+{% if users %}
+<ul class="adm-people ct-card">
+	{% for u in users %}
+	<li>
+		<a class="adm-person" href="/users/{{ u.uuid }}" data-ct-swap-link>
+			<span class="adm-avatar">
+				<img src="http://{{ settings.USERSTORAGE_HOST }}/avatar/{{ u.uuid }}/im" alt="" width="36" height="36" loading="lazy">
+				{% if u.online %}<span class="ct-presence" aria-hidden="true"></span>{% endif %}
+			</span>
+			<span class="adm-person-body">
+				<span class="adm-person-name">{{ u.username }}{% if u.online %}<span class="visually-hidden">, signed in</span>{% endif %}</span>
+				<span class="adm-person-meta">{{ u.email }}{% if u.suspended and u.deleted_at %} · <span class="adm-doomed">deleted {{ u.deleted_at | until }}</span>{% endif %}</span>
+			</span>
+			<span class="adm-person-flags">{{ flags(u) }}</span>
+			<span class="adm-person-when ct-muted">joined {{ u.date_created | ago }}<br>last in {{ u.date_login | ago }}</span>
+		</a>
+	</li>
+	{% endfor %}
+</ul>
+{{ pager(page, pages, '/users?' ~ ('show=' ~ show ~ '&' if show else '') ~ ('q=' ~ (q | urlencode) ~ '&' if q else '')) }}
+{% else %}
+<p class="ct-muted">{% if q or show %}Nobody matches that.{% else %}There are no accounts yet.{% endif %}</p>
+{% endif %}
+{% endblock %}

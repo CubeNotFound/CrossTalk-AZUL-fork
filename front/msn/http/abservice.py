@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 from enum import IntEnum
 from datetime import datetime
 import asyncio, secrets, sys, util.misc, settings
@@ -10,168 +10,15 @@ from markupsafe import Markup
 from core import models, error
 from core.backend import Backend, BackendSession, MAX_GROUP_NAME_LENGTH
 
-from .util import preprocess_soap, get_tag_localname, unknown_soap, find_element, render, bool_to_str, xml_to_string
+from .util import find_element, render, bool_to_str, dispatch_abch, abch_fault, schema_fault, server_fault
 from ..misc import gen_signedticket_xml
 
 def register(app: web.Application) -> None:
-	app.router.add_post('/abservice/SharingService.asmx', lambda req: handle_abservice(req, sharing = True))
 	app.router.add_post('/abservice/abservice.asmx', handle_abservice)
 
-async def handle_abservice(req: web.Request, *, sharing: bool = False) -> web.Response:
-	header, action, bs, _ = await preprocess_soap(req)
-	if bs is None:
-		raise web.HTTPForbidden()
-	action_str = get_tag_localname(action)
-	if find_element(action, 'deltasOnly') or find_element(action, 'DeltasOnly'):
-		return render(req, 'msn:abservice/Fault.fullsync.xml', { 'faultactor': action_str })
-	
-	if settings.DEBUG_FULL:
-		print(xml_to_string(action))
-	
-	method = getattr(sys.modules[__name__], ('sharing' if sharing else 'ab') + '_' + action_str, None)
-	if not method:
-		return unknown_soap(req, header, action)
-	
-	try:
-		return method(req, header, action, bs)
-	except:
-		import traceback
-		return render(req, 'msn:Fault.generic.xml', {
-			'exception': traceback.format_exc(),
-		}, status = 500)
+async def handle_abservice(req: web.Request) -> web.Response:
+	return await dispatch_abch(req, sys.modules[__name__], 'ab')
 
-def sharing_FindMembership(req: web.Request, header: Any, action: Any, bs: BackendSession) -> web.Response:
-	backend: Backend = req.app['backend']
-	now_str = util.misc.date_format(datetime.utcnow())
-	user = bs.user
-	detail = user.detail
-	cachekey = secrets.token_urlsafe(172)
-	return render(req, 'msn:sharing/FindMembershipResponse.xml', {
-		'cachekey': cachekey,
-		'host': settings.ADDRESSBOOK_HOST,
-		'session_id': util.misc.gen_uuid(),
-		'user': user,
-		'detail': detail,
-		'ContactList': models.ContactList,
-		'lists': [models.ContactList.AL, models.ContactList.BL, models.ContactList.RL],
-		'circles': backend.user_service.get_circle_batch(user),
-		'now': now_str,
-	})
-
-def sharing_AddMember(req: web.Request, header: Any, action: Any, bs: BackendSession) -> web.Response:
-	backend: Backend = req.app['backend']
-	cachekey = secrets.token_urlsafe(172)
-	
-	user = bs.user
-	detail = user.detail
-	assert detail is not None
-	
-	memberships = action.findall('.//{*}memberships/{*}Membership')
-	for membership in memberships:
-		email = None # type: Optional[str]
-		circle_id = None
-		
-		lst = models.ContactList.Parse(str(find_element(membership, 'MemberRole')))
-		assert lst is not None
-		members = membership.findall('.//{*}Members/{*}Member')
-		for member in members:
-			member_type = member.get('{http://www.w3.org/2001/XMLSchema-instance}type')
-			if member_type == 'PassportMember':
-				if find_element(member, 'Type') == 'Passport' and find_element(member, 'State') == 'Accepted':
-					email = find_element(member, 'PassportName')
-			elif member_type == 'EmailMember':
-				if find_element(member, 'Type') == 'Email' and find_element(member, 'State') == 'Accepted':
-					email = find_element(member, 'Email')
-			elif member_type == 'CircleMember':
-				if find_element(member, 'Type') == 'Circle' and find_element(member, 'State') == 'Accepted':
-					circle_id = find_element(member, 'CircleId')
-			if email is None and circle_id is None:
-				return render(req, 'msn:sharing/Fault.userdoesnotexist.xml', status = 500)
-			if email is not None:
-				name = None
-				contact_uuid = backend.util_get_uuid_from_email(email)
-				if contact_uuid is None:
-					return render(req, 'msn:sharing/Fault.userdoesnotexist.xml', status = 500)
-				ctc = detail.contacts.get(contact_uuid)
-				if ctc is None:
-					name = email
-				
-				try:
-					bs.me_contact_add(contact_uuid, lst, name = name)
-				except error.ContactListIsFull:
-					return web.HTTPInternalServerError()
-				except:
-					pass
-			elif circle_id is not None:
-				if not (circle_id.startswith('00000000-0000-0000-0009-') and len(circle_id[24:]) == 12):
-					return render(req, 'msn:sharing/Fault.userdoesnotexist.xml', status = 500)
-				chat_id = circle_id[-12:]
-				circle = backend.user_service.get_circle(chat_id)
-				if circle is None: return web.HTTPInternalServerError()
-				
-				if lst in (models.ContactList.RL,models.ContactList.PL):
-					return web.HTTPInternalServerError()
-				if lst == models.ContactList.BL:
-					bs.me_block_circle(circle)
-	return render(req, 'msn:sharing/AddMemberResponse.xml', {
-		'cachekey': cachekey,
-		'host': settings.ADDRESSBOOK_HOST,
-		'session_id': util.misc.gen_uuid(),
-	})
-
-def sharing_DeleteMember(req: web.Request, header: Any, action: Any, bs: BackendSession) -> web.Response:
-	backend: Backend = req.app['backend']
-	cachekey = secrets.token_urlsafe(172)
-	
-	user = bs.user
-	detail = user.detail
-	assert detail is not None
-	
-	contact_uuid = None
-	circle_id = None
-	
-	memberships = action.findall('.//{*}memberships/{*}Membership')
-	for membership in memberships:
-		lst = models.ContactList.Parse(str(find_element(membership, 'MemberRole')))
-		assert lst is not None
-		members = membership.findall('.//{*}Members/{*}Member')
-		for member in members:
-			member_type = member.get('{http://www.w3.org/2001/XMLSchema-instance}type')
-			if member_type == 'PassportMember':
-				if find_element(member, 'Type') == 'Passport' and find_element(member, 'State') == 'Accepted':
-					try:
-						contact_uuid = find_element(member, 'MembershipId').split('/', 1)[1]
-					except:
-						email = find_element(member, 'PassportName')
-						contact_uuid = backend.util_get_uuid_from_email(email or '')
-					assert contact_uuid is not None
-				elif member_type == 'CircleMember':
-					if find_element(member, 'Type') == 'Circle' and find_element(member, 'State') == 'Accepted':
-						circle_id = find_element(member, 'CircleId')
-					assert circle_id is not None
-			if contact_uuid is not None:
-				if contact_uuid not in detail.contacts:
-					return render(req, 'msn:sharing/Fault.memberdoesnotexist.xml', status = 500)
-				try:
-					bs.me_contact_remove(contact_uuid, lst)
-				except:
-					pass
-			elif circle_id is not None:
-				if not (circle_id.startswith('00000000-0000-0000-0009-') and len(circle_id[24:]) == 12):
-					return web.HTTPInternalServerError()
-				chat_id = circle_id[-12:]
-				circle = backend.user_service.get_circle(chat_id)
-				if circle is None: return web.HTTPInternalServerError()
-				
-				if lst in (models.ContactList.RL,models.ContactList.PL):
-					return web.HTTPInternalServerError()
-				if lst == models.ContactList.BL:
-					bs.me_unblock_circle(circle)
-	return render(req, 'msn:sharing/DeleteMemberResponse.xml', {
-		'cachekey': cachekey,
-		'host': settings.ADDRESSBOOK_HOST,
-		'session_id': util.misc.gen_uuid(),
-	})
 
 def ab_ABFindAll(req: web.Request, header: Any, action: Any, bs: BackendSession) -> web.Response:
 	now_str = util.misc.date_format(datetime.utcnow())
@@ -188,7 +35,7 @@ def ab_ABFindAll(req: web.Request, header: Any, action: Any, bs: BackendSession)
 		ab_id = '00000000-0000-0000-0000-000000000000'
 	
 	if ab_id != '00000000-0000-0000-0000-000000000000':
-		return web.HTTPInternalServerError()
+		return abch_fault(req, 'ABFindAll', 'ABDoesNotExist')
 	
 	return render(req, 'msn:abservice/ABFindAllResponse.xml', {
 		'cachekey': cachekey,
@@ -220,9 +67,9 @@ def ab_ABFindContactsPaged(req: web.Request, header: Any, action: Any, bs: Backe
 	
 	try:
 		if not (ab_id == '00000000-0000-0000-0000-000000000000' or (ab_id.startswith('00000000-0000-0000-0009-') and len(ab_id[24:]) == 12)):
-			return web.HTTPInternalServerError()
+			return abch_fault(req, 'ABFindContactsPaged', 'ABDoesNotExist')
 	except:
-		return web.HTTPInternalServerError()
+		return abch_fault(req, 'ABFindContactsPaged', 'ABDoesNotExist')
 	
 	if ab_id == '00000000-0000-0000-0000-000000000000':
 		ab_type = 'Individual'
@@ -230,6 +77,9 @@ def ab_ABFindContactsPaged(req: web.Request, header: Any, action: Any, bs: Backe
 		ab_type = 'Group'
 		chat_id = ab_id[-12:]
 		circle = backend.user_service.get_circle(chat_id)
+		# A circle's address book is only there for its members
+		if circle is None or user.uuid not in circle.memberships:
+			return abch_fault(req, 'ABFindContactsPaged', 'ABDoesNotExist')
 	
 	circles = [
 		circle
@@ -274,12 +124,12 @@ def ab_ABContactAdd(req: web.Request, header: Any, action: Any, bs: BackendSessi
 		ab_id = '00000000-0000-0000-0000-000000000000'
 	
 	if ab_id != '00000000-0000-0000-0000-000000000000':
-		return web.HTTPInternalServerError()
+		return abch_fault(req, 'ABContactAdd', 'ABDoesNotExist')
 	
 	contact = find_element(action, 'contacts/Contact')
 	
 	if contact is None:
-		return web.HTTPInternalServerError()
+		return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactAdd')
 	
 	type = find_element(contact, 'contactType') or 'LivePending'
 	email = find_element(contact, 'passportName') or ''
@@ -300,7 +150,7 @@ def ab_ABContactAdd(req: web.Request, header: Any, action: Any, bs: BackendSessi
 		for annotation in annotations:
 			name = find_element(annotation, 'Name')
 			if name not in _ANNOTATION_NAMES:
-				return web.HTTPInternalServerError()
+				return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactAdd')
 			value = find_element(annotation, 'Value')
 			if name == 'AB.NickName':
 				nickname = value
@@ -319,7 +169,7 @@ def ab_ABContactAdd(req: web.Request, header: Any, action: Any, bs: BackendSessi
 			bs.me_contact_add(contact_uuid, models.ContactList.FL, name = email, nickname = nickname)
 		except error.ContactListIsFull:
 			# TODO
-			return web.HTTPInternalServerError()
+			return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactAdd', 'Contact list is full')
 		except:
 			pass
 	
@@ -328,6 +178,82 @@ def ab_ABContactAdd(req: web.Request, header: Any, action: Any, bs: BackendSessi
 		'host': settings.ADDRESSBOOK_HOST,
 		'session_id': util.misc.gen_uuid(),
 		'contact_uuid': contact_uuid,
+	})
+
+def ab_CreateContact(req: web.Request, header: Any, action: Any, bs: BackendSession) -> web.Response:
+	backend: Backend = req.app['backend']
+	cachekey = secrets.token_urlsafe(172)
+	
+	user = bs.user
+	detail = user.detail
+	assert detail is not None
+	
+	email = str(find_element(action, 'contactHandle/Email') or '')
+	if '@' not in email:
+		return render(req, 'msn:abservice/Fault.emailmissingatsign.xml', status = 500)
+	elif '.' not in email:
+		return render(req, 'msn:abservice/Fault.emailmissingdot.xml', status = 500)
+	
+	contact_uuid = backend.util_get_uuid_from_email(email)
+	if contact_uuid is None:
+		return render(req, 'msn:abservice/Fault.invaliduser.xml', {
+			'action_str': 'CreateContact',
+			'email': email,
+		}, status = 500)
+	head = backend._load_user_record(contact_uuid)
+	if head is None:
+		return abch_fault(req, 'CreateContact', 'InvalidPassportUser')
+
+	ab_id = str(find_element(action, 'abHandle/ABId') or '00000000-0000-0000-0000-000000000000').lower()
+	if ab_id != '00000000-0000-0000-0000-000000000000':
+		if not (ab_id.startswith('00000000-0000-0000-0009-') and len(ab_id[24:]) == 12):
+			return abch_fault(req, 'CreateContact', 'ABDoesNotExist')
+		circle = backend.user_service.get_circle(ab_id[-12:])
+		if circle is None or user.uuid not in circle.memberships:
+			return abch_fault(req, 'CreateContact', 'ABDoesNotExist')
+		caller_membership = circle.memberships[user.uuid]
+		if contact_uuid not in circle.memberships and caller_membership.role in (models.CircleRole.Admin, models.CircleRole.AssistantAdmin):
+			bs.me_add_user_to_circle(circle, head)
+		return render(req, 'msn:abservice/CreateContactResponse.xml', {
+			'cachekey': cachekey,
+			'host': settings.ADDRESSBOOK_HOST,
+			'session_id': util.misc.gen_uuid(),
+			'head': head,
+			'user': user,
+			'now': util.misc.date_format(datetime.utcnow()),
+			'trust_level': 0,
+		})
+
+	nickname = None
+	for annotation in action.findall('.//{*}contactInfo/{*}annotations/{*}Annotation'):
+		if find_element(annotation, 'Name') == 'AB.NickName':
+			nickname = find_element(annotation, 'Value')
+	
+	ctc = detail.contacts.get(contact_uuid)
+	if ctc is None or not ctc.lists & models.ContactList.FL:
+		try:
+			bs.me_contact_add(contact_uuid, models.ContactList.FL, name = email, nickname = nickname)
+		except error.ContactListIsFull:
+			return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/CreateContact', 'Contact list is full')
+		except:
+			pass
+	
+	trust_level = find_element(action, 'contactInfo/TrustLevel')
+	if trust_level is not None:
+		try:
+			user.settings['TrustLevels'] = { **(user.settings.get('TrustLevels') or {}), contact_uuid: int(trust_level) }
+		except (TypeError, ValueError):
+			return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/CreateContact')
+		backend._mark_modified(user)
+	
+	return render(req, 'msn:abservice/CreateContactResponse.xml', {
+		'cachekey': cachekey,
+		'host': settings.ADDRESSBOOK_HOST,
+		'session_id': util.misc.gen_uuid(),
+		'head': head,
+		'user': user,
+		'now': util.misc.date_format(datetime.utcnow()),
+		'trust_level': (user.settings.get('TrustLevels') or {}).get(contact_uuid, 0),
 	})
 
 def ab_ABContactDelete(req: web.Request, header: Any, action: Any, bs: BackendSession) -> web.Response:
@@ -344,7 +270,7 @@ def ab_ABContactDelete(req: web.Request, header: Any, action: Any, bs: BackendSe
 		ab_id = '00000000-0000-0000-0000-000000000000'
 	
 	if ab_id != '00000000-0000-0000-0000-000000000000':
-		return web.HTTPInternalServerError()
+		return abch_fault(req, 'ABContactDelete', 'ABDoesNotExist')
 	
 	contacts = action.findall('.//{*}contacts/{*}Contact')
 	for contact in contacts:
@@ -375,7 +301,7 @@ def ab_ABContactUpdate(req: web.Request, header: Any, action: Any, bs: BackendSe
 		ab_id = '00000000-0000-0000-0000-000000000000'
 	
 	if ab_id != '00000000-0000-0000-0000-000000000000':
-		return web.HTTPInternalServerError()
+		return abch_fault(req, 'ABContactUpdate', 'ABDoesNotExist')
 	
 	contacts = action.findall('.//{*}contacts/{*}Contact')
 	for contact in contacts:
@@ -386,7 +312,7 @@ def ab_ABContactUpdate(req: web.Request, header: Any, action: Any, bs: BackendSe
 		else:
 			contact_uuid = find_element(contact, 'contactId')
 		if not contact_uuid:
-			return web.HTTPInternalServerError()
+			return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 		if contact_uuid is not user.uuid:
 			ctc = detail.contacts.get(contact_uuid)
 			if not ctc:
@@ -395,11 +321,11 @@ def ab_ABContactUpdate(req: web.Request, header: Any, action: Any, bs: BackendSe
 				}, status = 500)
 		properties_changed = contact.find('./{*}propertiesChanged')
 		if not properties_changed:
-			return web.HTTPInternalServerError()
+			return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 		properties_changed = str(properties_changed).strip().split(' ')
 		for contact_property in properties_changed:
 			if contact_property not in _CONTACT_PROPERTIES:
-				return web.HTTPInternalServerError()
+				return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 		
 		for contact_property in properties_changed:
 			if contact_property == 'Anniversary':
@@ -411,7 +337,7 @@ def ab_ABContactUpdate(req: web.Request, header: Any, action: Any, bs: BackendSe
 						property = str(property)
 						property = datetime.strptime(property, '%Y/%m/%d')
 				except:
-					return web.HTTPInternalServerError()
+					return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 			if contact_property == 'ContactBirthDate':
 				assert ctc is not None
 				property = find_element(contact_info, 'birthdate')
@@ -420,80 +346,80 @@ def ab_ABContactUpdate(req: web.Request, header: Any, action: Any, bs: BackendSe
 						property = str(property)
 						if property != '0001-01-01T00:00:00':
 							if not property.endswith('Z'):
-								return web.HTTPInternalServerError()
+								return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 							property = iso_parser.parse(property)
 				except:
-					return web.HTTPInternalServerError()
+					return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 			if contact_property == 'ContactLocation':
 				assert ctc is not None
 				contact_locations = contact_info.findall('.//{*}locations/{*}ContactLocation')
 				for contact_location in contact_locations:
 					if str(find_element(contact_location, 'contactLocationType')) not in ('ContactLocationPersonal','ContactLocationBusiness'):
-						return web.HTTPInternalServerError()
+						return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 					location_properties_changed = find_element(contact_location, 'Changes')
 					if location_properties_changed is None:
-						return web.HTTPInternalServerError()
+						return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 					location_properties_changed = str(location_properties_changed).strip().split(' ')
 					for location_property in location_properties_changed:
 						if location_property not in _CONTACT_LOCATION_PROPERTIES:
-							return web.HTTPInternalServerError()
+							return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 					for location_property in location_properties_changed:
 						if location_property == 'Name' and str(find_element(contact_location, 'contactLocationType')) != 'ContactLocationBusiness':
-							return web.HTTPInternalServerError()
+							return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 			if contact_property == 'IsMessengerUser':
 				assert ctc is not None
 				property = find_element(contact_info, 'isMessengerUser')
 				if property is None:
-					return web.HTTPInternalServerError()
+					return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 			if contact_property == 'ContactEmail':
 				assert ctc is not None
 				contact_emails = contact_info.findall('.//{*}emails/{*}ContactEmail')
 				for contact_email in contact_emails:
 					email_properties_changed = find_element(contact_email, 'propertiesChanged')
 					if email_properties_changed is None:
-						return web.HTTPInternalServerError()
+						return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 					email_properties_changed = str(email_properties_changed).strip().split(' ')
 					for email_property in email_properties_changed:
 						if email_property not in _CONTACT_EMAIL_PROPERTIES:
-							return web.HTTPInternalServerError()
+							return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 					if (
 						str(find_element(contact_email, 'contactEmailType')) not in (
 							'ContactEmailPersonal', 'ContactEmailBusiness', 'ContactEmailMessenger', 'ContactEmailOther',
 						)
 					):
-						return web.HTTPInternalServerError()
+						return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 			if contact_property == 'ContactPrimaryEmailType':
 				assert ctc is not None
 				email_primary_type = str(find_element(contact_info, 'primaryEmailType'))
 				if email_primary_type not in ('Passport','ContactEmailPersonal','ContactEmailBusiness','ContactEmailOther'):
-					return web.HTTPInternalServerError()
+					return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 			if contact_property == 'ContactPhone':
 				assert ctc is not None
 				contact_phones = contact_info.findall('.//{*}phones/{*}ContactPhone')
 				for contact_phone in contact_phones:
 					phone_properties_changed = find_element(contact_phone, 'propertiesChanged')
 					if phone_properties_changed is None:
-						return web.HTTPInternalServerError()
+						return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 					phone_properties_changed = str(phone_properties_changed).strip().split(' ')
 					for phone_property in phone_properties_changed:
 						if phone_property not in _CONTACT_PHONE_PROPERTIES:
-							return web.HTTPInternalServerError()
+							return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 					if (
 						str(find_element(contact_phone, 'contactPhoneType')) not in (
 							'ContactPhonePersonal', 'ContactPhoneBusiness', 'ContactPhoneMobile', 'ContactPhoneFax', 'ContactPhonePager', 'ContactPhoneOther',
-						),
+						)
 					):
-						return web.HTTPInternalServerError()
+						return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 			if contact_property == 'ContactWebSite':
 				assert ctc is not None
 				contact_websites = contact_info.findall('.//{*}webSites/{*}ContactWebSite')
 				for contact_website in contact_websites:
 					if str(find_element(contact_website, 'contactWebSiteType')) not in ('ContactWebSitePersonal','ContactWebSiteBusiness'):
-						return web.HTTPInternalServerError()
+						return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 			if contact_property == 'Annotation':
 				if find_element(contact_info, 'contactType') != 'Me':
 					if ctc is None:
-						return web.HTTPInternalServerError()
+						return abch_fault(req, 'ABContactUpdate', 'ContactDoesNotExist')
 				annotations = contact_info.findall('.//{*}annotations/{*}Annotation')
 				for annotation in annotations:
 					name = find_element(annotation, 'Name')
@@ -509,7 +435,7 @@ def ab_ABContactUpdate(req: web.Request, header: Any, action: Any, bs: BackendSe
 							else:
 								gtc = GTCAnnotation(int(value))
 						except ValueError:
-							return web.HTTPInternalServerError()
+							return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 					if name == 'MSN.IM.BLP':
 						try:
 							if value == '':
@@ -517,10 +443,10 @@ def ab_ABContactUpdate(req: web.Request, header: Any, action: Any, bs: BackendSe
 							else:
 								blp = BLPAnnotation(int(value))
 						except ValueError:
-							return web.HTTPInternalServerError()
+							return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABContactUpdate')
 		if find_element(contact_info, 'contactType') != 'Me':
 			if ctc is None:
-				return web.HTTPInternalServerError()
+				return abch_fault(req, 'ABContactUpdate', 'ContactDoesNotExist')
 	for contact in contacts:
 		updated = False
 		ctc = None
@@ -766,6 +692,60 @@ def ab_ABContactUpdate(req: web.Request, header: Any, action: Any, bs: BackendSe
 		'session_id': util.misc.gen_uuid(),
 	})
 
+
+def ab_UpdateContact(req: web.Request, header: Any, action: Any, bs: BackendSession) -> web.Response:
+	from lxml import etree
+	from lxml.objectify import fromstring as parse_xml
+	
+	backend: Backend = req.app['backend']
+	cachekey = secrets.token_urlsafe(172)
+	
+	user = bs.user
+	detail = user.detail
+	assert detail is not None
+	
+	contact_uuid = str(find_element(action, 'contactId') or '')
+	contact_info = action.find('./{*}contactInfo')
+	if contact_info is None:
+		return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/UpdateContact')
+	if contact_uuid != user.uuid and contact_uuid not in detail.contacts:
+		return render(req, 'msn:abservice/Fault.contactdoesnotexist.xml', {
+			'action_str': 'UpdateContact',
+		}, status = 500)
+	
+	properties_changed = str(find_element(contact_info, 'PropertiesChanged') or '').strip().split()
+	
+	if 'TrustLevel' in properties_changed:
+		try:
+			trust_level = int(find_element(contact_info, 'TrustLevel'))
+		except (TypeError, ValueError):
+			return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/UpdateContact')
+		user.settings['TrustLevels'] = { **(user.settings.get('TrustLevels') or {}), contact_uuid: trust_level }
+		backend._mark_modified(user)
+	
+	properties_changed = [contact_property for contact_property in properties_changed if contact_property != 'TrustLevel']
+	if properties_changed:
+		contact_info_elm = etree.fromstring(etree.tostring(contact_info))
+		for elm in contact_info_elm.findall('{*}PropertiesChanged') + contact_info_elm.findall('{*}TrustLevel'):
+			contact_info_elm.remove(elm)
+		if contact_uuid == user.uuid and contact_info_elm.find('{*}contactType') is None:
+			# `ABContactUpdate` addresses the user's own contact by its type
+			etree.SubElement(contact_info_elm, '{http://www.msn.com/webservices/AddressBook}contactType').text = 'Me'
+		response = ab_ABContactUpdate(req, header, parse_xml(
+			b'<ABContactUpdate xmlns="http://www.msn.com/webservices/AddressBook"><abId>00000000-0000-0000-0000-000000000000</abId><contacts><Contact>'
+			+ '<contactId>{}</contactId>'.format(contact_uuid).encode('utf-8') + etree.tostring(contact_info_elm)
+			+ '<propertiesChanged>{}</propertiesChanged>'.format(' '.join(properties_changed)).encode('utf-8')
+			+ b'</Contact></contacts></ABContactUpdate>'
+		), bs)
+		if response.status != 200:
+			return response
+	
+	return render(req, 'msn:abservice/UpdateContactResponse.xml', {
+		'cachekey': cachekey,
+		'host': settings.ADDRESSBOOK_HOST,
+		'session_id': util.misc.gen_uuid(),
+	})
+
 def ab_ABGroupAdd(req: web.Request, header: Any, action: Any, bs: BackendSession) -> web.Response:
 	cachekey = secrets.token_urlsafe(172)
 	
@@ -780,7 +760,7 @@ def ab_ABGroupAdd(req: web.Request, header: Any, action: Any, bs: BackendSession
 		ab_id = '00000000-0000-0000-0000-000000000000'
 	
 	if ab_id != '00000000-0000-0000-0000-000000000000':
-		return web.HTTPInternalServerError()
+		return abch_fault(req, 'ABGroupAdd', 'ABDoesNotExist')
 	
 	name = find_element(action, 'name')
 	is_favorite = find_element(action, 'IsFavorite')
@@ -823,17 +803,17 @@ def ab_ABGroupUpdate(req: web.Request, header: Any, action: Any, bs: BackendSess
 		ab_id = '00000000-0000-0000-0000-000000000000'
 	
 	if ab_id != '00000000-0000-0000-0000-000000000000':
-		return web.HTTPInternalServerError()
+		return abch_fault(req, 'ABGroupUpdate', 'ABDoesNotExist')
 	
 	groups = action.findall('.//{*}groups/{*}Group')
 	for group_elm in groups:
 		group_id = str(find_element(group_elm, 'groupId'))
 		if group_id not in detail._groups_by_uuid:
-			return web.HTTPInternalServerError()
+			return abch_fault(req, 'ABGroupUpdate', 'GroupDoesNotExist')
 		group_info = group_elm.find('.//{*}groupInfo')
 		properties_changed = find_element(group_elm, 'propertiesChanged')
 		if not properties_changed:
-			return web.HTTPInternalServerError()
+			return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABGroupUpdate')
 		properties_changed = str(properties_changed).strip().split(' ')
 		#for contact_property in properties_changed:
 		#	if contact_property not in _CONTACT_PROPERTIES:
@@ -842,7 +822,7 @@ def ab_ABGroupUpdate(req: web.Request, header: Any, action: Any, bs: BackendSess
 			if contact_property == 'GroupName':
 				name = str(find_element(group_info, 'name'))
 				if name is None:
-					return web.HTTPInternalServerError()
+					return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABGroupUpdate')
 				elif name == '(No Group)':
 					return render(req, 'msn:abservice/Fault.groupalreadyexists.xml', {
 						'action_str': 'ABGroupUpdate',
@@ -859,7 +839,7 @@ def ab_ABGroupUpdate(req: web.Request, header: Any, action: Any, bs: BackendSess
 			is_favorite = find_element(group_info, 'IsFavorite')
 			if is_favorite is not None:
 				if not isinstance(is_favorite, bool):
-					return web.HTTPInternalServerError()
+					return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABGroupUpdate')
 	for group_elm in groups:
 		group_id = str(find_element(group_elm, 'groupId'))
 		group_info = group_elm.find('.//{*}groupInfo')
@@ -893,12 +873,12 @@ def ab_ABGroupDelete(req: web.Request, header: Any, action: Any, bs: BackendSess
 		ab_id = '00000000-0000-0000-0000-000000000000'
 	
 	if ab_id != '00000000-0000-0000-0000-000000000000':
-		return web.HTTPInternalServerError()
+		return abch_fault(req, 'ABGroupDelete', 'ABDoesNotExist')
 	
 	group_ids = [str(group_id) for group_id in action.findall('.//{*}groupFilter/{*}groupIds/{*}guid')]
 	for group_id in group_ids:
 		if group_id not in detail._groups_by_uuid:
-			return web.HTTPInternalServerError()
+			return abch_fault(req, 'ABGroupDelete', 'GroupDoesNotExist')
 	for group_id in group_ids:
 		bs.me_group_remove(group_id)
 	return render(req, 'msn:abservice/ABGroupDeleteResponse.xml', {
@@ -922,35 +902,39 @@ def ab_ABGroupContactAdd(req: web.Request, header: Any, action: Any, bs: Backend
 		ab_id = '00000000-0000-0000-0000-000000000000'
 	
 	if ab_id != '00000000-0000-0000-0000-000000000000':
-		return web.HTTPInternalServerError()
+		return abch_fault(req, 'ABGroupContactAdd', 'ABDoesNotExist')
 	
 	group_ids = [str(group_id) for group_id in action.findall('.//{*}groupFilter/{*}groupIds/{*}guid')]
 	
 	for group_id in group_ids:
 		if group_id not in detail._groups_by_uuid:
-			return web.HTTPInternalServerError()
+			return abch_fault(req, 'ABGroupContactAdd', 'GroupDoesNotExist')
 	
 	if find_element(action, 'contactInfo') is not None:
 		email = find_element(action, 'passportName')
 		if email is None:
 			email = find_element(action, 'email')
 			if email is None:
-				return web.HTTPInternalServerError()
+				return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ABGroupContactAdd')
 		contact_uuid = backend.util_get_uuid_from_email(email)
-		assert contact_uuid is not None
+		if contact_uuid is None:
+			return render(req, 'msn:abservice/Fault.invaliduser.xml', {
+				'action_str': 'ABGroupContactAdd',
+				'email': email,
+			}, status = 500)
 		
 		ctc = detail.contacts.get(contact_uuid)
 		if ctc is not None and ctc.lists & models.ContactList.FL:
 			for group_id in group_ids:
 				for group_contact_entry in ctc._groups:
 					if group_contact_entry.uuid == group_id:
-						return web.HTTPInternalServerError()
+						return abch_fault(req, 'ABGroupContactAdd', 'ContactAlreadyExists')
 		
 		for group_id in group_ids:
 			try:
 				ctc, _ = bs.me_contact_add(contact_uuid, models.ContactList.FL, group_id = group_id, name = email)
 			except:
-				return web.HTTPInternalServerError()
+				return server_fault(req, 'http://www.msn.com/webservices/AddressBook/ABGroupContactAdd')
 	else:
 		contact_uuid = find_element(action, 'contactId')
 		assert contact_uuid is not None
@@ -964,7 +948,7 @@ def ab_ABGroupContactAdd(req: web.Request, header: Any, action: Any, bs: Backend
 			for group_id in group_ids:
 				for group_contact_entry in ctc._groups:
 					if group_contact_entry.uuid == group_id:
-						return web.HTTPInternalServerError()
+						return abch_fault(req, 'ABGroupContactAdd', 'ContactAlreadyExists')
 		
 		for group_id in group_ids:
 			bs.me_group_contact_add(group_id, ctc.head.uuid)
@@ -989,13 +973,13 @@ def ab_ABGroupContactDelete(req: web.Request, header: Any, action: Any, bs: Back
 		ab_id = '00000000-0000-0000-0000-000000000000'
 	
 	if ab_id != '00000000-0000-0000-0000-000000000000':
-		return web.HTTPInternalServerError()
+		return abch_fault(req, 'ABGroupContactDelete', 'ABDoesNotExist')
 	
 	group_ids = [str(group_id) for group_id in action.findall('.//{*}groupFilter/{*}groupIds/{*}guid')]
 	
 	for group_id in group_ids:
 		if group_id not in detail._groups_by_uuid:
-			return web.HTTPInternalServerError()
+			return abch_fault(req, 'ABGroupContactDelete', 'GroupDoesNotExist')
 	
 	contact_uuid = find_element(action, 'contactId')
 	ctc = detail.contacts.get(contact_uuid or '')
@@ -1008,7 +992,7 @@ def ab_ABGroupContactDelete(req: web.Request, header: Any, action: Any, bs: Back
 						ctc_in_group = True
 						break
 				if not ctc_in_group:
-					return web.HTTPInternalServerError()
+					return abch_fault(req, 'ABGroupContactDelete', 'ContactDoesNotExist')
 			for group_id in group_ids:
 				bs.me_group_contact_remove(group_id, ctc.head.uuid)
 	else:
@@ -1019,121 +1003,6 @@ def ab_ABGroupContactDelete(req: web.Request, header: Any, action: Any, bs: Back
 		'cachekey': cachekey,
 		'host': settings.ADDRESSBOOK_HOST,
 		'session_id': util.misc.gen_uuid(),
-	})
-
-def sharing_CreateCircle(req: web.Request, header: Any, action: Any, bs: BackendSession) -> web.Response:
-	backend: Backend = req.app['backend']
-	cachekey = secrets.token_urlsafe(172)
-	
-	user = bs.user
-	
-	if (
-		find_element(action, 'Domain') == 1
-		and find_element(action, 'HostedDomain') == 'live.com'
-		and find_element(action, 'Type') == 2
-		and isinstance(find_element(action, 'IsPresenceEnabled'), bool)
-	):
-		membership_access = int(find_element(action, 'MembershipAccess'))
-		name = str(find_element(action, 'DisplayName'))
-		owner_friendly = str(find_element(action, 'PublicDisplayName'))
-		
-		circle = bs.me_create_circle(name, owner_friendly, membership_access)
-		
-		backend.loop.create_task(_dispatch_circle_created(backend, user, circle))
-		
-		return render(req, 'msn:sharing/CreateCircleResponse.xml', {
-			'cachekey': cachekey,
-			'host': settings.ADDRESSBOOK_HOST,
-			'session_id': util.misc.gen_uuid(),
-			'chat_id': circle.chat_id,
-		})
-	
-	return web.HTTPInternalServerError()
-
-def ab_CreateContact(req: web.Request, header: Any, action: Any, bs: BackendSession) -> web.Response:
-	backend: Backend = req.app['backend']
-	now_str = util.misc.date_format(datetime.utcnow())
-	cachekey = secrets.token_urlsafe(172)
-	
-	# Used as a step in Circle invites, but also used for regular contact adds in WLM 2011/2012
-	user = bs.user
-	detail = user.detail
-	assert detail is not None
-	
-	ab_id = find_element(action, 'ABId')
-	if ab_id is not None:
-		ab_id = str(ab_id)
-	else:
-		ab_id = '00000000-0000-0000-0000-000000000000'
-	
-	chat_id = ab_id[-12:]
-	circle = backend.user_service.get_circle(chat_id)
-	
-	caller_membership = circle.memberships.get(user.uuid)
-	if caller_membership is None or caller_membership.role not in (models.CircleRole.Admin,models.CircleRole.AssistantAdmin):
-		return web.HTTPInternalServerError()
-	
-	contact_email = find_element(action, 'Email')
-	contact_uuid = backend.util_get_uuid_from_email(contact_email)
-	
-	if contact_uuid is None:
-		return render(req, 'msn:abservice/Fault.invaliduser.xml', {
-			'action_str': 'CreateContact',
-			'email': contact_email,
-		}, status = 500)
-	head = backend._load_user_record(contact_uuid)
-	if head is None:
-		return render(req, 'msn:abservice/Fault.invaliduser.xml', {
-			'action_str': 'CreateContact',
-			'email': contact_email,
-		}, status = 500)
-	
-	membership = circle.memberships.get(head.uuid)
-	
-	if (
-		membership is not None and (
-			membership.state == models.CircleState.Rejected
-			or (membership.role == models.CircleRole.Member and membership.state == models.CircleState.Empty)
-		)
-	):
-		bs.me_change_circle_membership(circle, head, role = models.CircleRole.Empty, state = models.CircleState.Empty)
-	else:
-		if circle:
-			try:
-				bs.me_add_user_to_circle(circle, head)
-			except error.MemberAlreadyInCircle:
-				return render(req, 'msn:abservice/Fault.contactalreadyexists.xml', {
-					'action_str': 'CreateContact',
-				}, status = 500)
-			except:
-				return web.HTTPInternalServerError()
-		else:
-			add_ctc = False
-	
-			ctc = detail.contacts.get(contact_uuid)
-			if ctc is not None:
-				if not ctc.lists & models.ContactList.FL:
-					add_ctc = True
-			else:
-				add_ctc = True
-	
-			if add_ctc:
-				try:
-					bs.me_contact_add(contact_uuid, models.ContactList.FL, name = email, nickname = nickname)
-				except error.ContactListIsFull:
-					# TODO
-					return web.HTTPInternalServerError()
-				except:
-					pass	
-	
-	return render(req, 'msn:abservice/CreateContactResponse.xml', {
-		'cachekey': cachekey,
-		'host': settings.ADDRESSBOOK_HOST,
-		'session_id': util.misc.gen_uuid(),
-		'ab_id': ab_id,
-		'head': head,
-		'now': now_str,
-		'user': user
 	})
 
 def ab_ManageWLConnection(req: web.Request, header: Any, action: Any, bs: BackendSession) -> web.Response:
@@ -1149,7 +1018,7 @@ def ab_ManageWLConnection(req: web.Request, header: Any, action: Any, bs: Backen
 	ab_id = str(ab_id) if ab_id is not None else '00000000-0000-0000-0000-000000000000'
 
 	if not (ab_id == '00000000-0000-0000-0000-000000000000' or (ab_id.startswith('00000000-0000-0000-0009-') and len(ab_id[24:]) == 12)):
-		return web.HTTPInternalServerError()
+		return abch_fault(req, 'ManageWLConnection', 'ABDoesNotExist')
 
 	circle = None
 	invite_message = None
@@ -1157,7 +1026,14 @@ def ab_ManageWLConnection(req: web.Request, header: Any, action: Any, bs: Backen
 
 	contact_uuid = find_element(action, 'contactId')
 	assert contact_uuid is not None
-	head = backend._load_user_record(contact_uuid) if ab_id != '00000000-0000-0000-0000-000000000000' else user
+	contact_uuid = str(contact_uuid)
+
+	if ab_id != '00000000-0000-0000-0000-000000000000':
+		head = backend._load_user_record(contact_uuid)
+	elif contact_uuid.startswith('00000000-0000-0000-0009-'):
+		head = user
+	else:
+		head = backend._load_user_record(contact_uuid)
 
 	if head is None:
 		return render(req, 'msn:abservice/Fault.contactdoesnotexist.xml', {
@@ -1166,7 +1042,7 @@ def ab_ManageWLConnection(req: web.Request, header: Any, action: Any, bs: Backen
 
 	if ab_id == '00000000-0000-0000-0000-000000000000' and contact_uuid.startswith('00000000-0000-0000-0009-'):
 		chat_id = contact_uuid[-12:]
-		uuid = head.uuid
+		uuid = user.uuid
 		circle_mode = True
 	elif ab_id.startswith('00000000-0000-0000-0009-'):
 		chat_id = ab_id[-12:]
@@ -1175,15 +1051,18 @@ def ab_ManageWLConnection(req: web.Request, header: Any, action: Any, bs: Backen
 
 	if circle_mode:
 		circle = backend.user_service.get_circle(chat_id)
-		if circle is None or uuid not in circle.memberships:
-			return web.HTTPInternalServerError()
+		if circle is None:
+			return abch_fault(req, 'ManageWLConnection', 'ABDoesNotExist')
+		if uuid not in circle.memberships:
+			return abch_fault(req, 'ManageWLConnection', 'MemberDoesNotExist')
 
 	if find_element(action, 'connection') == True:
+		# Parse relationship variables; relationshipRole is optional (absent in older clients)
 		try:
-			relationship_type = models.RelationshipType(find_element(action, 'relationshipType'))
-			relationship_role = int(find_element(action, 'relationshipRole'))
+			relationship_type_raw = find_element(action, 'relationshipType')
+			relationship_role_raw = find_element(action, 'relationshipRole')
 			wl_action = int(find_element(action, 'action'))
-		except ValueError:
+		except (ValueError, TypeError):
 			return render(req, 'msn:abservice/ManageWLConnectionResponse.xml', {
 				'cachekey': cachekey,
 				'host': settings.ADDRESSBOOK_HOST,
@@ -1191,13 +1070,20 @@ def ab_ManageWLConnection(req: web.Request, header: Any, action: Any, bs: Backen
 				'error': 'Relationship variables invalid',
 			}, status=500)
 
-		if relationship_type == models.RelationshipType.Circle:
-			if circle is None:
+		try:
+			relationship_type = models.RelationshipType(relationship_type_raw)
+		except (ValueError, TypeError):
+			relationship_type = None 
+		relationship_role = int(relationship_role_raw) if relationship_role_raw is not None else None
+
+		if circle_mode:
+			# All circle operations require a valid Circle relationship type
+			if relationship_type != models.RelationshipType.Circle:
 				return render(req, 'msn:abservice/ManageWLConnectionResponse.xml', {
 					'cachekey': cachekey,
 					'host': settings.ADDRESSBOOK_HOST,
 					'session_id': util.misc.gen_uuid(),
-					'error': 'Relationship type not suitable for non-specialized contacts',
+					'error': 'Expected Circle relationship type for circle operation',
 				}, status=500)
 
 			if wl_action == 1:
@@ -1244,7 +1130,6 @@ def ab_ManageWLConnection(req: web.Request, header: Any, action: Any, bs: Backen
 					for annotation in annotations:
 						name = find_element(annotation, 'Name')
 						value = find_element(annotation, 'Value')
-
 						if name == 'MSN.IM.InviteMessage':
 							invite_message = value
 							break
@@ -1275,7 +1160,7 @@ def ab_ManageWLConnection(req: web.Request, header: Any, action: Any, bs: Backen
 						}, status=500)
 				else:
 					error_msg = 'RelationshipRole `{role}` not currently supported for relationship type `{type}`'.format(
-						role=relationship_role, type=relationship_type.name
+						role=relationship_role, type=relationship_type.name,
 					)
 					return render(req, 'msn:abservice/ManageWLConnectionResponse.xml', {
 						'cachekey': cachekey,
@@ -1312,11 +1197,33 @@ def ab_ManageWLConnection(req: web.Request, header: Any, action: Any, bs: Backen
 							'error': '`Circle` does not currently exist',
 						}, status=500)
 				else:
-					return web.HTTPInternalServerError()
+					return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ManageWLConnection')
 		else:
-			return web.HTTPInternalServerError()
+			# regular contact add/remove
+			if wl_action == 1:
+				add_ctc = False
+				ctc = detail.contacts.get(contact_uuid)
+				if ctc is not None:
+					if not ctc.lists & models.ContactList.FL:
+						add_ctc = True
+				else:
+					add_ctc = True
+				if add_ctc:
+					try:
+						bs.me_contact_add(contact_uuid, models.ContactList.FL, name=head.email)
+					except error.ContactListIsFull:
+						return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ManageWLConnection', 'Contact list is full')
+					except:
+						pass
+			elif wl_action == 2:
+				try:
+					bs.me_contact_remove(contact_uuid, models.ContactList.FL)
+				except:
+					pass
+			else:
+				return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ManageWLConnection')
 	else:
-		return web.HTTPInternalServerError()
+		return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/ManageWLConnection')
 
 	return render(req, 'msn:abservice/ManageWLConnectionResponse.xml', {
 		'cachekey': cachekey,
@@ -1328,7 +1235,7 @@ def ab_ManageWLConnection(req: web.Request, header: Any, action: Any, bs: Backen
 		'CircleRole': models.CircleRole,
 		'CircleState': models.CircleState,
 		'now': now_str,
-		'user': user
+		'user': user,
 	})
 
 def ab_BreakConnection(req: web.Request, header: Any, action: Any, bs: BackendSession) -> web.Response:
@@ -1343,55 +1250,48 @@ def ab_BreakConnection(req: web.Request, header: Any, action: Any, bs: BackendSe
 	ab_id = str(ab_id) if ab_id is not None else '00000000-0000-0000-0000-000000000000'
 
 	if not (ab_id == '00000000-0000-0000-0000-000000000000' or (ab_id.startswith('00000000-0000-0000-0009-') and len(ab_id[24:]) == 12)):
-		return web.HTTPInternalServerError()
-
-	circle = None
-	chat_id = None
-	circle_mode = False
+		return abch_fault(req, 'BreakConnection', 'ABDoesNotExist')
 
 	contact_uuid = find_element(action, 'contactId')
 	assert contact_uuid is not None
+	contact_uuid = str(contact_uuid)
 
-	if ab_id != '00000000-0000-0000-0000-000000000000':
-		# Right now, this only supports requests from the calling user
-		if contact_uuid != user.uuid:
-			return web.HTTPInternalServerError()
-		head = user
-	else:
-		head = None
-
-	if head is None:
-		return render(req, 'msn:abservice/Fault.contactdoesnotexist.xml', {
-			'action_str': 'BreakConnection',
-		}, status=500)
+	circle_mode = False
+	chat_id = None
 
 	if ab_id.startswith('00000000-0000-0000-0009-'):
+		# Circle-AB leave: the caller must be the contact being removed
+		if contact_uuid != user.uuid:
+			return schema_fault(req, 'http://www.msn.com/webservices/AddressBook/BreakConnection', 'Access Denied')
 		chat_id = ab_id[-12:]
-		uuid = contact_uuid
+		circle_mode = True
+	elif contact_uuid.startswith('00000000-0000-0000-0009-'):
+		# Default-AB with circle contactId: alternate leave form
+		chat_id = contact_uuid[-12:]
 		circle_mode = True
 
 	if circle_mode:
 		circle = backend.user_service.get_circle(chat_id)
-		if circle is None or uuid not in circle.memberships:
-			return web.HTTPInternalServerError()
-
+		if circle is None:
+			return abch_fault(req, 'BreakConnection', 'ABDoesNotExist')
+		if user.uuid not in circle.memberships:
+			return abch_fault(req, 'BreakConnection', 'MemberDoesNotExist')
 		try:
 			bs.me_leave_circle(circle)
 		except Exception:
-			return web.HTTPInternalServerError()
-
+			return server_fault(req, 'http://www.msn.com/webservices/AddressBook/BreakConnection')
 		backend.loop.create_task(_dispatch_circle_left(backend, user, circle))
+	else:
+		try:
+			bs.me_contact_remove(contact_uuid, models.ContactList.FL)
+		except:
+			pass
 
 	return render(req, 'msn:abservice/BreakConnectionResponse.xml', {
 		'cachekey': cachekey,
 		'host': settings.ADDRESSBOOK_HOST,
 		'session_id': util.misc.gen_uuid(),
 	})
-
-async def _dispatch_circle_created(backend: Backend, user: models.User, circle: models.Circle) -> None:
-	await asyncio.sleep(0.04)
-	for sess in backend.util_get_sessions_by_user(user):
-		sess.evt.on_circle_created(circle)
 
 async def _dispatch_circle_invite_status(backend: Backend, user: models.User, circle: models.Circle, accepted: bool) -> None:
 	await asyncio.sleep(0.04)

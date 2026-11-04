@@ -36,7 +36,7 @@ def unmarshal_tlvs(data: bytes) -> list[TLV]:
 	buf = buffer.Buffer(data)
 	tlvs = []
 
-	while len(buf) > 4:
+	while len(buf) >= 4:
 		type = buf.read_u16()
 		length = buf.read_u16()
 		value = buf.read_bytes(length)

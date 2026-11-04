@@ -20,24 +20,12 @@
 		"url": "http://wiby.me"
 	},
 	{
-		"caption": "Mac Secret - The worst kept secret in Macintosh archiving.",
-		"url": "http://macsecret.com"
-	},
-	{
 		"caption": "Arch Linux - A simple, lightweight Linux distribution.",
 		"url": "https://archlinux.org"
 	},
 	{
 		"caption": "Gentoo - A highly flexible, source-based Linux distribution.",
 		"url": "https://www.gentoo.org"
-	},
-	{
-		"caption": "NixOS - Reproducible, declarative, and reliable.",
-		"url": "https://nixos.org/"
-	},
-	{
-		"caption": "Debian - The universal operating system.",
-		"url": "https://debian.org"
 	},
 	{
 		"caption": "WebTV Redialed allows you to surf the web the fun way - on your TV. It's a replacement to the original WebTV service, and our sister project!",
@@ -86,10 +74,6 @@
 	{
 		"caption": "GrapheneOS is a private and secure Android-based operating system.",
 		"url": "https://grapheneos.org/"
-	},
-	{
-		"caption": "BitView - Express Yourself.",
-		"url": "https://www.bitview.net/"
 	},
 	{
 		"caption": "SpaceHey - a space for friends.",

@@ -137,7 +137,8 @@ class MSNPReader:
 		self._data = self._data[e:]
 		self._i = 0
 		_log(self.logger, '[Client]', m)
-		m = [unquote(x) for x in m]
+		if m[0] != 'QRY':
+			m = [unquote(x) for x in m]
 		if body:
 			m.append(body)
 			if settings.DEBUG_FULL:
@@ -173,7 +174,7 @@ def _encode_msnobj(msnobj: Optional[str]) -> Optional[str]:
 	return quote(msnobj, safe = '')
 
 _PAYLOAD_COMMANDS = {
-	'UUX', 'MSG', 'QRY', 'NOT', 'ADL', 'FQY', 'RML', 'UUN', 'UUM', 'PUT', 'DEL', 'SDG', 'VAS', 'SDC',
+	'UUX', 'MSG', 'QRY', 'NOT', 'ADL', 'FQY', 'RML', 'UUN', 'UUM', 'PUT', 'DEL', 'SDG', 'VAS', 'SDC', 'PAG', 'PGD',
 }
 
 def _log(logger: Logger, pre: str, m: Sequence[Any]) -> None:

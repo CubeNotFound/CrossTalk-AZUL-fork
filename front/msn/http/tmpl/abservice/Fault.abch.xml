@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<soap:Body>
+		<soap:Fault>
+			<faultcode>{{ faultcode }}</faultcode>
+			<faultstring>{{ errorstring }}</faultstring>
+			<faultactor>http://www.msn.com/webservices/AddressBook/{{ action_str }}</faultactor>
+			<detail>
+				<errorcode xmlns="http://www.msn.com/webservices/AddressBook">{{ errorcode }}</errorcode>
+				<errorstring xmlns="http://www.msn.com/webservices/AddressBook">{{ errorstring }}</errorstring>
+				<machineName xmlns="http://www.msn.com/webservices/AddressBook">BAYABCHWBB133</machineName>
+				{% if parameter_fault %}<parameterFault xmlns="http://www.msn.com/webservices/AddressBook">{{ parameter_fault }}</parameterFault>
+				{% endif %}<additionalDetails>
+					{% if conflict_object_id %}<conflictObjectId>{{ conflict_object_id }}</conflictObjectId>
+					{% endif %}<originalExceptionErrorMessage>{{ errorstring }}</originalExceptionErrorMessage>
+				</additionalDetails>
+			</detail>
+		</soap:Fault>
+	</soap:Body>
+</soap:Envelope>

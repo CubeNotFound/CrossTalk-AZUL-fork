@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% from '_ui.html' import flags as flag_chips, csrf_field, copy_field %}
+{% block content %}
+<p class="ct-back"><a href="/users" data-ct-swap-link>Users</a></p>
+
+<section class="ct-card adm-identity" aria-labelledby="userName">
+	<span class="adm-avatar adm-avatar-lg">
+		<img src="http://{{ settings.USERSTORAGE_HOST }}/avatar/{{ user.uuid }}/static" alt="" width="72" height="72">
+		{% if user.online %}<span class="ct-presence" aria-hidden="true"></span>{% endif %}
+	</span>
+	<div class="min-w-0 flex-grow-1">
+		<h1 class="adm-identity-name" id="userName">{{ user.username }}</h1>
+		<p class="ct-muted mb-1 text-truncate">{{ user.email }}{% if user.uin %} · UIN {{ user.uin }}{% endif %}</p>
+		<p class="mb-0">{{ flag_chips(user) }}</p>
+	</div>
+	<dl class="adm-identity-facts">
+		<div><dt>status</dt><dd>{% if user.online %}{{ user.status | lower }}, {{ user.sessions }} session{{ 's' if user.sessions != 1 else '' }}{% if programs %} ({{ programs | join(', ') }}){% endif %}{% else %}signed out{% endif %}</dd></div>
+		<div><dt>joined</dt><dd>{{ user.date_created | when }}</dd></div>
+		<div><dt>last signed in</dt><dd>{{ user.date_login | when }}</dd></div>
+		<div><dt>UUID</dt><dd><code class="adm-uuid">{{ user.uuid }}</code><button type="button" class="ct-icon-btn ct-icon-btn-sm" data-ct-copy="{{ user.uuid }}" aria-label="Copy the UUID" title="Copy"><i class="bi bi-copy" aria-hidden="true"></i></button></dd></div>
+	</dl>
+</section>
+
+{% if user.suspended %}
+<section class="ct-card adm-suspended" aria-labelledby="userSuspended">
+	<div>
+		<h2 class="adm-suspended-title" id="userSuspended">suspended{% if user.suspended_at %} {{ user.suspended_at | ago }}{% endif %}</h2>
+		{% if user.deleted_at is none or suspended_days is none %}
+		<p class="mb-0">{% if user.suspended_at %}Since {{ user.suspended_at | when }}. {% endif %}Suspended accounts are kept on this server.</p>
+		{% elif user.suspended_at %}
+		<p class="mb-0">Since {{ user.suspended_at | when }}. The account is deleted <strong>{{ user.deleted_at | until }}</strong> ({{ user.deleted_at | when }}), {{ suspended_days }} days after it was suspended, unless it's unsuspended before then.</p>
+		{% else %}
+		<p class="mb-0">It was suspended before azul kept the date, so it's deleted <strong>at the next hourly check</strong>, unless it's unsuspended first.</p>
+		{% endif %}
+	</div>
+</section>
+{% endif %}
+
+{% if reveal and reveal.kind == 'password' %}
+<section class="ct-card adm-reveal" aria-labelledby="tempPassword">
+	<h2 class="ct-card-title" id="tempPassword">temporary password for {{ reveal['for'] }}</h2>
+	<p>Give it to them however you can reach them. It won't be shown again, and they should change it once they're in.</p>
+	{{ copy_field('tempPasswordValue', reveal.value, 'Temporary password') }}
+</section>
+{% endif %}
+
+<div class="adm-columns">
+	<section class="ct-card" aria-labelledby="userFlags">
+		<h2 class="ct-card-title" id="userFlags">account</h2>
+		<form method="post">
+			{{ csrf_field(csrf) }}
+			<input type="hidden" name="action" value="flags">
+			<div class="ct-switches">
+				{% for key, label, desc in flags %}
+				<label class="ct-switch-row form-switch" for="flag-{{ key }}">
+					<span>
+						<span class="ct-switch-title">{{ label }}</span>
+						<span class="ct-switch-desc">{{ desc }}{% if key == 'is_admin' and is_self %} You can't turn this off for yourself.{% endif %}{% if key == 'suspended' and suspended_days is not none %} Suspended accounts are deleted after {{ suspended_days }} days.{% endif %}</span>
+					</span>
+					<input class="form-check-input" type="checkbox" role="switch" id="flag-{{ key }}" name="{{ key }}"{% if user[key] %} checked{% endif %}{% if key == 'is_admin' and is_self %} disabled{% endif %}>
+				</label>
+				{% if key == 'is_admin' and is_self and user[key] %}<input type="hidden" name="is_admin" value="on">{% endif %}
+				{% endfor %}
+			</div>
+			<div class="ct-form-actions"><button type="submit" class="btn btn-primary">Save</button></div>
+		</form>
+	</section>
+
+	<div>
+		<section class="ct-card" aria-labelledby="userAlert">
+			<h2 class="ct-card-title" id="userAlert">alert</h2>
+			<form method="post" class="adm-mini-alert">
+				{{ csrf_field(csrf) }}
+				<input type="hidden" name="action" value="alert">
+				<div class="ct-field">
+					<label for="alertMessage" class="form-label">Message</label>
+					<textarea class="form-control" id="alertMessage" name="message" rows="3" maxlength="1000" required aria-describedby="alertMarkup"></textarea>
+					<small class="form-text" id="alertMarkup">**bold**, *italic*, and a blank line for a new paragraph: Messenger 6 and later show them, the rest get the words.</small>
+				</div>
+				<div class="ct-field">
+					<label for="alertUrl" class="form-label">Link <span class="ct-muted">(optional)</span></label>
+					<input type="url" class="form-control" id="alertUrl" name="url" inputmode="url" placeholder="https://">
+				</div>
+				{% if email_available %}
+				<div class="form-check form-switch my-3">
+					<input class="form-check-input" type="checkbox" role="switch" id="alertEmail" name="email">
+					<label class="form-check-label" for="alertEmail">Also e-mail it to {{ user.email }}</label>
+				</div>
+				{% endif %}
+				<button type="submit" class="btn btn-outline-secondary"{% if not user.online and not email_available %} disabled aria-describedby="alertOffline"{% endif %}>Send alert</button>
+				{% if not user.online %}<p class="form-text" id="alertOffline">{{ user.username }} isn't signed in{% if email_available %}, so only an e-mail copy would reach them{% else %}, and the website isn't linked to e-mail it{% endif %}.</p>{% endif %}
+			</form>
+		</section>
+
+		<section class="ct-card" aria-labelledby="userSessions">
+			<h2 class="ct-card-title" id="userSessions">sessions</h2>
+			{% if sessions %}
+			<ul class="ct-list">
+				{% for s in sessions %}
+				<li class="ct-list-item">
+					<span class="ct-list-body">
+						<span class="ct-list-title">{{ program_names.get(s.client.program, s.client.program) }} {{ s.client.version }}</span>
+						<span class="ct-list-meta">{{ s.status | lower }} via {{ s.client.via }}</span>
+					</span>
+					<form method="post" class="m-0">
+						{{ csrf_field(csrf) }}
+						<input type="hidden" name="action" value="kill">
+						<input type="hidden" name="session" value="{{ s.id }}">
+						<button type="submit" class="btn btn-sm btn-outline-danger">Sign out<span class="visually-hidden"> {{ s.client.program }}</span></button>
+					</form>
+				</li>
+				{% endfor %}
+			</ul>
+			<form method="post" class="mt-2">
+				{{ csrf_field(csrf) }}
+				<input type="hidden" name="action" value="kill-all">
+				<button type="submit" class="btn btn-outline-danger">Sign out everywhere</button>
+			</form>
+			{% else %}
+			<p class="ct-muted">Not signed in anywhere.</p>
+			{% endif %}
+		</section>
+
+		<section class="ct-card" aria-labelledby="userPassword">
+			<h2 class="ct-card-title" id="userPassword">password</h2>
+			<form method="post" class="mb-3">
+				{{ csrf_field(csrf) }}
+				<input type="hidden" name="action" value="password">
+				<div class="ct-field">
+					<label for="newPassword" class="form-label">New password</label>
+					<div class="ct-password">
+						<input type="password" class="form-control" id="newPassword" name="password" minlength="6" autocomplete="new-password" required>
+						<button type="button" class="ct-icon-btn" data-ct-reveal="newPassword" aria-pressed="false" aria-label="Show password"><i class="bi bi-eye-fill" aria-hidden="true"></i></button>
+					</div>
+				</div>
+				<fieldset class="adm-inline-checks">
+					<legend class="form-label">Keep working in</legend>
+					{% for flag, name in legacy_clients %}
+					<div class="form-check">
+						<input class="form-check-input" type="checkbox" id="client-{{ flag }}" name="client_{{ flag }}"{% if flag in (user.clients or []) %} checked{% endif %}>
+						<label class="form-check-label" for="client-{{ flag }}">{{ name }}</label>
+					</div>
+					{% endfor %}
+				</fieldset>
+				<button type="submit" class="btn btn-primary">Set password</button>
+			</form>
+			<div class="ct-actions">
+				<form method="post" class="m-0">
+					{{ csrf_field(csrf) }}
+					<input type="hidden" name="action" value="temp-password">
+					<button type="submit" class="btn btn-outline-secondary">Make a temporary one</button>
+				</form>
+				<form method="post" class="m-0">
+					{{ csrf_field(csrf) }}
+					<input type="hidden" name="action" value="reset-email">
+					<button type="submit" class="btn btn-outline-secondary"{% if not reset_available %} disabled aria-describedby="resetHelp"{% endif %}>E-mail them a reset link</button>
+				</form>
+			</div>
+			{% if not reset_available %}<p class="form-text" id="resetHelp">The website isn't linked right now, so it can't send the e-mail.</p>{% endif %}
+		</section>
+	</div>
+</div>
+
+<section class="ct-card adm-danger" aria-labelledby="userDelete">
+	<h2 class="ct-card-title" id="userDelete">delete this account</h2>
+	{% if is_self %}
+	<p class="ct-muted mb-0">You can't delete your own account from the admin panel.</p>
+	{% else %}
+	<p>Removes {{ user.username }} for good: their contacts, CrossTalk Beacon posts, reactions and comments go too, and circles they ran pass to the next administrator or member. It can't be undone.</p>
+	<form method="post" class="adm-confirm">
+		{{ csrf_field(csrf) }}
+		<input type="hidden" name="action" value="delete">
+		<label for="deleteConfirm" class="form-label">Type <strong>{{ user.username }}</strong> to confirm</label>
+		<div class="d-flex flex-wrap gap-2">
+			<input type="text" class="form-control" id="deleteConfirm" name="confirm" autocomplete="off" spellcheck="false" required>
+			<button type="submit" class="btn btn-danger">Delete account</button>
+		</div>
+	</form>
+	{% endif %}
+</section>
+{% endblock %}

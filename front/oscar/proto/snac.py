@@ -101,7 +101,7 @@ class Subgroup:
 class OSCARClient:
 	__slots__ = 'ctrl'
 
-	ctrl: Any  # Any because of circular imports - TODO(subpurple): make this less hacky
+	ctrl: Any  # Any because of circular imports - TODO: make this less hacky
 
 	def __init__(self, ctrl: Any) -> None:
 		self.ctrl = ctrl

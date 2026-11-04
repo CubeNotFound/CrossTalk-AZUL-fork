@@ -1,7 +1,7 @@
 from typing import Dict, Tuple, Any, Optional
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-import ssl
+import ssl, settings
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -48,7 +48,7 @@ class TLSContext:
 		p_key = self.cert_dir / '{}'.format(self.cert_root)
 		
 		if not exists_and_valid(p_crt, p_key):
-			raise ssl.CertificateError()
+			if not settings.DEBUG: raise ssl.CertificateError()
 		
 		return p_crt, p_key
 

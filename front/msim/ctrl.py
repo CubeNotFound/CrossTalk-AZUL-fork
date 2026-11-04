@@ -226,7 +226,7 @@ class MSIMCtrl:
 						'GroupID': id,
 						'GroupName': group,
 						'Position': id,
-						'GroupFlag': 131073	 # unclear what GroupFlag does, TODO(subpurple): figure it out
+						'GroupFlag': 131073	 # unclear what GroupFlag does, TODO: figure it out
 					})
 
 				# self.send_persist_reply(cmd, dsn, lid, rid, msim_groups)

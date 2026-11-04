@@ -38,7 +38,7 @@
 					<TimeZone>None</TimeZone>
 					<IsAutoUpdateDisabled>false</IsAutoUpdateDisabled>
 					<IsShellContact>false</IsShellContact>
-					<TrustLevel>0</TrustLevel>
+					<TrustLevel>{{ trust_level }}</TrustLevel>
 					<PropertiesChanged />
 				</contactInfo>
 				<propertiesChanged />

@@ -1,0 +1,81 @@
+{% from '_ui.html' import flash_list -%}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="color-scheme" content="light dark">
+	<meta name="robots" content="noindex, nofollow">
+	<link rel="icon" href="https://{{ settings.STATIC_HOST }}/svc/ct/logo/favicon.ico"/>
+	<link rel="stylesheet" href="https://{{ settings.STATIC_HOST }}/sites/ct/style/style.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css">
+	<script src="https://{{ settings.STATIC_HOST }}/sites/ct/style/style.js"></script>
+	<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+	<script src="https://{{ settings.STATIC_HOST }}/sites/ct/bootstrap/bootstrap.bundle.min.js"></script>
+	<title>{% if title %}{{ title }} | {% endif %}azul admin</title>
+</head>
+<body class="light-mode adm-body">
+<a class="visually-hidden-focusable ct-skip" href="#main">Skip to main content</a>
+<header>
+<nav class="navbar navbar-dark bg-primary fixed-top adm-bar" aria-label="Admin">
+	<div class="container-fluid">
+		<a class="navbar-brand" href="/" style="color:white;">
+			<img src="https://{{ settings.STATIC_HOST }}/svc/ct/logo/shadow.svg" height="28" alt="">
+			CrossTalk <span class="adm-brand-tag">admin</span>
+		</a>
+		<form method="get" action="/users" class="adm-find" role="search" aria-label="Find an account" data-ct-swap-form>
+			<i class="bi bi-search" aria-hidden="true"></i>
+			<label for="admFind" class="visually-hidden">Find an account by username, e-mail or UUID</label>
+			<input type="search" class="form-control form-control-sm" id="admFind" name="q" placeholder="find an account" autocomplete="off" spellcheck="false">
+		</form>
+		<div class="adm-bar-end">
+			<button type="button" class="ct-icon-btn adm-bar-btn" id="mode-toggle-anchor" role="switch" aria-checked="false" aria-label="Dark theme"><i id="mode-toggle-icon" class="bi" aria-hidden="true"></i><span id="mode-toggle-label" class="visually-hidden">Dark theme</span></button>
+			<div class="dropdown">
+				<button type="button" class="adm-who dropdown-toggle" id="admWho" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu for {{ admin.username }}">
+					<img src="http://{{ settings.USERSTORAGE_HOST }}/avatar/{{ admin.uuid }}/im" alt="" width="28" height="28">
+					<span class="adm-who-name">{{ admin.username }}</span>
+				</button>
+				<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="admWho">
+					<li class="ct-menu-head">
+						<img src="http://{{ settings.USERSTORAGE_HOST }}/avatar/{{ admin.uuid }}/im" alt="" width="36" height="36">
+						<span><strong>{{ admin.username }}</strong>administrator</span>
+					</li>
+					<li><a class="dropdown-item" href="/users/{{ admin.uuid }}" data-ct-swap-link><i class="bi bi-person-fill" aria-hidden="true"></i>Your account</a></li>
+					<li><hr class="dropdown-divider"></li>
+					<li>
+						<form method="post" action="/logout" class="m-0">
+							<input type="hidden" name="csrf" value="{{ csrf }}">
+							<button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right" aria-hidden="true"></i>Sign out</button>
+						</form>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</nav>
+</header>
+
+<div class="adm-shell">
+	<nav class="adm-nav" aria-label="Sections" data-ct-pivot-nav>
+		<ul>
+			{% for href, label, icon in sections %}
+			{% set current = (path == href) or (href != '/' and path.startswith(href)) %}
+			<li>
+				<a href="{{ href }}"{% if current %} aria-current="page" class="is-current"{% endif %}>
+					<i class="bi {{ icon }}" aria-hidden="true"></i><span class="adm-nav-label">{{ label }}</span>
+					{% if href == '/sessions' %}<span class="adm-nav-count" id="admNavSessions" data-ct-swap-sync>{{ nav.sessions }}<span class="visually-hidden"> open</span></span>{% endif %}
+					{% if href == '/broadcast' %}<span class="adm-nav-mark" id="admNavMaintenance" data-ct-swap-sync>{% if nav.maintenance %}<span class="ct-dot" aria-hidden="true"></span><span class="visually-hidden">, maintenance announced</span>{% endif %}</span>{% endif %}
+				</a>
+			</li>
+			{% endfor %}
+		</ul>
+		<p class="adm-nav-foot">azul {{ settings.VERSION }}</p>
+	</nav>
+
+	<main class="adm-main" id="main" tabindex="-1" data-ct-swap>
+		{{ flash_list(flashes) }}
+		{% block content %}{% endblock %}
+	</main>
+</div>
+</body>
+</html>

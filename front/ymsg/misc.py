@@ -4,10 +4,11 @@ from enum import IntEnum
 from util.misc import DefaultDict, MultiDict, arbitrary_encode
 
 from core.backend import BackendSession
-from core.models import Substatus
+from core.models import Contact, Substatus, User, UserStatus
 
-import settings
+import settings, binascii, struct, secrets
 
+TOKEN_LIFETIME = int(getattr(settings, 'YMSG_TOKEN_LIFETIME', 60 * 60 * 24 * 30))
 class YMSGService(IntEnum):
 	LogOn = 0x01
 	LogOff = 0x02
@@ -21,7 +22,9 @@ class YMSGService(IntEnum):
 	AddIgnore = 0x11
 	PingConfiguration = 0x12
 	SystemMessage = 0x14
+	ClientStats = 0x15 
 	SkinName = 0x15
+	ClientAlertStats = 0x16
 	ClientHostStats = 0x16
 	MassMessage = 0x17
 	ConfInvite = 0x18
@@ -31,38 +34,59 @@ class YMSGService(IntEnum):
 	ConfAddInvite = 0x1C
 	ConfMsg = 0x1D
 	MessageV2 = 0x27
-	AvatarOld = 0xBD
-	Avatar6 = 0xC1
-	Avatar = 0xC7
 	FileTransfer = 0x46
 	VoiceChat = 0x4A
 	Notify = 0x4B
 	Handshake = 0x4C
 	P2PFileXfer = 0x4D
-	P2PFileXfer8 = 0xDC
-	P2PPhotoSharing = 0xD2
 	PeerToPeer = 0x4F
 	VideoChat = 0x50
 	AuthResp = 0x54
 	List = 0x55
+	PreLoginData = 0x55
 	Auth = 0x57
 	FriendAdd = 0x83
 	FriendRemove = 0x84
 	Ignore = 0x85
 	ContactDeny = 0x86
 	GroupRename = 0x89
+	KeepAlive = 0x8A 
 	Ping = 0x8A
 	ChatJoin = 0x96
+	ChatPing = 0xA1
+	FriendIcon = 0xBD
+	AvatarOld = 0xBD
+	FriendIconDownload = 0xBE
+	DisplayTypeChanged = 0xC1
+	Avatar6 = 0xC1
+	FriendIconFileTransfer = 0xC2
 	IsInvisible = 0xC5
 	StatusUpdate = 0xC6
-	StatusUpdate2 = 0xF0
-	# `static var YES_CHAT_PING = 161;` 161 = 0xA1
-	# Yahoo! Messenger 9.0's `desktopHub` SWF seems to list a lot of YMSG service codes and field defs in its code. :p
-	ChatPing = 0xA1
+	DisplayImagePrefs = 0xC7
+	Avatar = 0xC7
+	Audible = 0xD0
+	IMPanelFeature = 0xD2
+	P2PPhotoSharing = 0xD2
+	IMSession = 0xD4
 	ChatSession = 0xD4
+	BuddyAuthorize = 0xD6
+	PhotoAdd = 0xD7
+	PhotoSelect = 0xD8
+	PhotoFileRequest = 0xDA
+	FileTransferInvite = 0xDC
+	P2PFileXfer8 = 0xDC
+	PeerSetup = 0xDD
+	PeerInit = 0xDE
 	ContactRegroup = 0xE7
+	Preference = 0xEF
+	BuddyInfo = 0xF0
+	StatusUpdate2 = 0xF0
+	BuddyList = 0xF1
 	NewBuddyList = 0xF1
-	# Documented by the Yahsmosis project (https://www.autoitscript.com/forum/topic/142448-help-with-yahomosis/) - this appears to be used when a protocol-level error occurs (protocol version "cloaking", bad `Y`/`T` cookies, invalid Yahoo ID, invalid key/value pairs, etc.). Unsure what protocol version this was first placed into or how far back in the protocol version Yahoo's servers decided to send this on (A Wireshark capture indicates as far back as YMSG12)
+	MessageAck = 0xFB
+	SmsMessage = 0x2EA
+	MobileSetup = 0x2ED
+	# Documented by the Yahsmosis project (https://www.autoitscript.com/forum/topic/142448-help-with-yahomosis/) - this appears to be used when a protocol-level error occurs
 	ProtocolError = 0x07D1
 
 class YMSGStatus(IntEnum):
@@ -85,9 +109,11 @@ class YMSGStatus(IntEnum):
 	Invisible   = 0x0000000C
 	Bad		 = 0x0000000D
 	Locked	  = 0x0000000E
+	Ack		 = 0x00000012
 	Typing	  = 0x00000016
 	Custom	  = 0x00000063
 	Idle		= 0x000003E7
+	CmdSentAck  = 0x000003E8
 	WebLogin	= 0x5A55AA55
 	Offline	 = 0x5A55AA56
 	LoginError  = 0xFFFFFFFF
@@ -223,3 +249,102 @@ def split_to_chunks(s: str, count: int) -> List[str]:
 		i += count
 	
 	return final
+
+def build_photo_notify_packet(
+	sender: str, recipient: str, photo_id: bytes, *,
+	name: bytes | None = None, thumbnail: bytes | None = None, url: bytes | None = None,
+) -> Iterable[EncodedYMSG]:
+	kvs = MultiDict([
+		(b'4', arbitrary_encode(sender)),
+		(b'5', arbitrary_encode(recipient)),
+		(b'245', photo_id),
+	]) # type: KVSType
+	if name is not None: kvs.add(b'246', name)
+	if url is not None: kvs.add(b'20', url)
+	if thumbnail is not None: kvs.add(b'267', thumbnail)
+	yield (YMSGService.PhotoAdd, YMSGStatus.BRB, kvs)
+
+def build_photo_relay_packet(
+	sender: str, recipient: str, photo_id: bytes, token: bytes, *,
+	relay_host: bytes, filesize: bytes | None = None, status: YMSGStatus = YMSGStatus.BRB,
+) -> Iterable[EncodedYMSG]:
+	kvs = MultiDict([
+		(b'4', arbitrary_encode(sender)),
+		(b'5', arbitrary_encode(recipient)),
+		(b'249', b'3'),
+	]) # type: KVSType
+	if status is YMSGStatus.Ack:
+		kvs.add(b'250', relay_host)
+	kvs.add(b'251', token)
+	kvs.add(b'245', photo_id)
+	kvs.add(b'248', b'2')
+	if filesize is not None: kvs.add(b'28', filesize)
+	if status is YMSGStatus.Ack: kvs.add(b'253', photo_id)
+	kvs.add(b'276', token)
+	yield (YMSGService.PhotoFileRequest, status, kvs)
+	
+AVATAR_URL_TEMPLATE = 'http://{host}/avatar/{uuid}/im'
+BUDDY_INFO_BUILD = b'3017751'
+
+def _avatar_raw(avatar: str) -> bytes:
+	try:
+		return bytes.fromhex(avatar)
+	except ValueError:
+		return avatar.encode('utf-8')
+
+def yahoo_avatar_checksum(user: User) -> bytes | None:
+	avatar = getattr(user, 'avatar', None)
+	if not avatar:
+		return None
+	crc = binascii.crc32(_avatar_raw(avatar)) & 0xFFFFFFFF
+	return str(struct.unpack('i', struct.pack('I', crc))[0]).encode('utf-8')
+
+def yahoo_avatar_url(user: User) -> bytes | None:
+	if not getattr(user, 'avatar', None):
+		return None
+	return AVATAR_URL_TEMPLATE.format(host = settings.USERSTORAGE_HOST, uuid = user.uuid).encode('utf-8')
+
+def _buddy_info_entry(kvs: KVSType, status: UserStatus, head: User, *, wrapped: bool = True) -> None:
+	is_offlineish = status.is_offlineish()
+	if wrapped:
+		kvs.add(b'300', b'315')
+	kvs.add(b'7', arbitrary_encode(head.username))
+	kvs.add(b'241', b'0')
+	if is_offlineish or not status.message:
+		kvs.add(b'10', str(int(YMSGStatus.Available if is_offlineish else YMSGStatus.FromSubstatus(status.substatus))).encode('utf-8'))
+		kvs.add(b'19', b'')
+		kvs.add(b'47', b'0')
+	else:
+		kvs.add(b'10', str(int(YMSGStatus.Custom)).encode('utf-8'))
+		kvs.add(b'19', arbitrary_encode(status.message))
+		kvs.add(b'47', (b'1' if status.substatus is not Substatus.Online else b'0'))
+	kvs.add(b'187', b'0')
+	kvs.add(b'283', b'0')
+	kvs.add(b'60', b'0')
+	kvs.add(b'244', BUDDY_INFO_BUILD)
+	checksum = yahoo_avatar_checksum(head)
+	kvs.add(b'213', (b'2' if checksum is not None else b'0'))
+	kvs.add(b'198', b'0')
+	if checksum is not None:
+		kvs.add(b'192', checksum)
+	if wrapped:
+		kvs.add(b'301', b'315')
+
+def build_user_login_v16(contact: Contact) -> KVSType:
+	kvs = MultiDict() # type: KVSType
+	_buddy_info_entry(kvs, contact.status, contact.head, wrapped = False)
+	return kvs
+
+def build_buddy_info_v16(contacts: Iterable[Contact]) -> KVSType:
+	kvs = MultiDict([(b'241', b'0')]) # type: KVSType
+	contacts = list(contacts)
+	if not contacts:
+		return kvs
+	kvs.add(b'302', b'315')
+	for c in contacts:
+		_buddy_info_entry(kvs, c.status, c.head)
+	kvs.add(b'303', b'315')
+	return kvs
+
+def gen_relay_token() -> str:
+	return secrets.token_hex(20)

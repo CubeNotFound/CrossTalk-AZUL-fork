@@ -76,32 +76,7 @@ class Argon2PasswordHasher(Hasher):
 			cls.impl.verify(hash_str, password + salt)
 			return True
 		except (ValueError, VerifyMismatchError, binascii.Error):
-			# PBKDF2 fallback, migrate hash to Argon2
-			try:
-				parts = encoded.split(cls.separator)
-				alg = parts[0]
-				if alg != PBKDF2PasswordHasher.algorithm:
-					return False
-				_, *stuff, salt, _ = parts
-				if PBKDF2PasswordHasher.verify(password, encoded):
-					return 'MIGRATEMEPLSTHX'
-			except Exception:
-				return False
 			return False
-
-class PBKDF2PasswordHasher(Hasher):
-	algorithm = 'pbkdf2_sha256'
-	iterations = 24000
-
-	@classmethod
-	def _encode_impl(cls, password: str, *stuff: Any, salt: str) -> Tuple[bytes, List[str]]:
-		assert len(stuff) <= 1
-		iterations: Optional[int] = (stuff[0] if stuff else None)
-		if iterations is None:
-			iterations = cls.iterations
-		iterations = int(iterations)
-		hash = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), iterations, None)
-		return hash, [str(iterations)]
 
 class MD5PasswordHasher(Hasher):
 	algorithm = 'md5'
@@ -204,7 +179,6 @@ class SHA1PasswordHasher(Hasher):
 		return secrets.compare_digest(encoded, encoded_2)
 
 HASHERS[Argon2PasswordHasher.algorithm] = Argon2PasswordHasher
-HASHERS[PBKDF2PasswordHasher.algorithm] = PBKDF2PasswordHasher
 HASHERS[MD5PasswordHasher.algorithm] = MD5PasswordHasher
 HASHERS[MD5CryptPasswordHasher.algorithm] = MD5CryptPasswordHasher
 HASHERS[SHA1PasswordHasher.algorithm] = SHA1PasswordHasher
@@ -213,7 +187,6 @@ def gen_salt(length: int = 15) -> str:
 	return secrets.token_hex(length)[:length]
 
 hasher = Argon2PasswordHasher
-hasher_pbkdf2 = PBKDF2PasswordHasher
 hasher_md5 = MD5PasswordHasher
 hasher_md5crypt = MD5CryptPasswordHasher
 hasher_sha1 = SHA1PasswordHasher

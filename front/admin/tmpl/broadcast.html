@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% from '_ui.html' import hub, csrf_field, alert_row %}
+{% block content %}
+{% set maintenance = info.maintenance or {} %}
+{{ hub('broadcast', 'Alerts in people\'s clients, news on CrossTalk Beacon, and warnings before maintenance.') }}
+
+<div class="ct-pivot adm-broadcast-pivot" role="tablist" aria-label="Broadcast" data-ct-tabs data-ct-tabs-hash>
+	<button type="button" role="tab" id="bcTabAlert" aria-controls="bcAlert" aria-selected="true" data-hash="alert">alert</button>
+	<button type="button" role="tab" id="bcTabAnnounce" aria-controls="bcAnnounce" aria-selected="false" tabindex="-1" data-hash="announcement">announcement</button>
+	<button type="button" role="tab" id="bcTabMaintenance" aria-controls="bcMaintenance" aria-selected="false" tabindex="-1" data-hash="maintenance">maintenance{% if maintenance.active or maintenance.pending %} <span class="ct-dot" style="--ct-tone: var(--ct-info)" aria-hidden="true"></span><span class="visually-hidden">, announced</span>{% endif %}</button>
+	<button type="button" role="tab" id="bcTabHistory" aria-controls="bcHistory" aria-selected="false" tabindex="-1" data-hash="history">history <span class="ct-count">{{ alerts | length }}</span></button>
+</div>
+
+<section class="ct-pane" role="tabpanel" id="bcAlert" aria-labelledby="bcTabAlert">
+	<form method="post" class="adm-composer" data-ct-alert-composer data-max-body="{{ max_body }}" data-site-url="{{ site_url }}">
+		{{ csrf_field(csrf) }}
+		<input type="hidden" name="action" value="alert">
+		<input type="hidden" name="networks_shown" value="1">
+		<div class="adm-composer-form ct-card">
+			<div class="ct-field">
+				<div class="adm-label-row">
+					<label for="alertMessage" class="form-label">Message</label>
+					<div class="adm-tools" role="toolbar" aria-label="Formatting" aria-controls="alertMessage">
+						<button type="button" class="ct-icon-btn ct-icon-btn-sm" data-alert-wrap="**" aria-label="Bold" title="Bold (**text**)"><i class="bi bi-type-bold" aria-hidden="true"></i></button>
+						<button type="button" class="ct-icon-btn ct-icon-btn-sm" data-alert-wrap="*" aria-label="Italic" title="Italic (*text*)"><i class="bi bi-type-italic" aria-hidden="true"></i></button>
+						<span class="adm-tools-gap" aria-hidden="true"></span>
+						{% for align, icon in [('left', 'bi-text-left'), ('center', 'bi-text-center'), ('right', 'bi-text-right')] %}
+						<input type="radio" class="btn-check" name="align" id="alertAlign-{{ align }}" value="{{ align }}" autocomplete="off"{% if loop.first %} checked{% endif %}>
+						<label class="ct-icon-btn ct-icon-btn-sm adm-tool-toggle" for="alertAlign-{{ align }}" title="Align {{ align }}"><i class="bi {{ icon }}" aria-hidden="true"></i><span class="visually-hidden">Align {{ align }}</span></label>
+						{% endfor %}
+					</div>
+				</div>
+				<textarea class="form-control" id="alertMessage" name="message" rows="5" maxlength="1000" required aria-describedby="alertMarkup"></textarea>
+				<small class="form-text" id="alertMarkup">**bold**, *italic*, a backslash before a * to keep it, and a blank line for a new paragraph. Messenger 6 and later show the formatting; everything else gets the words.</small>
+			</div>
+
+			<div class="row g-3 mt-1">
+				<div class="col-sm-6 ct-field mb-0">
+					<label for="alertUrl" class="form-label">Link</label>
+					<input type="url" class="form-control" id="alertUrl" name="url" inputmode="url" placeholder="{{ site_url }}" aria-describedby="alertUrlHelp">
+					<small class="form-text" id="alertUrlHelp">Where clicking the alert goes. Empty goes to {{ site_url }}.</small>
+				</div>
+				<fieldset class="col-sm-6 ct-field mb-0">
+					<legend class="form-label">Icon</legend>
+					<div class="adm-choices">
+						{% for kind, label, icon in [('bell', 'bell', 'bi-bell-fill'), ('stocks', 'stocks', 'bi-graph-up-arrow'), ('calendar', 'calendar', 'bi-calendar-event-fill'), ('custom', 'your own', 'bi-image-fill')] %}
+						<input type="radio" class="btn-check" name="kind" id="alertKind-{{ kind }}" value="{{ kind }}" autocomplete="off"{% if loop.first %} checked{% endif %}>
+						<label class="adm-choice" for="alertKind-{{ kind }}"><i class="bi {{ icon }}" aria-hidden="true"></i>{{ label }}</label>
+						{% endfor %}
+					</div>
+				</fieldset>
+			</div>
+			<div class="ct-field mt-3" data-alert-when="kind=custom">
+				<label for="alertIcon" class="form-label">Icon address</label>
+				<input type="url" class="form-control" id="alertIcon" name="icon" inputmode="url" placeholder="https://example.com/alert_32x32.png" aria-describedby="alertIconHelp">
+				<small class="form-text" id="alertIconHelp">A 32×32 PNG. Messenger 6 and later swap <code>_32x32</code> in its name for <code>_48x32</code> and use that one if it's there.</small>
+			</div>
+
+			<fieldset class="ct-field mt-3">
+				<legend class="form-label">Who</legend>
+				<div class="adm-choices">
+					<input type="radio" class="btn-check" name="who" id="alertWho-everyone" value="everyone" autocomplete="off" checked>
+					<label class="adm-choice" for="alertWho-everyone"><i class="bi bi-globe2" aria-hidden="true"></i>everyone signed in</label>
+					<input type="radio" class="btn-check" name="who" id="alertWho-people" value="people" autocomplete="off">
+					<label class="adm-choice" for="alertWho-people"><i class="bi bi-person-lines-fill" aria-hidden="true"></i>certain people</label>
+				</div>
+			</fieldset>
+			<div data-alert-when="who=people">
+				<div class="ct-field">
+					<label for="alertTargets" class="form-label">Their usernames or e-mail addresses</label>
+					<textarea class="form-control" id="alertTargets" name="targets" rows="2" spellcheck="false" aria-describedby="alertTargetsHelp"></textarea>
+					<small class="form-text" id="alertTargetsHelp">Separated with commas or on lines of their own.</small>
+				</div>
+				<div class="form-check form-switch mb-2">
+					<input class="form-check-input" type="checkbox" role="switch" id="alertEmail" name="email"{% if not email_available %} disabled aria-describedby="alertEmailHelp"{% endif %}>
+					<label class="form-check-label" for="alertEmail">Also e-mail it to them</label>
+				</div>
+				{% if not email_available %}<p class="form-text mt-0" id="alertEmailHelp">The website isn't linked right now, so it can't send e-mail.</p>{% endif %}
+				<div class="ct-field" data-alert-when="email">
+					<label for="alertEmailText" class="form-label">The e-mail's text <span class="ct-muted">(optional)</span></label>
+					<textarea class="form-control" id="alertEmailText" name="email_text" rows="3" aria-describedby="alertEmailTextHelp"></textarea>
+					<small class="form-text" id="alertEmailTextHelp">Empty sends the alert's words and its link. Messenger also gets it as the alert's <code>EMAILTEXT</code>.</small>
+				</div>
+			</div>
+
+			<fieldset class="ct-field mt-3">
+				<legend class="form-label">Clients</legend>
+				<div class="adm-choices">
+					{% for network in networks %}
+					<input type="checkbox" class="btn-check" name="network_{{ network }}" id="alertNetwork-{{ network }}" autocomplete="off" checked>
+					<label class="adm-choice adm-choice-name" for="alertNetwork-{{ network }}"><i class="bi bi-check-lg adm-choice-tick" aria-hidden="true"></i>{{ network_names.get(network, network) }}</label>
+					{% endfor %}
+				</div>
+			</fieldset>
+
+			<details class="ct-details adm-more">
+				<summary>more .NET Alerts options</summary>
+				<div class="ct-details-body">
+					<div class="row g-3">
+						<div class="col-sm-6 ct-field mb-0">
+							<label for="alertSubscr" class="form-label">"Change alert" link</label>
+							<input type="url" class="form-control" id="alertSubscr" name="subscr_url" inputmode="url" aria-describedby="alertSubscrHelp">
+							<small class="form-text" id="alertSubscrHelp">Messenger's option to change the alert (<code>SUBSCR</code>). Empty uses the link.</small>
+						</div>
+						<div class="col-sm-6 ct-field mb-0">
+							<label for="alertLang" class="form-label">Language</label>
+							<select class="form-select" id="alertLang" name="lang">
+								{% for lcid, name in languages %}<option value="{{ lcid }}"{% if lcid == 1033 %} selected{% endif %}>{{ name }} ({{ lcid }})</option>{% endfor %}
+							</select>
+						</div>
+						<div class="col-sm-4 ct-field mb-0">
+							<label for="alertPriority" class="form-label">Priority</label>
+							<input type="number" class="form-control" id="alertPriority" name="priority" min="0" max="4294967295" value="1">
+						</div>
+						<div class="col-sm-4 ct-field mb-0">
+							<label for="alertMessageId" class="form-label">Message ID</label>
+							<input type="number" class="form-control" id="alertMessageId" name="message_id" min="0" max="4294967295" value="0">
+						</div>
+						<div class="col-sm-4 ct-field mb-0">
+							<label for="alertVia" class="form-label">Sent via</label>
+							<select class="form-select" id="alertVia" name="via">
+								<option value="">nothing said</option>
+								{% for agent in agents %}<option value="{{ agent }}">{{ agent }}</option>{% endfor %}
+							</select>
+						</div>
+					</div>
+					<div class="ct-field mt-3 mb-0">
+						<label for="alertPlain" class="form-label">Plain-text version <span class="ct-muted">(optional)</span></label>
+						<textarea class="form-control" id="alertPlain" name="plain" rows="2" aria-describedby="alertPlainHelp"></textarea>
+						<small class="form-text" id="alertPlainHelp">What Messenger 5 and older, Yahoo!, AIM and IRC show when the message has formatting. Empty takes the message's words.</small>
+					</div>
+				</div>
+			</details>
+
+			<div class="ct-form-actions"><button type="submit" class="btn btn-primary">Send alert</button></div>
+		</div>
+	</form>
+</section>
+
+<section class="ct-pane ct-card" role="tabpanel" id="bcAnnounce" aria-labelledby="bcTabAnnounce" data-ct-later>
+	<p class="ct-muted">A news item on CrossTalk Beacon and in Windows Live Messenger's What's New.</p>
+	<form method="post" class="adm-narrow-form">
+		{{ csrf_field(csrf) }}
+		<input type="hidden" name="action" value="announce">
+		<div class="ct-field">
+			<label for="ancTitle" class="form-label">Title</label>
+			<input type="text" class="form-control" id="ancTitle" name="title" maxlength="100" required>
+		</div>
+		<div class="ct-field">
+			<label for="ancText" class="form-label">Text</label>
+			<textarea class="form-control" id="ancText" name="text" rows="3" maxlength="255" required></textarea>
+		</div>
+		<div class="ct-field">
+			<label for="ancUrl" class="form-label">Link <span class="ct-muted">(optional)</span></label>
+			<input type="url" class="form-control" id="ancUrl" name="url" inputmode="url">
+		</div>
+		<button type="submit" class="btn btn-primary">Post announcement</button>
+	</form>
+</section>
+
+<section class="ct-pane ct-card" role="tabpanel" id="bcMaintenance" aria-labelledby="bcTabMaintenance" data-ct-later>
+	{% if maintenance.active %}
+	<p class="mb-0">The server is in maintenance mode right now.</p>
+	{% elif maintenance.pending %}
+	<p class="mb-0">Maintenance is already announced, in about {{ maintenance.minutes }} minute{{ 's' if maintenance.minutes != 1 else '' }}.</p>
+	{% else %}
+	<p>Tells everyone signed in that the server is going down, with a countdown. The website's status page shows it too.</p>
+	<form method="post" class="d-flex flex-wrap align-items-end gap-2">
+		{{ csrf_field(csrf) }}
+		<input type="hidden" name="action" value="maintenance">
+		<div>
+			<label for="mntMinutes" class="form-label">In how many minutes</label>
+			<input type="number" class="form-control adm-narrow" id="mntMinutes" name="minutes" min="0" max="1440" value="10" required>
+		</div>
+		<button type="submit" class="btn btn-outline-danger">Announce maintenance</button>
+	</form>
+	{% endif %}
+</section>
+
+<section class="ct-pane ct-card" role="tabpanel" id="bcHistory" aria-labelledby="bcTabHistory" data-ct-later>
+	{% if alerts %}
+	<p class="ct-muted">The last {{ alerts | length }} alert{{ 's' if alerts | length != 1 else '' }} since azul started, newest first.</p>
+	<ul class="adm-alerts">
+		{% for alert in alerts %}{{ alert_row(alert) }}{% endfor %}
+	</ul>
+	{% else %}
+	<p class="ct-muted">No alerts since azul started.</p>
+	{% endif %}
+</section>
+{% endblock %}

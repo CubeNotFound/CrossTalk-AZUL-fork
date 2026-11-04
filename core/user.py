@@ -1,8 +1,8 @@
 from typing import Dict, Optional, List, Tuple, Any, TYPE_CHECKING
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil import parser as iso_parser
 from pathlib import Path
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 import json, traceback
 
@@ -13,11 +13,12 @@ from util.avatar import store_avatar_file, get_img_type
 from .conn import Conn
 from .db import (
 	User as DBUser, UserContact as DBUserContact, Circle as DBCircle,
-	CircleMembership as DBCircleMembership, UserProfile as DBUserProfile
+	CircleMembership as DBCircleMembership, UserProfile as DBUserProfile, Activity as DBActivity,
+	ActivityReaction as DBActivityReaction, ActivityComment as DBActivityComment
 )
 from .models import (
 	User, Contact, ContactDetail, ContactLocation, ContactGroupEntry, UserStatus, UserDetail, Circle,
-	CircleMembership, CircleRole, CircleState, Group, RoamingInfo, OIM, UserProfile
+	CircleMembership, CircleRole, CircleState, Group, RoamingInfo, OIM, UserProfile, Activity, ActivityType
 )
 
 if TYPE_CHECKING:
@@ -43,11 +44,6 @@ class UserService:
 			status = hasher.verify(pwd, dbuser.password)
 			if status is True:
 				return dbuser.uuid
-			elif status == 'MIGRATEMEPLSTHX':
-				new_hash = hasher.encode(pwd, salt=gen_salt())
-				dbuser.password = new_hash
-				sess.add(dbuser)
-				return dbuser.uuid
 			return None
 
 	def login_with_username(self, username: str, pwd: str) -> Optional[str]:
@@ -58,13 +54,25 @@ class UserService:
 			status = hasher.verify(pwd, dbuser.password)
 			if status is True:
 				return dbuser.uuid
-			elif status == 'MIGRATEMEPLSTHX':
-				new_hash = hasher.encode(pwd, salt=gen_salt())
-				dbuser.password = new_hash
-				sess.add(dbuser)
+			return None
+
+	def login_with_uin(self, uin: int, pwd: str) -> Optional[str]:
+		uuid = self.get_uuid_uin(uin)
+		if uuid is None:
+			return None
+		return self.login_with_uuid(uuid, pwd)
+
+	def login_with_uuid(self, uuid: str, pwd: str) -> Optional[str]:
+		# for frontends that already worked out which account a login name points at (screen name or UIN)
+		with self._conn.session() as sess:
+			dbuser = sess.query(DBUser).filter(DBUser.uuid == uuid).one_or_none()
+			if dbuser is None:
+				return None
+			status = hasher.verify(pwd, dbuser.password)
+			if status is True:
 				return dbuser.uuid
 			return None
-	
+
 	def msn_login_md5(self, email: str, md5_hash: str) -> Optional[str]:
 		with self._conn.session() as sess:
 			dbuser = sess.query(DBUser).filter(func.lower(DBUser.email) == email.lower()).one_or_none()
@@ -118,6 +126,31 @@ class UserService:
 
 		return hasher.extract_salt(pw_md5) if pw_md5 else None
 
+	def aim_get_md5_password_by_uuid(self, uuid: str) -> Optional[bytes]:
+		with self._conn.session() as sess:
+			dbuser = sess.query(DBUser).filter(DBUser.uuid == uuid).one_or_none()
+			if dbuser is None:
+				return None
+
+			return hasher_md5.extract_hash(dbuser.get_front_data('aim', 'pw_md5') or '')
+
+	def aim_get_md5_password_bucp2_by_uuid(self, uuid: str) -> Optional[bytes]:
+		with self._conn.session() as sess:
+			dbuser = sess.query(DBUser).filter(DBUser.uuid == uuid).one_or_none()
+			if dbuser is None:
+				return None
+
+			return hasher_md5.extract_hash(dbuser.get_front_data('aim', 'pw_md5_v5') or '')
+
+	def aim_get_md5_salt_by_uuid(self, uuid: str) -> Optional[str]:
+		with self._conn.session() as sess:
+			dbuser = sess.query(DBUser).filter(DBUser.uuid == uuid).one_or_none()
+			if dbuser is None:
+				return None
+
+			pw_md5 = dbuser.get_front_data('aim', 'pw_md5')
+
+		return hasher.extract_salt(pw_md5) if pw_md5 else None
 
 	def msim_get_sha1_password(self, email: str) -> Optional[bytes]:
 		with self._conn.session() as sess:
@@ -151,6 +184,39 @@ class UserService:
 			if dbuser is None:
 				return None
 			return dbuser.uuid
+
+	def get_uuid_uin(self, uin: int) -> Optional[str]:
+		# a UIN of 0 is what accounts without an ICQ number carry, so it never names anyone
+		if uin <= 0:
+			return None
+		with self._conn.session() as sess:
+			dbuser = sess.query(DBUser).filter(DBUser.uin == uin).first()
+			if dbuser is None:
+				return None
+			return dbuser.uuid
+
+	def search_uuids(
+		self, *, email: Optional[str] = None, first_name: Optional[str] = None, last_name: Optional[str] = None,
+		nickname: Optional[str] = None, limit: int = 20,
+	) -> List[str]:
+		# directory searches (ICQ white pages, AIM ODIR, find-by-email) only ever see people who listed themselves
+		criteria = []
+		if email:
+			criteria.append(func.lower(DBUser.email) == email.lower())
+		if first_name:
+			criteria.append(func.lower(DBUser.first_name) == first_name.lower())
+		if last_name:
+			criteria.append(func.lower(DBUser.last_name) == last_name.lower())
+		if nickname:
+			criteria.append(or_(
+				func.lower(DBUser.nickname) == nickname.lower(), func.lower(DBUser.friendly_name) == nickname.lower(),
+				func.lower(DBUser.username) == nickname.lower(),
+			))
+		if not criteria:
+			return []
+		with self._conn.session() as sess:
+			query = sess.query(DBUser.uuid).filter(DBUser.show_in_dir == True, DBUser.suspended == False, *criteria)
+			return [row.uuid for row in query.limit(limit)]
 
 	def get(self, uuid: str) -> Optional[User]:
 		if uuid not in self._cache_by_uuid:
@@ -218,9 +284,11 @@ class UserService:
 
 		self._cache_by_uuid.pop(user.uuid, None)
 
+		if md5 != user.avatar:
+			self.add_activity(user, ActivityType.DisplayPicture, text = md5)
+
 		user.avatar = md5
 		return md5
-
 
 	def get_detail(self, uuid: str) -> Optional[UserDetail]:
 		with self._conn.session() as sess:
@@ -408,6 +476,49 @@ class UserService:
 		
 		return circle
 	
+	def delete_user(self, uuid: str, new_owners: Dict[str, Circle]) -> bool:
+		with self._conn.session() as sess:
+			dbuser = sess.query(DBUser).filter(DBUser.uuid == uuid).one_or_none()
+			if dbuser is None:
+				return False
+			for chat_id, circle in new_owners.items():
+				sess.query(DBCircle).filter(DBCircle.chat_id == chat_id).update({
+					DBCircle.owner_id: circle.owner_id, DBCircle.owner_uuid: circle.owner_uuid, DBCircle.owner_friendly: circle.owner_friendly,
+				}, synchronize_session = False)
+			sess.query(DBCircleMembership).filter(or_(
+				DBCircleMembership.member_id == dbuser.id, DBCircleMembership.member_uuid == uuid,
+			)).delete(synchronize_session = False)
+			sess.query(DBUserContact).filter(or_(
+				DBUserContact.user_id == dbuser.id, DBUserContact.contact_id == dbuser.id,
+				DBUserContact.user_uuid == uuid, DBUserContact.uuid == uuid,
+			)).delete(synchronize_session = False)
+			for model in (DBActivityReaction, DBActivityComment):
+				sess.query(model).filter(model.user_uuid == uuid).delete(synchronize_session = False)
+			activity_ids = [activity_id for (activity_id,) in sess.query(DBActivity.id).filter(DBActivity.user_uuid == uuid)]
+			if activity_ids:
+				for model in (DBActivityReaction, DBActivityComment):
+					sess.query(model).filter(model.activity_id.in_(activity_ids)).delete(synchronize_session = False)
+				sess.query(DBActivity).filter(DBActivity.id.in_(activity_ids)).delete(synchronize_session = False)
+			sess.query(DBUserProfile).filter(DBUserProfile.user_id == dbuser.id).delete(synchronize_session = False)
+			sess.expire(dbuser)
+			sess.delete(dbuser)
+		self._cache_by_uuid.pop(uuid, None)
+		return True
+	
+	def expired_suspensions(self, days: int, now: Optional[datetime] = None) -> List[str]:
+		cutoff = (now or datetime.utcnow()) - timedelta(days = days)
+		with self._conn.session() as sess:
+			rows = sess.query(DBUser.uuid).filter(
+				DBUser.suspended == True, or_(DBUser.suspended_at == None, DBUser.suspended_at <= cutoff),
+			).all()
+		return [uuid for (uuid,) in rows]
+	
+	def delete_circle(self, chat_id: str) -> None:
+		with self._conn.session() as sess:
+			sess.query(DBCircleMembership).filter(DBCircleMembership.chat_id == chat_id).delete(synchronize_session = False)
+			sess.query(DBCircle).filter(DBCircle.chat_id == chat_id).delete(synchronize_session = False)
+		self._circle_cache_by_chat_id.pop(chat_id, None)
+	
 	def get_all_circles(self) -> List[Circle]:
 		circles = []
 		
@@ -548,8 +659,10 @@ class UserService:
 				if dbusercontacts_to_add:
 					sess.add_all(dbusercontacts_to_add)
 	
-	def save_single_roaming(self, user: User, to_save: Dict[str, Any]) -> None:
+	def save_single_roaming(self, user: User, to_save: Dict[str, Any]) -> bool:
+		# Returns whether a "What's New" activity was added
 		updated = False
+		activity_added = False
 		
 		with self._conn.session() as sess:
 			dbuser = sess.query(DBUser).filter(DBUser.uuid == user.uuid).one()
@@ -558,13 +671,149 @@ class UserService:
 				dbuser.name_last_modified = datetime.utcnow()
 				updated = True
 			if 'message' in to_save:
+				# A new status message shows up in contacts' "What's New"
+				if to_save['message'] and to_save['message'] != dbuser.message:
+					activity_added = self.add_activity(user, ActivityType.StatusMessage, text = to_save['message'])
 				dbuser.message = to_save['message']
 				dbuser.message_last_modified = datetime.utcnow()
 				updated = True
 			
 			if updated:
 				sess.add(dbuser)
+		
+		return activity_added
 
+	def add_activity(
+		self, user: Optional[User], type: ActivityType, *, title: Optional[str] = None, text: Optional[str] = None, url: Optional[str] = None,
+	) -> bool:
+		# Returns whether the activity was added
+		if user is not None and not beacon_enabled(user):
+			return False
+		text = (text[:255] if text else text)
+		title = (title[:100] if title else title)
+		with self._conn.session() as sess:
+			if user is not None:
+				types = ((int(type), int(ActivityType.Photo)) if type is ActivityType.StatusMessage else (int(type),))
+				dbactivity_last = sess.query(DBActivity).filter(
+					DBActivity.user_uuid == user.uuid, DBActivity.type.in_(types),
+				).order_by(DBActivity.date_created.desc()).first()
+				if dbactivity_last is not None and dbactivity_last.text == text and (
+					int(dbactivity_last.type) == int(type) or datetime.utcnow() - dbactivity_last.date_created < PHOTO_STATUS_WINDOW
+				) and (type is not ActivityType.Photo or dbactivity_last.url == url):
+					return False
+			sess.add(DBActivity(
+				user_uuid = (user.uuid if user is not None else None), type = int(type), title = title, text = text, url = url,
+			))
+		return True
+
+	def get_activities(
+		self, uuids: List[str], count: int, *, announcements: bool = False, before_id: int | None = None, after_id: int | None = None,
+		types: list[ActivityType] | None = None,
+	) -> List[Activity]:
+		activities = [] # type: List[Activity]
+
+		with self._conn.session() as sess:
+			condition = DBActivity.user_uuid.in_(uuids)
+			if announcements:
+				condition = condition | DBActivity.user_uuid.is_(None)
+			if before_id is not None:
+				condition = condition & (DBActivity.id < before_id)
+			if after_id is not None:
+				condition = condition & (DBActivity.id > after_id)
+			if types:
+				condition = condition & DBActivity.type.in_([int(t) for t in types])
+			for dbactivity in sess.query(DBActivity).filter(condition).order_by(DBActivity.date_created.desc(), DBActivity.id.desc()).limit(count):
+				user = (self.get(dbactivity.user_uuid) if dbactivity.user_uuid is not None else None)
+				if dbactivity.user_uuid is not None and user is None: continue
+				if user is not None and not beacon_enabled(user): continue
+				activities.append(Activity(
+					dbactivity.id, user, ActivityType(int(dbactivity.type)), dbactivity.title, dbactivity.text, dbactivity.url, dbactivity.date_created,
+				))
+		
+		return activities
+
+	def get_activity(self, activity_id: int) -> Activity | None:
+		with self._conn.session() as sess:
+			dbactivity = sess.query(DBActivity).filter(DBActivity.id == activity_id).one_or_none()
+			if dbactivity is None:
+				return None
+			user = (self.get(dbactivity.user_uuid) if dbactivity.user_uuid is not None else None)
+			return Activity(
+				dbactivity.id, user, ActivityType(int(dbactivity.type)), dbactivity.title, dbactivity.text, dbactivity.url, dbactivity.date_created,
+			)
+
+	def delete_activity(self, activity_id: int, user_uuid: str | None) -> bool:
+		with self._conn.session() as sess:
+			if sess.query(DBActivity).filter(DBActivity.id == activity_id).filter(
+				DBActivity.user_uuid.is_(None) if user_uuid is None else DBActivity.user_uuid == user_uuid
+			).count():
+				sess.query(DBActivityReaction).filter(DBActivityReaction.activity_id == activity_id).delete(synchronize_session = False)
+				sess.query(DBActivityComment).filter(DBActivityComment.activity_id == activity_id).delete(synchronize_session = False)
+			query = sess.query(DBActivity).filter(DBActivity.id == activity_id)
+			if user_uuid is None:
+				query = query.filter(DBActivity.user_uuid.is_(None))
+			else:
+				query = query.filter(DBActivity.user_uuid == user_uuid)
+			return query.delete(synchronize_session = False) > 0
+
+	def toggle_reaction(self, activity_id: int, user_uuid: str, reaction: str) -> bool:
+		with self._conn.session() as sess:
+			existing = sess.query(DBActivityReaction).filter(
+				DBActivityReaction.activity_id == activity_id, DBActivityReaction.user_uuid == user_uuid, DBActivityReaction.reaction == reaction,
+			).one_or_none()
+			if existing is not None:
+				sess.delete(existing)
+				return False
+			sess.add(DBActivityReaction(activity_id = activity_id, user_uuid = user_uuid, reaction = reaction))
+			return True
+	
+	def get_reactions(self, activity_ids: List[int]) -> Dict[int, Dict[str, List[str]]]:
+		result: dict[int, dict[str, list[str]]] = {}
+		if not activity_ids:
+			return result
+		with self._conn.session() as sess:
+			for row in sess.query(DBActivityReaction).filter(DBActivityReaction.activity_id.in_(activity_ids)).order_by(DBActivityReaction.id):
+				result.setdefault(row.activity_id, {}).setdefault(row.reaction, []).append(row.user_uuid)
+		return result
+	
+	def add_comment(self, activity_id: int, user_uuid: str, text: str) -> int:
+		with self._conn.session() as sess:
+			dbcomment = DBActivityComment(activity_id = activity_id, user_uuid = user_uuid, text = text[:255])
+			sess.add(dbcomment)
+			sess.flush()
+			return int(dbcomment.id)
+	
+	def delete_comment(self, comment_id: int, user_uuid: str) -> bool:
+		with self._conn.session() as sess:
+			dbcomment = sess.query(DBActivityComment).filter(DBActivityComment.id == comment_id).one_or_none()
+			if dbcomment is None:
+				return False
+			dbactivity = sess.query(DBActivity).filter(DBActivity.id == dbcomment.activity_id).one_or_none()
+			if dbcomment.user_uuid != user_uuid and (dbactivity is None or dbactivity.user_uuid != user_uuid):
+				return False
+			sess.delete(dbcomment)
+			return True
+	
+	def get_comments(self, activity_ids: List[int]) -> Dict[int, List[Tuple[int, str, str, datetime]]]:
+		result: dict[int, list[tuple[int, str, str, datetime]]] = {}
+		if not activity_ids:
+			return result
+		with self._conn.session() as sess:
+			for row in sess.query(DBActivityComment).filter(DBActivityComment.activity_id.in_(activity_ids)).order_by(DBActivityComment.id):
+				result.setdefault(row.activity_id, []).append((int(row.id), row.user_uuid, row.text, row.date_created))
+		return result
+
+def beacon_enabled(user: User) -> bool:
+	if not getattr(user, 'account_verified', False):
+		return False
+	settings_json = user.settings or {}
+	return not (settings_json.get('beacon_off') or settings_json.get('konekt_off'))
+
+def directory_online_visible(user: User) -> bool:
+	return not (user.settings or {}).get('dir_hide_online')
+
+# How long after sharing a photo a status message with the same caption still belongs to it
+PHOTO_STATUS_WINDOW = timedelta(minutes = 10)
 
 def _get_oim_path(recipient_uuid: str) -> Path:
 	return Path('storage/oim') / recipient_uuid

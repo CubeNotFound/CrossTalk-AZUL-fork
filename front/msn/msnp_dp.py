@@ -64,6 +64,14 @@ class MSNPCtrlDP(MSNPCtrl):
 		v = args[5]
 		self.send_reply('CVR', trid, v, v, '1.0.0000', 'https://crosstalk.im/downloads', 'https://crosstalk.im/compat')
 	
+	def _m_cvq(self, trid: str, *args: str) -> None:
+		if len(args) < 6:
+			self.send_reply(Err.InvalidCVQ, trid)
+			self.close()
+			return
+		v = args[5]
+		self.send_reply('CVQ', trid, v, v, '1.0.0000', 'https://crosstalk.im/downloads', 'https://crosstalk.im/compat')
+	
 	def _m_inf(self, trid: str) -> None:
 		if self.dialect < 9:
 			self.send_reply('INF', trid, 'MD5')
@@ -72,7 +80,7 @@ class MSNPCtrlDP(MSNPCtrl):
 			return
 
 	def __getattr__(self, name):
-		if name.startswith('_m_') and name not in ('_m_ver', '_m_cvr', '_m_inf'):
+		if name.startswith('_m_') and name not in ('_m_ver', '_m_cvr', '_m_cvq', '_m_inf'):
 			def handler(trid: str, *args: str):
 				if self.dialect == 2:
 					self.send_reply('XFR', trid, 'NS', f'{settings.TARGET_IP}:1864')

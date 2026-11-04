@@ -1,7 +1,7 @@
-{% macro contact_entry(ab_id, ctc, detail, now) %}
+{% macro contact_entry(ab_id, ctc, detail, now, trust_level = none) %}
 	<contactId>{{ ctc.head.uuid }}</contactId>
 	<contactInfo>
-		{% if ctc.detail.personal_email or ctc.detail.work_phone or ctc.detail.im_email or ctc.detail.other_email %}
+		{% if ctc.detail.personal_email or ctc.detail.work_email or ctc.detail.im_email or ctc.detail.other_email %}
 			<emails>
 				{% if ctc.detail.work_email %}
 					{{ email_entry('ContactEmailBusiness', ctc.detail.work_email) }}
@@ -20,7 +20,7 @@
 		{% if ctc.detail.home_phone or ctc.detail.work_phone or ctc.detail.fax_phone or ctc.detail.pager_phone or ctc.detail.mobile_phone or ctc.detail.other_phone %}
 			<phones>
 				{% if ctc.detail.work_phone %}
-					{{ phone_entry('ContactPhoneBusiness', contact.work_phone) }}
+					{{ phone_entry('ContactPhoneBusiness', ctc.detail.work_phone) }}
 				{% endif %}
 				{% if ctc.detail.fax_phone %}
 					{{ phone_entry('ContactPhoneFax', ctc.detail.fax_phone) }}
@@ -123,6 +123,11 @@
 		<IsPrivate>false</IsPrivate>
 		<Gender>Unspecified</Gender>
 		<TimeZone>None</TimeZone>
+		{% if trust_level is not none %}
+			<IsAutoUpdateDisabled>false</IsAutoUpdateDisabled>
+			<IsShellContact>false</IsShellContact>
+			<TrustLevel>{{ trust_level }}</TrustLevel>
+		{% endif %}
 	</contactInfo>
 	<propertiesChanged />
 	<fDeleted>false</fDeleted>
@@ -212,6 +217,9 @@
 			<IsPrivate>false</IsPrivate>
 			<Gender>Unspecified</Gender>
 			<TimeZone>None</TimeZone>
+			<IsAutoUpdateDisabled>false</IsAutoUpdateDisabled>
+			<IsShellContact>false</IsShellContact>
+			<TrustLevel>{{ (user.settings.get('TrustLevels') or {}).get(user.uuid, 0) }}</TrustLevel>
 		</contactInfo>
 		<propertiesChanged />
 		<fDeleted>false</fDeleted>

@@ -1,4 +1,4 @@
-import io, asyncio, binascii, struct, settings
+import io, asyncio, binascii, struct, settings, traceback
 from abc import ABCMeta, abstractmethod
 from typing import Tuple, Any, Optional, Callable, Iterable
 
@@ -8,6 +8,7 @@ from .misc import YMSGStatus, YMSGService
 
 KVS = MultiDict[bytes, bytes]
 
+YMSG_VENDOR_ID = 1337
 class YMSGCtrlBase(metaclass = ABCMeta):
 	__slots__ = ('logger', 'decoder', 'encoder', 'peername', 'closed', 'close_callback', 'transport', 'session_id')
 	
@@ -30,6 +31,9 @@ class YMSGCtrlBase(metaclass = ABCMeta):
 		self.transport = None
 		self.session_id = 0
 	
+	def set_dialect(self, dialect: int) -> None:
+		self.encoder.dialect = dialect
+
 	def data_received(self, data: bytes, *, transport: Optional[asyncio.BaseTransport] = None) -> None:
 		if transport is None:
 			transport = self.transport
@@ -73,14 +77,18 @@ class YMSGCtrlBase(metaclass = ABCMeta):
 	def _on_close(self, remove_sess_id: bool = True) -> None: pass
 
 class YMSGEncoder:
-	__slots__ = ('_logger', '_buf')
+	__slots__ = ('_logger', '_buf', 'dialect', 'vendor_id')
 	
 	_logger: Logger
 	_buf: io.BytesIO
+	dialect: int
+	vendor_id: int
 	
-	def __init__(self, logger: Logger) -> None:
+	def __init__(self, logger: Logger, *, dialect: int = 0, vendor_id: int = YMSG_VENDOR_ID) -> None:
 		self._logger = logger
 		self._buf = io.BytesIO()
+		self.dialect = dialect
+		self.vendor_id = vendor_id
 	
 	def encode(self, service: YMSGService, status: YMSGStatus, session_id: int, kvs: Optional[KVS] = None) -> None:
 		payload_list = []
@@ -100,8 +108,7 @@ class YMSGEncoder:
 		
 		w = self._buf.write
 		w(PRE)
-		# version number and vendor id are replaced with 0x00000000
-		w(b'\x00\x00\x00\x00')
+		w(struct.pack('!HH', self.dialect, self.vendor_id))
 		
 		# Have to call `int` on these because they might be an IntEnum, which
 		# get `repr`'d to `EnumName.ValueName`. Grr.
@@ -156,6 +163,15 @@ class YMSGDecoder:
 		_truncated_kvs(y[0], y[5])
 		return y
 
+def _decode_version(raw: bytes) -> int:
+	version_le = struct.unpack('<H', raw)[0]
+	if version_le in YMSG_DIALECTS:
+		return version_le
+	version_be = struct.unpack('!H', raw)[0]
+	if version_be in YMSG_DIALECTS:
+		return version_be
+	raise AssertionError('unrecognised YMSG dialect: {!r}'.format(raw))
+
 def _try_decode_ymsg(d: bytes, i: int) -> Tuple[DecodedYMSG, int]:
 	kvs = MultiDict() # type: KVS
 	
@@ -163,22 +179,28 @@ def _try_decode_ymsg(d: bytes, i: int) -> Tuple[DecodedYMSG, int]:
 	assert len(d[i:]) >= e
 	assert d[i:i+4] == PRE
 	header = d[i+4:i+e]
-	if header[:2] in (b'\x08\x00',b'\x09\x00',b'\x0a\x00'):
-		version = struct.unpack('<H', header[:2])[0] # type: int
-	else:
-		version = struct.unpack('!H', header[:2])[0]
+	version = _decode_version(header[:2])
 	(vendor_id, n, service, status, session_id) = struct.unpack('!HHHII', header[2:]) # type: Tuple[int, int, int, int, int]
-	assert version in YMSG_DIALECTS
-	assert e+n <= len(d[i:])
-	payload = d[e:e+n]
+	assert i+e+n <= len(d)
+	payload = d[i+e:i+e+n]
 	if payload:
 		parts = payload.split(SEP)
 		del parts[-1]
 		assert len(parts) % 2 == 0
 		for j in range(1, len(parts), 2):
 			kvs.add(parts[j-1], parts[j])
-		e += n
-	return ((YMSGService(service), version, vendor_id, YMSGStatus(status), session_id, kvs), e)
+	e += n
+	
+	try:
+		service_enum = YMSGService(service) # type: Any
+	except ValueError:
+		service_enum = service
+	try:
+		status_enum = YMSGStatus(status) # type: Any
+	except ValueError:
+		status_enum = status
+	
+	return ((service_enum, version, vendor_id, status_enum, session_id, kvs), e)
 
 def _truncated_kvs(service: YMSGService, kvs: KVS) -> None:
 	restricted_keys = set()
@@ -204,7 +226,7 @@ SEP = b'\xC0\x80'
 
 YMSG_DIALECTS = [
 	# Not actually supported
-	18, 17, 16, 8,
+	19, 18, 17,
 	# Actually supported
-	15, 14, 13, 12, 11, 10, 9
+	16, 15, 14, 13, 12, 11, 10, 9, 8
 ]

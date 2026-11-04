@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="color-scheme" content="light dark">
+	<meta name="robots" content="noindex, nofollow">
+	<link rel="icon" href="https://{{ settings.STATIC_HOST }}/svc/ct/logo/favicon.ico"/>
+	<link rel="stylesheet" href="https://{{ settings.STATIC_HOST }}/sites/ct/style/style.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css">
+	<script src="https://{{ settings.STATIC_HOST }}/sites/ct/style/style.js"></script>
+	<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+	<title>Sign in | azul admin</title>
+</head>
+<body class="light-mode adm-body adm-login-body">
+<header>
+<nav class="navbar navbar-dark bg-primary fixed-top adm-bar" aria-label="Admin">
+	<div class="container-fluid">
+		<a class="navbar-brand" href="/login" style="color:white;">
+			<img src="https://{{ settings.STATIC_HOST }}/svc/ct/logo/shadow.svg" height="28" alt="">
+			CrossTalk <span class="adm-brand-tag">admin</span>
+		</a>
+		<div class="adm-bar-end">
+			<button type="button" class="ct-icon-btn adm-bar-btn" id="mode-toggle-anchor" role="switch" aria-checked="false" aria-label="Dark theme"><i id="mode-toggle-icon" class="bi" aria-hidden="true"></i><span id="mode-toggle-label" class="visually-hidden">Dark theme</span></button>
+		</div>
+	</div>
+</nav>
+</header>
+<main class="container my-4" id="main" tabindex="-1">
+<section class="au-card ct-card" aria-labelledby="adminSignIn">
+	<header class="au-head">
+		<h1 class="au-title" id="adminSignIn">sign in</h1>
+		<p class="au-sub">sign in to manage azul {{ settings.VERSION }}</p>
+	</header>
+	{% if not configured %}
+	<div class="alert alert-warning" role="status"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i><div>No admin key is set up yet. Put the SHA-256 hash of one in <code>ADMIN_KEY</code> and restart azul.</div></div>
+	{% endif %}
+	{% if error %}
+	<div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i><div>{{ error }}</div></div>
+	{% elif next and next != '/' %}
+	<div class="alert alert-info" role="status"><i class="bi bi-lock-fill" aria-hidden="true"></i><div>Sign in to carry on where you were.</div></div>
+	{% endif %}
+	<form method="post" action="/login?next={{ next | urlencode }}" aria-labelledby="adminSignIn">
+		<div class="ct-field">
+			<label for="login" class="form-label">E-mail or username</label>
+			<input type="text" class="form-control" id="login" name="login" value="{{ login }}" placeholder="E-mail or username" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
+		</div>
+		<div class="ct-field">
+			<label for="password" class="form-label">Password</label>
+			<div class="ct-password">
+				<input type="password" class="form-control" id="password" name="password" placeholder="Password" autocomplete="current-password" required>
+				<button type="button" class="ct-icon-btn" data-ct-reveal="password" aria-pressed="false" aria-label="Show password"><i class="bi bi-eye-fill" aria-hidden="true"></i></button>
+			</div>
+		</div>
+		<div class="ct-field">
+			<label for="key" class="form-label">Admin key</label>
+			<div class="ct-password">
+				<input type="password" class="form-control" id="key" name="key" placeholder="The server's admin key" autocomplete="off" spellcheck="false" required aria-describedby="keyHelp">
+				<button type="button" class="ct-icon-btn" data-ct-reveal="key" aria-pressed="false" aria-label="Show admin key"><i class="bi bi-eye-fill" aria-hidden="true"></i></button>
+			</div>
+		</div>
+		<button type="submit" class="btn btn-primary w-100 au-submit">Sign in</button>
+	</form>
+	<p class="au-alt">not an administrator? this panel is only for the people who run this server, so shoo, go away.</p>
+</section>
+</main>
+</body>
+</html>

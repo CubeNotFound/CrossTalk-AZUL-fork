@@ -26,7 +26,7 @@ def main(*, devmode: bool = False) -> None:
 """)
 
 	print(f"===== AZUL {settings.VERSION} =====")
-	print(f"""2023 - 2026 the undergr0und
+	print(f"""2023 - 2026 hiden
 	""")
 	print(f"""Running on Python {sys.version} on {platform.platform()}
 	""")
@@ -35,6 +35,11 @@ def main(*, devmode: bool = False) -> None:
 		""")
 	loop = asyncio.new_event_loop()
 	asyncio.set_event_loop(loop)
+	
+	from core import db
+	schema_changes = db.ensure_schema(db.engine)
+	if schema_changes:
+		print(f"Database brought up to date ({', '.join(schema_changes)})")
 
 	user_service = UserService(Conn(settings.DB))
 	auth_service = AuthService()
@@ -55,26 +60,22 @@ def main(*, devmode: bool = False) -> None:
 	if settings.ENABLE_FRONT_OSCAR:
 		import front.oscar
 		front.oscar.register(loop, backend)
+	if getattr(settings, 'ENABLE_FRONT_ICQ', False):
+		import front.icq
+		front.icq.register(loop, backend)
+	if settings.ENABLE_FRONT_TOC:
+		import front.toc
+		front.toc.register(loop, backend)
 	if settings.ENABLE_FRONT_MSIM:
 		import front.msim
 		front.msim.register(loop, backend, http_app)
-	if settings.ENABLE_FRONT_API:
-		import front.api
-		front.api.register(http_app)
-	if settings.ENABLE_FRONT_BOT:
-		import front.bot
-		front.bot.register(loop, backend)
+	ins_registry = None
 	if settings.ENABLE_INS:
 		import core.interservice
-		core.interservice.register(loop, backend)
-
-	if devmode:
-		if settings.ENABLE_FRONT_DEVBOTS:
-			import front.devbots
-			front.devbots.register(loop, backend)
-
-		import dev.webconsole
-		dev.webconsole.register(loop, backend, http_app)
+		ins_registry = core.interservice.register(loop, backend)
+	if settings.ENABLE_ADMIN:
+		import front.admin
+		front.admin.register(loop, backend, ins_registry)
 
 	backend.run_forever()
 

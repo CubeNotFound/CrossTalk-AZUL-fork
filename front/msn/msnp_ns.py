@@ -1,10 +1,11 @@
-from typing import Tuple, Dict, Any, Optional, List
+from typing import Tuple, Dict, Any, Optional, List, Set, cast
 from datetime import datetime, timezone
 from lxml.etree import fromstring as parse_xml, XMLSyntaxError
 import base64, secrets, hmac, re, binascii, struct, time, asyncio, settings, random, json
 from email.parser import Parser
-from hashlib import sha1
+from hashlib import sha1, md5
 from urllib.parse import quote
+from xml.sax.saxutils import escape as xml_escape, quoteattr
 from disposable_email_domains import blocklist as disposable_emails
 
 from util.misc import Logger, gen_uuid, date_format, MultiDict
@@ -16,12 +17,19 @@ from core.models import (
 	Contact, TextWithData, MessageData, MessageType, LoginOption, OIM
 )
 from core.client import Client
+from core.alerts import Alert, MSNP_NOT, puid
 
 from .msnp import MSNPCtrl
 from .misc import (
 	build_presence_notif, cid_format, encode_payload, decode_capabilities_capabilitiesex, decode_email_networkid,
-	normalize_pop_id, decode_email_pop, gen_mail_data, gen_signedticket_xml, uuid_to_high_low,
-	generate_rps_key, encrypt_with_key_and_iv_tripledes_cbc, gen_chal_response, Err, MSNStatus, MSNObj,
+	normalize_pop_id, decode_email_pop, encode_email_pop, gen_mail_data, gen_signedticket_xml, uuid_to_high_low,
+	generate_rps_key, encrypt_with_key_and_iv_tripledes_cbc, gen_chal_response, Err, MSNStatus, MSNObj, DATACAST_MSNOBJ,
+	get_session_capabilities, CAPABILITIES_P2P_BOOTSTRAP_VIA_UUN, UNSUPPORTED_MESSAGE_TEXT, PE_EXTRA_ELEMENTS,
+	DATACAST_ACTION, NULL_EPID, is_null_epid, session_p2p_epid,
+)
+from .p2p_bridge import (
+	split_sdg_p2p, get_p2p_state, build_sdg_data, neutralize_sdg_data, refuse_direct_invite, parse_slp, SLP_DIRECT_CONTENT_TYPES,
+	detect_p2p_version,
 )
 
 MSNP_DIALECTS = ['MSNP{}'.format(d) for d in (
@@ -35,7 +43,8 @@ MSNP_DIALECTS = ['MSNP{}'.format(d) for d in (
 class MSNPCtrlNS(MSNPCtrl):
 	__slots__ = (
 		'backend', 'dialect', 'usr_email', 'email_for_validation', 'bs', 'client', 'syn_ser', 'gcf_sent', 'syn_sent', 'iln_sent', 'is_third_party_client',
-		'challenge', 'rps_challenge', 'circle_authenticated', 'new_circles', 'initial_adl_sent', 'circle_adl_sent', 'password', 'cs', 'email_conflict'
+		'challenge', 'rps_challenge', 'circle_authenticated', 'new_circles', 'initial_adl_sent', 'circle_adl_sent', 'password', 'cs', 'email_conflict',
+		'previous_challenge', 'challenge_answered',
 	)
 
 	backend: Backend
@@ -50,6 +59,8 @@ class MSNPCtrlNS(MSNPCtrl):
 	gcf_sent: bool
 	iln_sent: bool
 	challenge: Optional[str]
+	previous_challenge: Optional[str]
+	challenge_answered: float
 	rps_challenge: Optional[bytes]
 	circle_authenticated: bool
 	new_circles: List[Circle]
@@ -74,6 +85,8 @@ class MSNPCtrlNS(MSNPCtrl):
 		self.gcf_sent = False
 		self.iln_sent = False
 		self.challenge = None
+		self.previous_challenge = None
+		self.challenge_answered = 0.0
 		self.rps_challenge = None
 		self.circle_authenticated = False
 		self.new_circles = []
@@ -84,6 +97,10 @@ class MSNPCtrlNS(MSNPCtrl):
 	
 	def _on_close(self) -> None:
 		if self.bs:
+			for cs, _ in list(self.bs.front_data.get('windowslive_chats', {}).values()):
+				cs.close()
+			for cs, _ in list(self.bs.front_data.get('windowslive_groups', {}).values()):
+				cs.close()
 			self.bs.close()
 	
 	def on_connect(self) -> None:
@@ -483,7 +500,7 @@ class MSNPCtrlNS(MSNPCtrl):
 		now = datetime.now()
 
 		if dialect < 10:
-			args = (user.status.name,) # type: Tuple[Any, ...]
+			args = ((user.status.name or email),) # type: Tuple[Any, ...]
 		else:
 			args = ()
 		if dialect >= 6:
@@ -497,10 +514,10 @@ class MSNPCtrlNS(MSNPCtrl):
 			email_domain = user.email.lower().split('@')[-1]
 			if email_domain in restricted_emails or email_domain in disposable_emails:
 				self.send_reply(Err.InvalidDomain, trid)
-				self.send_reply('NOT', encode_payload(PAYLOAD_MSG_10,
-					email = email, icon = '', url = 'https://crosstalk.im/alias-prep',
-					msg = "Your e-mail address contains a disallowed domain and needs to be changed before you can log in. Click this alert to learn more.",
-				))
+				self._send_alert(Alert(
+					"Your e-mail address contains a disallowed domain and needs to be changed before you can log in. Click this alert to learn more.",
+					url = 'https://crosstalk.im/alias-prep',
+				), user)
 				self.close()
 				return
 
@@ -531,15 +548,15 @@ class MSNPCtrlNS(MSNPCtrl):
 			msg1 = encode_payload(PAYLOAD_MSG_1,
 				time = int(now.timestamp()), high = high, low = low, email = email,
 				token = token, ip = ip, port = port,
-				mpop = (0 if not machineguid else 1), nickname = user.status.name, server_ip = settings.TARGET_IP, sess_id = str(id(bs))
+				mpop = (0 if not machineguid else 1), nickname = (user.status.name or email), server_ip = settings.TARGET_IP, sess_id = str(id(bs))
 			)
 
 			real_email_domain = user.email.lower().split('@')[-1]
 			if real_email_domain in restricted_emails or real_email_domain in disposable_emails:
-				self.send_reply('NOT', encode_payload(PAYLOAD_MSG_10,
-					email = email, icon = '', url = 'https://crosstalk.im/alias-prep',
-					msg = "Your e-mail address contains a blacklisted domain and needs to be changed before you can log in. Click this alert to learn more. Change your e-mail in your CrossTalk account settings.",
-				))
+				self._send_alert(Alert(
+					"Your e-mail address contains a blacklisted domain and needs to be changed before you can log in. Click this alert to learn more. Change your e-mail in your CrossTalk account settings.",
+					url = 'https://crosstalk.im/alias-prep',
+				), user)
 				self.close()
 				return
 
@@ -548,14 +565,14 @@ class MSNPCtrlNS(MSNPCtrl):
 
 			#if self.email_conflict: 
 			#	self.send_reply('NOT', encode_payload(PAYLOAD_MSG_10,
-			#		email = user.email, icon = 'http://static.ugnet.gay/', url = 'https://crosstalk.im/alias-prep',
+			#		email = user.email, icon = 'http://static.ugnet.xyz/', url = 'https://crosstalk.im/alias-prep',
 			#		msg = "Your e-mail address contains the domain \"@crosstalk.im\" and needs to be changed to avoid conflicts and potential account deletion in the future. Click this alert to learn more.",
 			#	))
 			if settings.STRESS_TEST_ACTIVE:
-				self.send_reply('NOT', encode_payload(PAYLOAD_MSG_10,
-					email = email, icon = '', url = 'https://crosstalk.im',
-					msg = "We're currently doing a stress test of the CrossTalk service. Put load on the server, and tell your friends!",
-				))
+				self._send_alert(Alert(
+					"We're currently doing a stress test of the CrossTalk service. Put load on the server, and tell your friends!",
+					url = 'https://crosstalk.im',
+				), user)
 			if 16 <= dialect < 19:
 				# MSNP21 doesn't use this; I don't believe 19 & 20 do either
 			
@@ -603,7 +620,7 @@ class MSNPCtrlNS(MSNPCtrl):
 					cs = [c for c in contacts.values() if c.lists & lst]
 					if cs:
 						for i, c in enumerate(cs):
-							self.send_reply('LST', trid, lst.name, ser, i + 1, len(cs), self.backend.util_get_display_email(c.head), c.status.name)
+							self.send_reply('LST', trid, lst.name, ser, i + 1, len(cs), self.backend.util_get_display_email(c.head), (c.status.name or self.backend.util_get_display_email(c.head)))
 							if dialect >= 5:
 								for bpr_setting in ('PHH','PHM','PHW','MOB'):
 									bpr_value = c.head.settings.get(bpr_setting)
@@ -660,7 +677,7 @@ class MSNPCtrlNS(MSNPCtrl):
 			self.send_reply('SYN', trid, TIMESTAMP, TIMESTAMP, len(contacts), len(detail._groups_by_id.values()))
 			self.send_reply('GTC', user_settings.get('GTC', 'A'))
 			self.send_reply('BLP', user_settings.get('BLP', 'AL'))
-			self.send_reply('PRP', 'MFN', user.status.name)
+			self.send_reply('PRP', 'MFN', (user.status.name or self.backend.util_get_display_email(user)))
 			for prp_setting in ('PHH','PHW','PHM','MOB','MBE'):
 				prp_value = user_settings.get(prp_setting)
 				if prp_value:
@@ -740,17 +757,14 @@ class MSNPCtrlNS(MSNPCtrl):
 		if mg is not None and mg.text is not None:
 			bs.front_data['msn_machineguid'] = mg.text
 		ddp = elm.find('DDP')
-		if ddp is not None:
-			bs.front_data['msn_msnobj_ddp'] = ddp.text
 		sigsound = elm.find('SignatureSound')
-		if sigsound is not None:
-			bs.front_data['msn_sigsound'] = sigsound.text
 		scene = elm.find('Scene')
-		if scene is not None:
-			bs.front_data['msn_msnobj_scene'] = scene.text
 		colorscheme = elm.find('ColorScheme')
-		if colorscheme is not None:
-			bs.front_data['msn_colorscheme'] = colorscheme.text
+		self._update_presence_data({
+			key: value_elm.text for key, value_elm in (
+				('msn_msnobj_ddp', ddp), ('msn_sigsound', sigsound), ('msn_msnobj_scene', scene), ('msn_colorscheme', colorscheme),
+			) if value_elm is not None
+		})
 		
 		bs.me_update({
 			'message': ((psm.text or '') if psm is not None else None),
@@ -764,15 +778,15 @@ class MSNPCtrlNS(MSNPCtrl):
 	
 	def _m_url(self, trid: str, site: str, ignored: Optional[str] = None) -> None:
 		if site == 'CHAT':
-			self.send_reply('URL', trid, 'chatrooms.msgrsvcs.ctsrv.gay', 'chatrooms.msgrsvcs.ctsrv.gay', 1)
+			self.send_reply('URL', trid, 'chatrooms.msgrsvcs.ctsrv.xyz', 'chatrooms.msgrsvcs.ctsrv.xyz', 1)
 		elif site == 'ADDRBOOK':
-			self.send_reply('URL', trid, '/', 'addressbook.ugnet.gay', 1)
+			self.send_reply('URL', trid, '/', 'addressbook.ugnet.xyz', 1)
 		elif site == 'COMPOSE':
-			self.send_reply('URL', trid, '/', 'compose.mail.ugnet.gay', 1)
+			self.send_reply('URL', trid, '/', 'compose.mail.ugnet.xyz', 1)
 		elif site == 'INBOX':
-			self.send_reply('URL', trid, '/', 'inbox.mail.ugnet.gay', 1)
+			self.send_reply('URL', trid, '/', 'inbox.mail.ugnet.xyz', 1)
 		elif site == 'PROFILE':
-			self.send_reply('URL', trid, '/', 'members.ugnet.gay')
+			self.send_reply('URL', trid, '/', 'members.ugnet.xyz')
 		else:
 			self.send_reply('URL', trid, 'NOT_AVAILABLE', 'NOT_AVAILABLE', 1)
 	
@@ -967,6 +981,8 @@ class MSNPCtrlNS(MSNPCtrl):
 						if circle is None and self.dialect < 20: # hack until i figure out how to make WLM 2011 not dc when you send it 933
 							self.send_reply(Err.InvalidCircleMembership, trid)
 							return
+						# A circle WLM 2011 still lists but that's gone (or that it's no longer in) is skipped
+						if circle is None or (circle.memberships.get(user.uuid) is None and self.dialect >= 20): continue
 						membership = circle.memberships.get(user.uuid)
 						if membership is None or (membership is not None and membership.state != CircleState.Accepted) and self.dialect < 20: # hack until i figure out how to make WLM 2011 not dc when you send it 933
 							self.send_reply(Err.InvalidCircleMembership, trid)
@@ -984,7 +1000,9 @@ class MSNPCtrlNS(MSNPCtrl):
 			
 			for d_el in d_els:
 				domain = d_el.get('n')
-				
+				# Each domain's own contacts (not the last domain's, for every domain)
+				c_els = d_el.findall('c')
+
 				for c_el in c_els:
 					ctc = None
 					lsts = None
@@ -1005,24 +1023,26 @@ class MSNPCtrlNS(MSNPCtrl):
 						chat_id = username[-12:]
 						circle = backend.user_service.get_circle(chat_id)
 						if circle is None: continue
-						
+						if user.uuid not in circle.memberships: continue
+
 						if lsts & ContactList.FL or lsts & ContactList.AL:
 							cs = None
-							
+
 							if circle.memberships[user.uuid].blocking and not lsts & ContactList.BL: on_unblock = True
-							
+
 							if on_unblock:
 								try:
 									bs.me_unblock_circle(circle)
 								except:
 									pass
-							
+
 							try:
 								cs = backend.join_circle(chat_id, 'msn', bs, ChatEventHandler(self.backend.loop, self, bs), pop_id = bs.front_data.get('msn_pop_id'))
 							except:
 								if on_unblock:
 									cs = backend.get_circle_cs(chat_id, bs)
-								raise Exception("Circle bad")
+								# Already in the circle's conversation from an earlier `ADL` (or not allowed in it): nothing to join
+								if cs is None or not on_unblock: continue
 							
 							if cs is None: continue
 							chat = cs.chat
@@ -1053,10 +1073,11 @@ class MSNPCtrlNS(MSNPCtrl):
 			if isinstance(ex, XMLSyntaxError):
 				self.send_reply(Err.XXLInvalidPayload, trid)
 				self.close()
-			else:
-				self.send_reply(Err.GetCodeForException(ex, self.dialect), trid)
 				return
-		
+			else:
+				self.send_reply(_err_code(ex, self.dialect), trid)
+				return
+
 		self.send_reply('ADL', trid, 'OK')
 	
 	def _m_rml(self, trid: str, data: bytes) -> None:
@@ -1385,10 +1406,9 @@ class MSNPCtrlNS(MSNPCtrl):
 		capabilities_msn_ex = None # type: Optional[str]
 		
 		if settings.FORCE_HOSTS_UPDATE:
-			self.send_reply('NOT', encode_payload(PAYLOAD_MSG_10,
-				email = self.backend.util_get_display_email(user), icon = '', url = 'http://diet.crosstalk.im/moving-hosts',
-				msg = "Your patches need to be updated before you can log in. Click this alert for more info."
-			))
+			self._send_alert(Alert(
+				"Your patches need to be updated before you can log in. Click this alert for more info.", url = 'http://diet.crosstalk.im/moving-hosts',
+			), user)
 			self.backend.loop.call_later(5, self.close)
 			return
 		else:
@@ -1416,10 +1436,9 @@ class MSNPCtrlNS(MSNPCtrl):
 		bs.front_data['msn_capabilities'] = capabilities_msn or 0
 		bs.front_data['msn_capabilitiesex'] = capabilities_msn_ex or 0
 		if msnobj == capabilities:
-			bs.front_data['msn_msnobj'] = None
-			bs.front_data['msn_msnobj_ddp'] = None
+			self._update_presence_data({ 'msn_msnobj': None, 'msn_msnobj_ddp': None })
 		else:
-			bs.front_data['msn_msnobj'] = msnobj
+			self._update_presence_data({ 'msn_msnobj': msnobj })
 		
 		bs.me_update({
 			'substatus': msn_substatus,
@@ -1440,7 +1459,10 @@ class MSNPCtrlNS(MSNPCtrl):
 			dialect = self.dialect
 			for ctc in detail.contacts.values():
 				if ctc.lists & ContactList.FL:
-					for m in build_presence_notif(trid, None, ctc.head, user, dialect, self.backend, self.iln_sent, True):
+					for m in build_presence_notif(
+						trid, None, ctc.head, user, dialect, self.backend, self.iln_sent, True,
+						announced_epids = bs.front_data.setdefault('msn_announced_epids', {}),
+					):
 						self.send_reply(*m)
 			if dialect >= 6 and not self.is_third_party_client:
 				self._send_chl(trid)
@@ -1458,49 +1480,71 @@ class MSNPCtrlNS(MSNPCtrl):
 				'notify_status': True,
 			})
 	
+	def _send_alert(self, alert: Alert, user: User) -> bool:
+		if self.dialect < MSNP_NOT:
+			return False
+		(high, low) = uuid_to_high_low(user.uuid)
+		self.send_reply('NOT', alert.notification(
+			pid = puid(high, low), name = self.backend.util_get_display_email(user), dialect = self.dialect,
+			email = user.email if alert.email_text else None,
+		))
+		return True
+	
+	def _m_not(self, *args: Any) -> None:
+		self.close()
+	
+	def _m_chl(self, trid: str) -> None:
+		self.send_reply('CHL', trid, self._new_challenge())
+	
 	def _m_qry(self, trid: str, client_id: str, response: bytes) -> None:
-		challenge = self.challenge
+		id_key = _QRY_KEYPAIRS.get(client_id)
+		try:
+			answer = response.decode('ascii')
+		except UnicodeDecodeError:
+			answer = None
 		
-		id_key, max_dialect = _QRY_KEYPAIRS[client_id]
+		ok = False
+		if id_key is not None and answer is not None and len(answer) == 32:
+			for challenge in (self.challenge, self.previous_challenge):
+				if challenge is None: continue
+				for msnp11 in (False, True):
+					server_response = gen_chal_response(challenge, client_id, id_key, msnp11 = msnp11)
+					if settings.DEBUG_FULL:
+						print(f"Server challenge response: {server_response}")
+					if hmac.compare_digest(answer, server_response):
+						ok = True
+						break
+				if ok: break
 		
-		if self.dialect > max_dialect:
+		if not ok:
 			self.send_reply(Err.ChallengeResponseFailed, trid)
 			self.close()
 			return
 		
-		server_response = gen_chal_response(challenge, client_id, id_key, msnp11 = (self.dialect >= 11))
-		if settings.DEBUG_FULL:
-			print(f"Server challenge response: {server_response}")
-		
-		if response.decode() != server_response:
-			self.send_reply(Err.ChallengeResponseFailed, trid)
-			self.close()
-			return
-
-		self.challenge = None
+		self.challenge_answered = time.monotonic()
 		self.send_reply('QRY', trid)
 
-	def _m_put(self, trid: str, data: bytes) -> None:		
+	def _m_put(self, trid: str, data: bytes) -> None:
 		if self.dialect < 18:
 			self.close()
 			return
-		
+
 		backend = self.backend
 		bs = self.bs
 		assert bs is not None
 		user = bs.user
 		detail = user.detail
 		assert detail is not None
-		
+
 		chat_id = None
 		presence = False
-		
+
 		i = data.index(b'\r\n\r\n') + 4
 		headers = Parser().parsestr(data[:i].decode('utf-8'))
-		
+
 		to = _split_email_epid(str(headers['To']))
 		from_email = _split_email_epid(str(headers['From']))
-		
+
 		if to[1] is NetworkID.CIRCLE:
 			if not to[0].endswith('@live.com'):
 				self.send_reply(Err.InvalidParameter, trid)
@@ -1511,31 +1555,42 @@ class MSNPCtrlNS(MSNPCtrl):
 				self.send_reply(Err.InvalidParameter, trid)
 				return
 			chat_id = circle_id[-12:]
-		
+
 		nfy_1_index = data.index(b'\r\n\r\n', i) + 4
-				
+		reliability = Parser().parsestr(data[i:nfy_1_index].decode('utf-8'))
+
 		# TODO: `PUT` ACK
-		
+
 		nfy_actual = data[nfy_1_index:]
-		
+
 		payload_index = nfy_actual.index(b'\r\n\r\n') + 4
 		nfy_headers = Parser().parsestr(nfy_actual[:payload_index].decode('utf-8'))
 		payload = nfy_actual[payload_index:]
-		
+
+		if to[1] is NetworkID.TEMPORARYGROUP:
+			if self.dialect < 19:
+				self.send_reply(Err.InvalidParameter, trid)
+				return
+			content_length = str(nfy_headers.get('Content-Length') or '').strip()
+			if content_length.isdigit():
+				payload = payload[:int(content_length)]
+			self._put_group(trid, to[0], payload)
+			return
+
 		if nfy_headers.get('Content-Type') == 'application/circles+xml':
 			if not self.circle_adl_sent:
 				self.send_reply(Err.InvalidParameter, trid)
 				return
-			
+
 			if chat_id is None: return
-			
+
 			circle = backend.user_service.get_circle(chat_id)
 			if circle is None:
 				self.send_reply(Err.InvalidParameter, trid)
 				return
 			chat = backend.chat_get('persistent', chat_id)
 			if chat is None: return
-			
+
 			elm = parse_xml(payload)
 			email_elm = elm.find('roster/user/id')
 			if email_elm is not None:
@@ -1554,42 +1609,44 @@ class MSNPCtrlNS(MSNPCtrl):
 				else:
 					self.send_reply(Err.InvalidParameter, trid)
 					return
-			
+
 			presence_elm = elm.find('props/presence')
 			if presence_elm is not None:
 				cs = backend.get_circle_cs(chat_id, bs)
 				if cs is None:
 					self.send_reply(Err.InvalidParameter, trid)
 					return
-				
+
 				psm_elm = presence_elm.find('Data/PSM')
 				if psm_elm is not None:
 					chat.front_data['msn_circle_psm'] = psm_elm.text
 				cm_elm = presence_elm.find('Data/CurrentMedia')
 				if cm_elm is not None:
 					chat.front_data['msn_circle_cm'] = cm_elm.text
-				
+
 				chat.send_update()
 		elif nfy_headers.get('Content-Type') == 'application/user+xml':
 			presence = True
 			try:
 				payload_xml = parse_xml(payload)
-				
+
 				user_display_email = self.backend.util_get_display_email(user)
 				if not (to[1] is NetworkID.WINDOWS_LIVE and to[0].lower() in (user.email.lower(), user_display_email.lower()) and to[2] is None):
 					return
-				
+
 				name = None # type: Optional[str]
 				psm = None # type: Optional[str]
 				substatus = None # type: Optional[Substatus]
 				currentmedia = None # type: Optional[str]
 				capabilities = None # type: Optional[str]
-				capabilities_ex = None # type: Optional[str]
+				capabilitiesex = None # type: Optional[str]
 				pe_capabilities = None # type: Optional[str]
 				pe_capabilitiesex = None # type: Optional[str]
-				
+				pe_fields = {} # type: Dict[str, Any]
+				front_data_old = tuple(bs.front_data.get(key) for key in PUT_FRONT_DATA_KEYS)
+
 				#TODO: Better notification flag criteria
-				
+
 				s_els = payload_xml.findall('s')
 				for s_el in s_els:
 					if s_el.get('n') == 'IM':
@@ -1597,31 +1654,41 @@ class MSNPCtrlNS(MSNPCtrl):
 						if substatus_elm is not None:
 							try:
 								substatus = MSNStatus.ToSubstatus(getattr(MSNStatus, substatus_elm.text))
-							except ValueError:
+							except (AttributeError, TypeError, ValueError):
 								self.close()
 								return
 						currentmedia_elm = s_el.find('CurrentMedia')
 						if currentmedia_elm is not None:
-							currentmedia = currentmedia_elm.text
+							currentmedia = currentmedia_elm.text or ''
 					if s_el.get('n') == 'PE':
 						name_elm = s_el.find('FriendlyName')
 						if name_elm is not None:
-							name = name_elm.text
+							name = name_elm.text or user_display_email
 						psm_elm = s_el.find('PSM')
 						if psm_elm is not None:
-							psm = psm_elm.text
+							psm = psm_elm.text or ''
 						utl_el = s_el.find('UserTileLocation')
 						if utl_el is not None:
-							bs.front_data['msn_msnobj'] = utl_el.text
+							pe_fields['msn_msnobj'] = utl_el.text
 						ddp = s_el.find('DDP')
 						if ddp is not None:
-							bs.front_data['msn_msnobj_ddp'] = ddp.text
+							pe_fields['msn_msnobj_ddp'] = ddp.text
 						scene = s_el.find('Scene')
 						if scene is not None:
-							bs.front_data['msn_msnobj_scene'] = scene.text
+							pe_fields['msn_msnobj_scene'] = scene.text
 						colorscheme = s_el.find('ColorScheme')
 						if colorscheme is not None:
-							bs.front_data['msn_colorscheme'] = colorscheme.text
+							pe_fields['msn_colorscheme'] = colorscheme.text
+						sigsound = s_el.find('SignatureSound')
+						if sigsound is not None:
+							pe_fields['msn_sigsound'] = sigsound.text
+						pe_extra = { name: s_el.find(name) for name in PE_EXTRA_ELEMENTS }
+						if any(elm is not None for elm in pe_extra.values()):
+							pe_extra_old = bs.front_data.get('msn_pe_extra') or {}
+							pe_fields['msn_pe_extra'] = {
+								name: (elm.text if elm is not None else pe_extra_old.get(name)) for name, elm in pe_extra.items()
+								if elm is not None or name in pe_extra_old
+							}
 				sep_elms = payload_xml.findall('sep')
 				for sep_elm in sep_elms:
 					if sep_elm.get('n') == 'IM':
@@ -1682,30 +1749,55 @@ class MSNPCtrlNS(MSNPCtrl):
 							
 							bs.front_data['msn_PE_capabilities'] = pe_capabilities or 0
 							bs.front_data['msn_PE_capabilitiesex'] = pe_capabilitiesex or 0
+							
+				self._update_presence_data(pe_fields)
 				
 				#TODO: Presence is a bit wonky
-				bs.me_update({
-					'name': name or user_display_email,
+				fields = {
 					'message': psm,
-					'substatus': substatus,
 					'media': currentmedia,
 					'needs_notify': (False if user.status.substatus is Substatus.Offline and substatus is None else True),
 					'notify_self': True,
-				})
+				} # type: Dict[str, Any]
+				if name is not None:
+					fields['name'] = name or user_display_email
+				if substatus is not None:
+					fields['substatus'] = substatus
+				front_data_changed = (tuple(bs.front_data.get(key) for key in PUT_FRONT_DATA_KEYS) != front_data_old)
+				changed = front_data_changed or (
+					(psm is not None and psm != user.status.message) or (currentmedia is not None and currentmedia != user.status.media)
+					or ('name' in fields and fields['name'] != user.status.name) or (substatus is not None and substatus is not user.status.substatus)
+				)
 				
-				if not self.iln_sent:
+				if changed:
+					now = time.time()
+					put_times = [put_time for put_time in bs.front_data.get('msn_put_times', ()) if now - put_time < 10] + [now]
+					bs.front_data['msn_put_times'] = put_times
+					if len(put_times) > 30:
+						self.close()
+						return
+					if front_data_changed and not (substatus or user.status.substatus).is_offlineish():
+						fields['notify_status'] = True
+					bs.me_update(fields)
+				
+				self.send_reply('PUT', trid, 'OK', b'')
+				if reliability.get('Flags') == 'ACK':
+					self.send_reply('NFY', 'PUT', encode_payload(PAYLOAD_MSG_14,
+						to_email = _encode_email_epid(user_display_email, bs.front_data.get('msn_pop_id')), from_email = user_display_email,
+					) + nfy_actual)
+				
+				if not self.iln_sent and user.status.substatus is not Substatus.Offline:
 					self.iln_sent = True
 					for ctc in detail.contacts.values():
 						for m in build_presence_notif(None, None, ctc.head, user, self.dialect, self.backend, self.iln_sent, True):
 							self.send_reply(*m)
-				self.send_reply('PUT', trid, 'OK', b'')
 				return
 			except XMLSyntaxError:
 				self.close()
 				return
-		
+
 		self.send_reply('PUT', trid, 'OK', b'')
-		
+
 		return
 	
 	def _m_sdg(self, trid: str, data: bytes) -> None:
@@ -1729,9 +1821,18 @@ class MSNPCtrlNS(MSNPCtrl):
 			headers = Parser().parsestr(data[:i].decode('utf-8'))
 			to = _split_email_sdg(str(headers['To']))
 			from_email = _split_email_epid(str(headers['From']))
-		except (KeyError, ValueError):
+			messaging_headers, body = _parse_sdg_messaging(data, i)
+		except (KeyError, ValueError, UnicodeDecodeError):
 			self.send_reply(Err.InvalidParameter, trid)
 			return
+		message_type = str(messaging_headers.get('Message-Type') or '')
+		pop_id = bs.front_data.get('msn_pop_id')
+		
+		user_display_email = self.backend.util_get_display_email(user)
+		if from_email[0].lower() not in (user.email.lower(), user_display_email.lower(), (self.usr_email or '').lower()):
+			if self.backend.util_get_uuid_from_email(from_email[0]) != user.uuid:
+				self.send_reply(Err.InvalidParameter, trid)
+				return
 
 		if to[1] == NetworkID.CIRCLE and to[0].endswith('@live.com'):
 			email_end = to[0].rfind('@live.com')
@@ -1741,26 +1842,62 @@ class MSNPCtrlNS(MSNPCtrl):
 				chat_id = circle_id[-12:]
 			else:
 				circle_mode = False
+		
+		if to[1] == NetworkID.TEMPORARYGROUP:
+			self._sdg_to_group(trid, to[0], data, i)
+			return
 			
 		if circle_mode:
 			cs = self.backend.get_circle_cs(chat_id, bs)
 			if cs is None:
-				self.send_reply(Err.InvalidParameter, trid)
+				self.send_reply(ERR_INVALID_CIRCLE if self.backend.user_service.get_circle(chat_id or '') is None else ERR_SENDER_NOT_MEMBER, trid)
+				return
+			message = messagedata_from_sdg(cs.user, pop_id, data, i)
+			if message.type is MessageType.Ignored: return
+			if not self.backend.util_message_allowed(user, message):
+				self.send_reply(ERR_SDG_THROTTLED, trid)
 				return
 			try:
-				cs.send_message_to_everyone(messagedata_from_sdg(cs.user, bs.front_data.get('msn_pop_id'), data, i))
+				cs.send_message_to_everyone(message)
 			except Exception as ex:
-				self.send_reply(Err.GetCodeForException(ex, self.dialect), trid)
+				self.send_reply(_err_code(ex, self.dialect), trid)
 		else:
 			if self.dialect > 18:
 				to_str = str(to[0]).strip()
 				contact_uuid = self.backend.util_get_uuid_from_email(to_str)
 				if contact_uuid is None:
+					self.send_reply(Err.InvalidUser2, trid)
 					return
+				
+				to_pop_id = _split_email_epid(str(headers['To']))[2]
+				if message_type.startswith('Signal/'):
+					if self._intercept_direct_signal(message_type, to_str, to_pop_id, body): return
+					self._send_uun(to_str, SDG_SIGNAL_UUN_TYPES.get(message_type), body, to_pop_id, sdg = data)
+					return
+				
+				p2pv2 = not is_null_epid(from_email[2])
+				if message_type == 'Data':
+					packets = split_sdg_p2p(body, str(messaging_headers.get('Bridging-Offsets') or '0'))
+					version = (detect_p2p_version(packets[0]) if packets else None)
+					if version is not None:
+						p2pv2 = version
+					k = data.index(b'\r\n\r\n', data.index(b'\r\n\r\n', i) + 4) + 4
+					body_new = neutralize_sdg_data(body, str(messaging_headers.get('Bridging-Offsets') or '0'), p2pv2)
+					if body_new != body:
+						data = data[:k] + body_new + data[k + len(body):]
+				
 				try:
 					cs, evt = self._get_private_chat_with(contact_uuid)
 					if None not in (cs, evt):
-						evt._send_when_user_joins(contact_uuid, messagedata_from_sdg(cs.user, bs.front_data.get('msn_pop_id'), data, i))
+						message = messagedata_from_sdg(cs.user, pop_id, data, i)
+						message.front_cache['msn_p2p_dest_pop_id'] = to_pop_id
+						message.front_cache['msn_p2p_dest_email'] = to_str
+						message.front_cache['msn_p2pv2'] = p2pv2
+						if message.type is MessageType.Ignored: return
+						if not self.backend.util_message_allowed(user, message):
+							self.send_reply(ERR_SDG_THROTTLED, trid)
+							return
+						evt._send_when_user_joins(contact_uuid, message)
 				except error.ContactNotOnline:
 					contact_user = self.backend._load_user_record(contact_uuid)
 					if contact_user is None:
@@ -1775,7 +1912,11 @@ class MSNPCtrlNS(MSNPCtrl):
 					elif ctc_self is None and contact_user.settings.get('BLP', 'AL') == 'BL':
 						return
 					md = messagedata_from_sdg(contact_user, bs.front_data.get('msn_pop_id'), data, i)
-					if md.type is MessageType.Chat:
+					if md is not None and md.type is MessageType.Chat and 'msn_datacast' not in md.front_cache:
+						# An offline message counts against the sender's rate like any other
+						if not self.backend.util_message_allowed(user, md):
+							self.send_reply(ERR_SDG_THROTTLED, trid)
+							return
 						(ip, _) = self.peername
 						from_user_id = to_str
 				
@@ -1784,10 +1925,161 @@ class MSNPCtrlNS(MSNPCtrl):
 							from_user_id = from_user_id,
 						)
 				except Exception as ex:
-					self.send_reply(Err.GetCodeForException(ex, self.dialect), trid)
+					self.send_reply(_err_code(ex, self.dialect), trid)
 					return
 			else:
 				pass
+	
+	def _sdg_to_group(self, trid: str, group_address: str, data: bytes, i: int) -> None:
+		bs = self.bs
+		assert bs is not None
+		group_id = group_address.split('@', 1)[0].lower()
+		entry = (bs.front_data.get('windowslive_groups') or {}).get(group_id)
+		if entry is None or entry[0].closed:
+			self.send_reply(ERR_INVALID_TEMP_GROUP if self.backend.chat_get('tempgroup', group_id) is None else ERR_SENDER_NOT_MEMBER, trid)
+			return
+		cs, _ = entry
+		message = messagedata_from_sdg(bs.user, bs.front_data.get('msn_pop_id'), data, i)
+		if message.type in (MessageType.Ignored, MessageType.MSNP2P): return
+		if not self.backend.util_message_allowed(bs.user, message):
+			self.send_reply(ERR_SDG_THROTTLED, trid)
+			return
+		cs.send_message_to_everyone(message)
+
+	def _put_group(self, trid: str, group_address: str, payload: bytes) -> None:
+		bs = self.bs
+		assert bs is not None
+		user = bs.user
+		backend = self.backend
+
+		roster_ids = [] # type: List[str]
+		if payload.strip():
+			try:
+				roster_ids = [str(elm.text or '').strip() for elm in parse_xml(payload).findall('roster/user/id')]
+			except XMLSyntaxError:
+				self.send_reply(Err.InvalidParameter, trid)
+				return
+
+		user_display_email = backend.util_get_display_email(user)
+		if not roster_ids:
+			entry_existing = (bs.front_data.get('windowslive_groups') or {}).get(group_address.split('@', 1)[0].lower())
+			if entry_existing is not None and not entry_existing[0].closed:
+				self.send_reply('PUT', trid, 'OK', b'')
+				return
+			chat = backend.chat_create()
+			chat.front_data['windowslive'] = True
+			group_id = _ensure_group_id(chat)
+			self._join_group(chat, group_id)
+			self.send_reply('PUT', trid, 'OK', encode_payload(PAYLOAD_MSG_16,
+				to_email = _encode_email_epid(user_display_email, bs.front_data.get('msn_pop_id')), group_id = group_id,
+			))
+			return
+
+		group_id = group_address.split('@', 1)[0].lower()
+		chat_group = backend.chat_get('tempgroup', group_id)
+		if chat_group is None:
+			self.send_reply(ERR_INVALID_TEMP_GROUP, trid)
+			return
+		chat = chat_group
+		entry = (bs.front_data.get('windowslive_groups') or {}).get(group_id)
+		if entry is not None and entry[0].closed:
+			entry = None
+		invited = chat.front_data.setdefault('msn_tempgroup_invited', set()) # type: Set[str]
+		joined_now = False
+		invitees = [] # type: List[User]
+		for roster_id in roster_ids:
+			(_, email, _) = _parse_address(roster_id)
+			if email.lower() in (user.email.lower(), user_display_email.lower()):
+				if entry is None:
+					if user.uuid not in invited and user not in _chat_users(chat):
+						self.send_reply(ERR_SENDER_NOT_MEMBER, trid)
+						return
+					try:
+						entry = self._join_group(chat, group_id)
+					except Exception as ex:
+						self.send_reply(_err_code(ex, self.dialect), trid)
+						return
+				joined_now = True
+				continue
+			invitee_uuid = (backend.util_get_uuid_from_email(email) if '@' in email else None)
+			invitee = (backend._load_user_record(invitee_uuid) if invitee_uuid is not None else None)
+			if invitee is None:
+				self.send_reply(Err.InvalidUser2, trid)
+				return
+			invitees.append(invitee)
+
+		if invitees:
+			if entry is None:
+				self.send_reply(ERR_SENDER_NOT_MEMBER, trid)
+				return
+			cs = entry[0]
+			detail = user.detail
+			assert detail is not None
+			for invitee in invitees:
+				ctc = detail.contacts.get(invitee.uuid)
+				if (ctc.status if ctc is not None else invitee.status).is_offlineish():
+					self.send_reply(Err.PrincipalNotOnline, trid)
+					return
+				invited.add(invitee.uuid)
+				try:
+					cs.invite(invitee)
+				except error.ContactAlreadyOnContactList:
+					# Already in the conversation
+					pass
+				except Exception as ex:
+					invited.discard(invitee.uuid)
+					self.send_reply(_err_code(ex, self.dialect), trid)
+					return
+
+		self.send_reply('PUT', trid, 'OK', b'')
+		if joined_now and entry is not None:
+			entry[1].send_group_roster(entry[1].group_members(), full = True)
+
+	def _join_group(self, chat: Chat, group_id: str) -> Tuple[ChatSession, 'ChatEventHandler']:
+		bs = self.bs
+		assert bs is not None
+		evt = ChatEventHandler(self.backend.loop, self, bs)
+		evt.group_id = group_id
+		cs = chat.join('msn', bs, evt, pop_id = _join_pop_id(chat, bs))
+		bs.front_data.setdefault('windowslive_groups', {})[group_id] = (cs, evt)
+		cast(Set[str], chat.front_data.setdefault('msn_tempgroup_invited', set())).discard(bs.user.uuid)
+		chat.send_participant_joined(cs)
+		return cs, evt
+
+	def _leave_group(self, trid: str, group_address: str, uri: str) -> None:
+		bs = self.bs
+		assert bs is not None
+		user = bs.user
+		group_id = group_address.split('@', 1)[0].lower()
+		entry = (bs.front_data.get('windowslive_groups') or {}).get(group_id)
+		if entry is None or entry[0].closed:
+			self.send_reply(ERR_INVALID_TEMP_GROUP if self.backend.chat_get('tempgroup', group_id) is None else ERR_SENDER_NOT_MEMBER, trid)
+			return
+		if '/user(' in uri:
+			(_, email, _) = _parse_address(uri[uri.index('/user(') + 6:].rstrip(')'))
+			if email.lower() not in (user.email.lower(), self.backend.util_get_display_email(user).lower()):
+				self.send_reply(ERR_SENDER_NOT_MEMBER, trid)
+				return
+		entry[0].close()
+		self.send_reply('DEL', trid, 'OK', b'')
+
+	def _intercept_direct_signal(self, message_type: str, to_email: str, to_pop_id: Optional[str], body: bytes) -> bool:
+		bs = self.bs
+		assert bs is not None
+		if message_type == 'Signal/Turn': return True
+		if message_type != 'Signal/P2P': return False
+		slp = parse_slp(body)
+		if slp is None or slp.content_type not in SLP_DIRECT_CONTENT_TYPES: return False
+		reply = refuse_direct_invite(body)
+		if reply is not None:
+			(slp_to, _) = _slp_signal_parties(body)
+			(_, slp_to_pop_id) = decode_email_pop(slp_to or '')
+			from_pop_id = (to_pop_id or (normalize_pop_id(slp_to_pop_id) if slp_to_pop_id else None))
+			self.send_reply('SDG', 0, encode_payload(PAYLOAD_MSG_12,
+				to_email = _encode_email_epid(self.backend.util_get_display_email(bs.user), bs.front_data.get('msn_pop_id')),
+				from_email = _encode_email_epid(to_email, from_pop_id), service_channel = 'PE', message_type = 'Signal/P2P', cl = len(reply),
+			) + reply)
+		return True
 
 	def _m_rea(self, trid: str, email: str, name: str) -> None:
 		# Set a display name (MSNP10 and earlier)
@@ -1830,17 +2122,149 @@ class MSNPCtrlNS(MSNPCtrl):
 		bs.send_invitation_email(email, sender_email, name, message)
 		self.send_reply('SDC', trid, 'OK')
 	
-	def _m_vas(self, trid: str, email: str, arg3: str, arg4: str, data: bytes) -> None:
-		# "Vote as spam". Don't know how to respond.
-		if self.dialect < 18:
+	def _m_cvq(self, trid: str, *args: str) -> None:
+		# `CVR` as CVR0-only clients send it (to the dispatch server, but some send it here too)
+		if len(args) < 6:
+			self.send_reply(Err.InvalidCVQ, trid)
 			self.close()
 			return
+		v = args[5]
+		self.send_reply('CVQ', trid, v, v, '1.0.0000', 'https://crosstalk.im/downloads', 'https://crosstalk.im/compat')
+	
+	def _m_fnd(self, trid: str, *args: str) -> None:
 		self.send_reply(Err.CommandDisabled, trid)
-		return
+	
+	def _m_gsb(self, trid: str) -> None:
+		if self.dialect < 11:
+			self.close()
+			return
+		self.send_reply('SBS', trid, 'null')
+	
+	def _m_lkp(self, trid: str, address: str) -> None:
+		if self.dialect < 12:
+			self.close()
+			return
+		number = (address[4:] if address.lower().startswith('tel:') else '')
+		if not (number.startswith('+') and number[1:].isdigit() and len(number) > 8):
+			self.send_reply(Err.InvalidMSISDN, trid)
+			return
+		self.send_reply('LKP', trid, address)
+	
+	def _m_pag(self, trid: str, email: str, data: bytes) -> None:
+		if self.dialect < 5:
+			self.close()
+			return
+		if self.dialect >= 9:
+			self.send_reply(Err.NotExpected, trid)
+			return
+		self._page(trid, email, data)
+	
+	def _m_pgd(self, trid: str, email: str, device_type: str, data: bytes) -> None:
+		if self.dialect < 9:
+			self.close()
+			return
+		if not device_type.isdigit():
+			self.close()
+			return
+		if device_type not in ('1', '2'):
+			self.send_reply(Err.InvalidParameter, trid)
+			return
+		self._page(trid, email, data)
+	
+	def _page(self, trid: str, email: str, data: bytes) -> None:
+		# Nobody here has a phone to text, so a page goes to the paged user's messenger sessions as a mobile message from the
+		# sender (`IPG`), and is kept as an offline message if they have none that can show it. Only users who have paging on
+		# (`MOB`) can be paged. MSNP11 and later hear how it went in an `IPG` of their own; before that only a failure is answered
+		bs = self.bs
+		assert bs is not None
+		user = bs.user
+		backend = self.backend
+		
+		try:
+			text_elm = parse_xml(b'<PAGE>' + data + b'</PAGE>').find('TEXT')
+		except XMLSyntaxError:
+			self.send_reply(Err.InvalidParameter, trid)
+			return
+		text = ((text_elm.text or '') if text_elm is not None else '')
+		
+		uuid = (backend.util_get_uuid_from_email(email) if '@' in email else None)
+		target = (backend._load_user_record(uuid) if uuid is not None else None)
+		result = 1
+		if target is None or target.settings.get('MOB') != 'Y' or not text:
+			# Not accepting pages
+			result = MOBILE_ERR_USER_DISABLED
+		else:
+			target_detail = backend._load_detail(target)
+			ctc_self = (target_detail.contacts.get(user.uuid) if target_detail is not None else None)
+			if ctc_self is not None and ctc_self.lists & ContactList.BL:
+				result = MOBILE_ERR_USER_DISABLED
+			elif not backend.util_message_allowed(user, MessageData(sender = user, type = MessageType.Chat, text = text)):
+				result = MOBILE_ERR_SMS_NOT_ALLOWED
+		if result == 1:
+			assert target is not None
+			delivered = False
+			for bs_other in backend.util_get_sessions_by_user(target):
+				if bs_other.evt.msn_on_page(user, text):
+					delivered = True
+			if not delivered:
+				(ip, _) = self.peername
+				backend.user_service.save_oim(bs, target.uuid, gen_uuid(), ip, text, True, from_user_id = backend.util_get_display_email(user))
+		
+		if self.dialect >= 11:
+			self.send_reply('IPG', _ipg_payload(
+				backend, int(trid) if trid.isdigit() else 0, user, (target if target is not None else None), email, result, '',
+			))
+		elif result != 1:
+			self.send_reply(Err.NotAcceptingPages if result == MOBILE_ERR_USER_DISABLED else Err.RateLimitExceeded, trid)
+	
+	def _m_vas(self, trid: str, email: str, arg3: str, arg4: str, data: bytes) -> None:
+		# "Vote as spam".
+		if self.dialect < 16:
+			self.close()
+			return
+		bs = self.bs
+		assert bs is not None
+		try:
+			networkid = NetworkID(int(arg3))
+		except ValueError:
+			self.send_reply(Err.InvalidNetworkID, trid)
+			return
+		if networkid in (NetworkID.WINDOWS_LIVE, NetworkID.YAHOO) and '@' in email:
+			uuid = self.backend.util_get_uuid_from_email(email)
+			target = (self.backend._load_user_record(uuid) if uuid is not None else None)
+			if target is not None and target is not bs.user:
+				self.backend.abuse.warn(bs.user, target, anonymous = True)
+		self.send_reply('VAS', trid)
 
 	def _m_del(self, trid: str, data: bytes) -> None:
 		# OUT sends presence updates on logout, ignore for now until we have multiparties implemented
-		pass
+		bs = self.bs
+		assert bs is not None
+		user = bs.user
+		
+		pop_id_self = bs.front_data.get('msn_pop_id')
+		try:
+			i = data.index(b'\r\n\r\n') + 4
+			to = _parse_address(str(Parser().parsestr(data[:i].decode('utf-8')).get('To') or ''))
+			i = data.index(b'\r\n\r\n', i) + 4
+			content = Parser().parsestr(data[i:data.index(b'\r\n\r\n', i) + 4].decode('utf-8'))
+			i = data.index(b'\r\n\r\n', i) + 4
+			sep_elms = (parse_xml(data[i:]).findall('sep') if data[i:].strip() and to[0] is not NetworkID.TEMPORARYGROUP else [])
+		except (ValueError, XMLSyntaxError):
+			self.send_reply(Err.InvalidParameter, trid)
+			return
+
+		if to[0] is NetworkID.TEMPORARYGROUP:
+			self._leave_group(trid, to[1], str(content.get('Uri') or ''))
+			return
+
+		for sep_elm in sep_elms:
+			epid = sep_elm.get('epid')
+			if sep_elm.get('n') != 'IM' or epid is None or normalize_pop_id(epid).lower() == (pop_id_self or '').lower(): continue
+			for bs_other in self.backend.util_get_sessions_by_user(user):
+				bs_other.evt.msn_on_uun_sent(user, 4, b'goawyplzthxbye', pop_id_sender = pop_id_self, pop_id = epid)
+		
+		self.send_reply('DEL', trid, 'OK', b'')
 	
 	def _m_prp(self, trid: str, key: str, value: Optional[str] = None, *rest: Optional[str]) -> None:
 		# Set a display name
@@ -1882,7 +2306,7 @@ class MSNPCtrlNS(MSNPCtrl):
 			
 			bs.me_update({ phone_type: value })
 		elif key == 'MOB':
-			if user.settings['MBE'] == 'N':
+			if user.settings.get('MBE') == 'N':
 				value = 'N'
 			else:
 				if value not in ('Y','N'):
@@ -1996,52 +2420,70 @@ class MSNPCtrlNS(MSNPCtrl):
 			self.close()
 			return
 		
-		bs = self.bs
-		assert bs is not None
-		user = bs.user
-		
-		pop_id_self = None
-		
 		(email, pop_id) = decode_email_pop(email)
-		
-		uuid = self.backend.util_get_uuid_from_email(email)
-		if uuid is None:
-			return
-		
-		ctc_head = self.backend._load_user_record(uuid)
-		if ctc_head is None:
-			return
-		
-		if ctc_head.status.is_offlineish():
-			self.send_reply(Err.PrincipalNotOnline, trid)
-			return
-		
-		ctc_detail = self.backend._load_detail(ctc_head)
-		assert ctc_detail is not None
-		
-		ctc_me = ctc_detail.contacts.get(user.uuid)
-		if ctc_me is not None:
-			if ctc_me.lists & ContactList.BL:
-				self.send_reply(Err.PrincipalNotOnline, trid)
-				return
-		else:
-			if ctc_head.settings.get('BLP', 'AL') == 'BL':
-				self.send_reply(Err.PrincipalNotOnline, trid)
-				return
 		
 		try:
 			uun_type = int(type)
 		except ValueError:
+			self.send_reply(Err.InvalidParameter, trid)
+			return
+		if not 1 <= uun_type <= 12 or (4 <= uun_type <= 8 and self.dialect < 16):
+			self.send_reply(Err.InvalidParameter, trid)
 			return
 		
-		if uun_type is None: return
+		if uun_type == 10 or (uun_type == 3 and data is not None and self._intercept_direct_uun(email, pop_id, data)):
+			self.send_reply('UUN', trid, 'OK')
+			return
 		
-		pop_id_self = bs.front_data.get('msn_pop_id')
-		
-		for sess_notify in self.backend.util_get_sessions_by_user(ctc_head):
-			sess_notify.evt.msn_on_uun_sent(bs.user, uun_type, data, pop_id_sender = pop_id_self, pop_id = pop_id)
+		if not self._send_uun(email, uun_type, data, pop_id):
+			self.send_reply(Err.PrincipalNotOnline, trid)
+			return
 		
 		self.send_reply('UUN', trid, 'OK')
+	
+	def _intercept_direct_uun(self, email: str, pop_id: Optional[str], data: bytes) -> bool:
+		slp = parse_slp(data)
+		if slp is None or slp.content_type not in SLP_DIRECT_CONTENT_TYPES: return False
+		reply = refuse_direct_invite(data)
+		if reply is not None:
+			uuid = self.backend.util_get_uuid_from_email(email)
+			head = (self.backend._load_user_record(uuid) if uuid is not None else None)
+			sender = (self.backend.util_get_display_email(head) if head is not None else email)
+			(slp_to, _) = _slp_signal_parties(data)
+			(_, slp_to_pop_id) = decode_email_pop(slp_to or '')
+			to_pop_id = pop_id or slp_to_pop_id
+			self.send_reply('UBN', (encode_email_pop(sender, normalize_pop_id(to_pop_id)) if self.dialect >= 16 and to_pop_id else sender), 3, reply)
+		return True
+	
+	def _send_uun(self, email: str, uun_type: Optional[int], data: Optional[bytes], pop_id: Optional[str], *, sdg: Optional[bytes] = None) -> bool:
+		bs = self.bs
+		assert bs is not None
+		user = bs.user
+		
+		uuid = self.backend.util_get_uuid_from_email(email)
+		if uuid is None:
+			return False
+		
+		ctc_head = self.backend._load_user_record(uuid)
+		if ctc_head is None:
+			return False
+		
+		if ctc_head.uuid != user.uuid:
+			if uun_type in (4, 5, 6, 7, 8):
+				return False
+			if ctc_head.status.is_offlineish():
+				return False
+			ctc_me = self.backend._load_detail(ctc_head).contacts.get(user.uuid)
+			if ctc_me is not None:
+				if ctc_me.lists & ContactList.BL:
+					return False
+			elif ctc_head.settings.get('BLP', 'AL') == 'BL':
+				return False
+		
+		for sess_notify in self.backend.util_get_sessions_by_user(ctc_head):
+			if sess_notify.front_data.get('msn') is not True: continue
+			sess_notify.evt.msn_on_uun_sent(user, uun_type, data, pop_id_sender = bs.front_data.get('msn_pop_id'), pop_id = pop_id, sdg = sdg)
+		return True
 	
 	def _m_uum(self, trid: str, email: str, networkid: str, type: str, data: bytes) -> None:
 		# For federated messaging (with Yahoo!); also used in MSNP18+ for OIMs
@@ -2126,18 +2568,23 @@ class MSNPCtrlNS(MSNPCtrl):
 		except:
 			return
 	
+	def _new_challenge(self) -> str:
+		self.previous_challenge = self.challenge
+		self.challenge = str(secrets.randbelow(89999999999999999999) + 10000000000000000000)
+		return self.challenge
+	
 	def _send_chl(self, trid: str) -> None:
 		backend = self.backend
 		
-		self.challenge = str(secrets.randbelow(89999999999999999999) + 10000000000000000000)
-		backend.loop.create_task(self._check_qry_sent(trid))
-		self.send_reply('CHL', 0, self.challenge)
+		challenge = self._new_challenge()
+		backend.loop.create_task(self._check_qry_sent(time.monotonic()))
+		self.send_reply('CHL', 0, challenge)
 	
-	async def _check_qry_sent(self, trid: str) -> None:
+	async def _check_qry_sent(self, sent: float) -> None:
 		await asyncio.sleep(50)
 		if not self.is_third_party_client:
-			if self.challenge:
-				self.send_reply(Err.ChallengeResponseFailed, trid)
+			if self.challenge_answered < sent and not self.closed:
+				self.send_reply('OUT')
 				self.close()
 				return
 	
@@ -2160,12 +2607,17 @@ class MSNPCtrlNS(MSNPCtrl):
 		other_user_ctc = detail.contacts.get(other_user.uuid)
 		if other_user_ctc is not None and other_user_ctc.lists & ContactList.BL:
 			raise error.ContactNotOnContactList()
-		if other_user_uuid not in bs.front_data['windowslive_chats']:
+		existing = bs.front_data['windowslive_chats'].get(other_user_uuid)
+		if existing is not None and (existing[0].closed or existing[1].group_id is not None):
+			del bs.front_data['windowslive_chats'][other_user_uuid]
+			existing = None
+		if existing is None:
 			other_user_detail = self.backend._load_detail(other_user)
 			if other_user_detail is None: raise error.ContactNotOnline()
 			ctc_self = other_user_detail.contacts.get(user.uuid)
 			if ctc_self is not None:
 				if ctc_self.lists & ContactList.BL: raise error.ContactNotOnline()
+			if other_user.status.is_offlineish(): raise error.ContactNotOnline()
 			chat = self.backend.chat_create()
 			chat.front_data['windowslive'] = True
 			
@@ -2173,10 +2625,17 @@ class MSNPCtrlNS(MSNPCtrl):
 			evt = ChatEventHandler(self.backend.loop, self, bs)
 			cs = chat.join('msn', bs, evt)
 			bs.front_data['windowslive_chats'][other_user_uuid] = (cs, evt)
-			cs.invite(other_user)
+			# `other_user` is invited with the first message (`ChatEventHandler._send_when_user_joins`)
 		elif other_user.status.is_offlineish():
 			raise error.ContactNotOnline()
 		return bs.front_data['windowslive_chats'].get(other_user_uuid)
+	
+	def _update_presence_data(self, fields: Dict[str, Any]) -> None:
+		bs = self.bs
+		assert bs is not None
+		for bs_other in self.backend.util_get_sessions_by_user(bs.user):
+			if bs_other.front_data.get('msn') is not True: continue
+			bs_other.front_data.update(fields)
 
 class BackendEventHandler(event.BackendEventHandler):
 	__slots__ = ('ctrl', 'loop')
@@ -2188,15 +2647,31 @@ class BackendEventHandler(event.BackendEventHandler):
 		self.ctrl = ctrl
 		self.loop = loop
 
-	def on_client_alert(self, icon_url: Optional[str], url: Optional[str], message: str = '') -> None:
+	def on_client_alert(self, alert: Alert) -> bool:
 		bs = self.ctrl.bs
 		assert bs is not None
 		user = bs.user
+		
+		return self.ctrl._send_alert(alert, user)
 
-		self.ctrl.send_reply('NOT', encode_payload(PAYLOAD_MSG_10,
-			email = self.ctrl.backend.util_get_display_email(user), icon = icon_url, url = url,
-			msg = message,
-		))
+	def on_warning_level_changed(self, level: int, warner: Optional[User]) -> None:
+		bs = self.ctrl.bs
+		if bs is None: return
+		level_old = bs.front_data.get('msn_warning_level', 0)
+		bs.front_data['msn_warning_level'] = level
+		if level <= level_old: return
+		who = ('Someone' if warner is None else (warner.status.name or self.ctrl.backend.util_get_display_email(warner)))
+		self.ctrl._send_alert(Alert(
+			text = '{} warned you. Your warning level is now {}%; the higher it is, the slower you can send messages.'.format(who, (level + 9) // 10),
+		), bs.user)
+
+	def msn_on_page(self, sender: User, text: str) -> bool:
+		# A page arrives as a message from the sender's mobile device (`IPG`, MSNP6 on)
+		ctrl = self.ctrl
+		bs = ctrl.bs
+		if bs is None or ctrl.closed or ctrl.dialect < 6: return False
+		ctrl.send_reply('IPG', _ipg_payload(ctrl.backend, 0, bs.user, sender, '', 0, text))
+		return True
 
 	def on_maintenance_message(self, *args: Any, **kwargs: Any) -> None:
 		if args[0] == 1 and args[1] < 0: return
@@ -2233,7 +2708,7 @@ class BackendEventHandler(event.BackendEventHandler):
 		if update_status or update_info_other:
 			for m in build_presence_notif(
 				trid, old_substatus, ctc.head, user, self.ctrl.dialect, self.ctrl.backend, self.ctrl.iln_sent, update_info_other,
-				update_status = update_status,
+				update_status = update_status, announced_epids = bs.front_data.setdefault('msn_announced_epids', {}),
 			):
 				self.ctrl.send_reply(*m)
 			return
@@ -2246,6 +2721,7 @@ class BackendEventHandler(event.BackendEventHandler):
 		if update_status or update_info:
 			for m in build_presence_notif(
 				None, old_substatus, user, user, self.ctrl.dialect, self.ctrl.backend, self.ctrl.iln_sent, update_info, self_presence = True,
+				announced_epids = bs.front_data.setdefault('msn_announced_epids', {}),
 			):
 				self.ctrl.send_reply(*m)
 			return
@@ -2255,15 +2731,29 @@ class BackendEventHandler(event.BackendEventHandler):
 	) -> None:
 		if circle and self.ctrl.circle_authenticated:
 			self.msn_on_notify_ab()
+		elif circle:
+			return
 		else:
 			if self.ctrl.dialect >= 19:
 				if chat is None:
-					chat = self.backend.chat_create()
+					chat = self.ctrl.backend.chat_create()
 					chat.add_id('windowslive', chat.ids['main'])
+				others = [user_other for user_other in _chat_users(chat) if user_other is not self.bs.user]
+				if 'tempgroup' in chat.ids or len(others) >= 2:
+					group_id = _ensure_group_id(chat)
+					chat.front_data.setdefault('msn_tempgroup_invited', set()).add(self.bs.user.uuid)
+					send_group_roster(self.ctrl, self.bs, group_id, [
+						(self.ctrl.backend.util_get_display_email(user_other), False) for user_other in others
+					] + [(self.ctrl.backend.util_get_display_email(self.bs.user), True)], full = True)
+					return
 				evt = ChatEventHandler(self.loop, self.ctrl, self.bs)
-				cs = chat.join('msn', self.bs, evt)
+				cs = chat.join('msn', self.bs, evt, pop_id = _join_pop_id(chat, self.bs))
 				chat.send_participant_joined(cs)
-				self.bs.front_data['windowslive_chats'][inviter.uuid] = (cs, evt)
+				peer = inviter
+				if inviter is self.bs.user:
+					peer = _private_chat_peer(cs, self.bs.user)
+				if peer is not None:
+					self.bs.front_data['windowslive_chats'][peer.uuid] = (cs, evt)
 				return
 			else:
 				extra = () # type: Tuple[Any, ...]
@@ -2348,10 +2838,26 @@ class BackendEventHandler(event.BackendEventHandler):
 	def msn_on_oim_deletion(self, oims_deleted: int) -> None:
 		if self.ctrl.iln_sent and self.ctrl.dialect >= 11:
 			self.ctrl.send_reply('MSG', 'Hotmail', 'Hotmail', encode_payload(PAYLOAD_MSG_3, oims_deleted = str(oims_deleted)))
-	
+
+	def msn_on_own_chat(self, chat: Chat, other_user_uuid: str) -> None:
+		ctrl = self.ctrl
+		bs = ctrl.bs
+		if bs is None or ctrl.closed or ctrl.dialect < 19:
+			return
+		windowslive_chats = bs.front_data.get('windowslive_chats')
+		if windowslive_chats is None:
+			return
+		existing = windowslive_chats.get(other_user_uuid)
+		if existing is not None and not existing[0].closed:
+			return
+		evt = ChatEventHandler(self.loop, ctrl, bs)
+		cs = chat.join('msn', bs, evt, pop_id = _join_pop_id(chat, bs))
+		chat.send_participant_joined(cs)
+		windowslive_chats[other_user_uuid] = (cs, evt)
+
 	def msn_on_uun_sent(
-		self, sender: User, type: int, data: Optional[bytes], *,
-		pop_id_sender: Optional[str] = None, pop_id: Optional[str] = None,
+		self, sender: User, type: Optional[int], data: Optional[bytes], *,
+		pop_id_sender: Optional[str] = None, pop_id: Optional[str] = None, sdg: Optional[bytes] = None,
 	) -> None:
 		ctrl = self.ctrl
 		bs = ctrl.bs
@@ -2360,16 +2866,60 @@ class BackendEventHandler(event.BackendEventHandler):
 		if ctrl.dialect < 13:
 			return
 		
-		if pop_id is not None and 'msn_pop_id' in bs.front_data:
-			pop_id_self = bs.front_data.get('msn_pop_id') or ''
+		pop_id_self = bs.front_data.get('msn_pop_id')
+		if pop_id is not None and pop_id_self is not None:
 			if normalize_pop_id(pop_id).lower() != pop_id_self.lower(): return
+		if sender.uuid == bs.user.uuid and pop_id_sender is not None and pop_id_sender == pop_id_self: return
 		
-		if pop_id_sender is not None and pop_id is not None and ctrl.dialect >= 16:
-			email = '{};{}'.format(self.ctrl.backend.util_get_display_email(sender), '{' + pop_id_sender + '}')
-		else:
-			email = self.ctrl.backend.util_get_display_email(sender)
+		sender_email = ctrl.backend.util_get_display_email(sender)
 		
-		self.ctrl.send_reply('UBN', email, type, data)
+		if ctrl.dialect >= 19:
+			if sdg is not None:
+				ctrl.send_reply('SDG', 0, sdg)
+				return
+			user_email = ctrl.backend.util_get_display_email(bs.user)
+			if type in (4, 8):
+				payload = '<user><sep n="IM" epid="{{{}}}"/></user>'.format(pop_id_self or '')
+				ctrl.send_reply('NFY', 'DEL', encode_payload(PAYLOAD_MSG_13, email = user_email, cl = len(payload), payload = payload))
+			elif type == 6:
+				self.msn_on_notify_ab()
+			elif type in SDG_SIGNALS:
+				(message_type, service_channel) = SDG_SIGNALS[type]
+				body = data or b''
+				if type == 5:
+					chat = ctrl.backend.chat_get('main', body.decode('utf-8', 'replace').split(';', 1)[0].strip())
+					if chat is None: return
+					body = '/'.join(
+						'1:' + ctrl.backend.util_get_display_email(cs_other.user)
+						for cs_other in chat.get_roster_single() if cs_other.user.uuid != bs.user.uuid
+					).encode('utf-8')
+				ctrl.send_reply('SDG', 0, encode_payload(PAYLOAD_MSG_12,
+					to_email = _encode_email_epid(user_email, pop_id_self), from_email = _encode_email_epid(sender_email, pop_id_sender),
+					service_channel = service_channel, message_type = message_type, cl = len(body),
+				) + body)
+			return
+		
+		if type is None:
+			return
+		if sdg is not None:
+			if type == 3 and not get_session_capabilities(bs, ctrl.dialect)[0] & CAPABILITIES_P2P_BOOTSTRAP_VIA_UUN:
+				return
+			if type == 5:
+				parties = { party.split(':', 1)[-1].lower() for party in (data or b'').decode('utf-8', 'replace').split('/') if party }
+				for chat in ctrl.backend.get_chats_by_scope('main'):
+					roster = chat.get_roster()
+					if not any(cs_other.bs is bs for cs_other in roster): continue
+					if { ctrl.backend.util_get_display_email(cs_other.user).lower() for cs_other in roster if cs_other.user.uuid != bs.user.uuid } == parties:
+						data = '{};{}:1865'.format(chat.ids['main'], settings.TARGET_IP).encode('utf-8')
+						break
+				else:
+					return
+		
+		ctrl.send_reply('UBN', (encode_email_pop(sender_email, pop_id_sender) if ctrl.dialect >= 16 else sender_email), type, data)
+	
+	def msn_on_whats_new(self, publisher: User) -> None:
+		if self.ctrl.dialect < 13: return
+		self.msn_on_notify_ab()
 	
 	def msn_on_notify_ab(self) -> None:
 		bs = self.ctrl.bs
@@ -2468,17 +3018,21 @@ class BackendEventHandler(event.BackendEventHandler):
 		self.ctrl.close()
 
 class ChatEventHandler(event.ChatEventHandler):
-	__slots__ = ('loop', 'ctrl', 'bs', 'cs')
+	__slots__ = ('loop', 'ctrl', 'bs', 'cs', 'pending', 'group_id')
 	
 	loop: asyncio.AbstractEventLoop
 	ctrl: MSNPCtrlNS
 	bs: Optional[BackendSession]
 	cs: ChatSession
+	pending: Dict[str, List[MessageData]]
+	group_id: Optional[str]
 	
 	def __init__(self, loop: asyncio.AbstractEventLoop, ctrl: MSNPCtrlNS, bs: BackendSession) -> None:
 		self.loop = loop
 		self.ctrl = ctrl
 		self.bs = bs
+		self.pending = {}
+		self.group_id = None
 	
 	def on_close(self) -> None:
 		bs = self.ctrl.bs
@@ -2487,9 +3041,14 @@ class ChatEventHandler(event.ChatEventHandler):
 		
 		chat = self.cs.chat
 		circle = chat.circle
+		for key, front_key in ((self.group_id, 'windowslive_groups'), (_private_chat_peer_uuid(self.cs, user), 'windowslive_chats')):
+			conversations = bs.front_data.get(front_key)
+			if key is not None and conversations is not None and conversations.get(key, (None,))[0] is self.cs:
+				del conversations[key]
+		if circle is None: return
 		
-		membership = circle.memberships[user.uuid]
-		if membership.state == CircleState.Empty:
+		membership = circle.memberships.get(user.uuid)
+		if membership is not None and membership.state == CircleState.Empty:
 			for cs_other in chat.get_roster():
 				self.ctrl.send_reply('NFY', 'DEL', encode_payload(PAYLOAD_MSG_9,
 					to_email = self.ctrl.backend.util_get_display_email(user), nid = str(int(NetworkID.CIRCLE)), uuid = '00000000-0000-0000-0009-{}'.format(circle.chat_id),
@@ -2505,6 +3064,10 @@ class ChatEventHandler(event.ChatEventHandler):
 		chat = cs.chat
 		circle = chat.circle
 		if circle:
+			if cs_other is cs and initial_join and self.ctrl.dialect >= 19:
+				self.ctrl.send_reply('NFY', 'PUT', encode_payload(PAYLOAD_MSG_7,
+					email = _encode_email_epid(self.ctrl.backend.util_get_display_email(user), bs.front_data.get('msn_pop_id')), chat_id = circle.chat_id,
+				))
 			if (cs_other.user.status.substatus is Substatus.Invisible and cs_other.user is user) or not cs_other.user.status.is_offlineish():
 				if cs_other.user.uuid == circle.owner_uuid:
 					for m in build_presence_notif(
@@ -2522,6 +3085,38 @@ class ChatEventHandler(event.ChatEventHandler):
 			if not first_pop: return
 		
 			self.on_chat_roster_updated()
+		else:
+			if cs_other is not cs and cs_other.user is not user:
+				cast(Set[str], chat.front_data.get('msn_tempgroup_invited', set())).discard(cs_other.user.uuid)
+				if self.group_id is None and len(_chat_users(chat)) > 2:
+					self.become_group()
+				elif self.group_id is not None and first_pop:
+					self.send_group_roster([(self.ctrl.backend.util_get_display_email(cs_other.user), False)], full = False)
+			for data in self.pending.pop(cs_other.user.uuid, ()):
+				cs.send_message_to_user(cs_other.user.uuid, data)
+	
+	def become_group(self) -> None:
+		bs = self.ctrl.bs
+		assert bs is not None
+		self.group_id = _ensure_group_id(self.cs.chat)
+		chats = bs.front_data.get('windowslive_chats') or {}
+		for uuid, (cs_other, _) in list(chats.items()):
+			if cs_other is self.cs:
+				del chats[uuid]
+		bs.front_data.setdefault('windowslive_groups', {})[self.group_id] = (self.cs, self)
+		self.send_group_roster(self.group_members(pending_self = True), full = True)
+
+	def group_members(self, *, pending_self: bool = False) -> List[Tuple[str, bool]]:
+		bs = self.ctrl.bs
+		assert bs is not None
+		return [
+			(self.ctrl.backend.util_get_display_email(other), pending_self and other is bs.user) for other in _chat_users(self.cs.chat)
+		]
+	
+	def send_group_roster(self, users: List[Tuple[str, bool]], *, full: bool) -> None:
+		bs = self.ctrl.bs
+		assert bs is not None and self.group_id is not None
+		send_group_roster(self.ctrl, bs, self.group_id, users, full = full)
 	
 	def on_participant_left(self, cs_other: ChatSession, last_pop: bool) -> None:
 		bs = self.ctrl.bs
@@ -2534,12 +3129,18 @@ class ChatEventHandler(event.ChatEventHandler):
 		
 		if last_pop:
 			if circle:
-				membership = circle.memberships[cs_other.user.uuid]
-				if membership.state == CircleState.Empty:
+				membership = circle.memberships.get(cs_other.user.uuid)
+				if membership is None or membership.state == CircleState.Empty:
 					self.ctrl.send_reply('NFY', 'DEL', encode_payload(PAYLOAD_MSG_9,
 						to_email = self.ctrl.backend.util_get_display_email(user), nid = str(int(NetworkID.CIRCLE)), uuid = '00000000-0000-0000-0009-{}'.format(circle.chat_id),
 						from_email = self.ctrl.backend.util_get_display_email(cs_other.user),
 					))
+			elif self.group_id is not None and cs_other.user is not user:
+				self.ctrl.send_reply('NFY', 'DEL', encode_payload(PAYLOAD_MSG_9,
+					to_email = _encode_email_epid(self.ctrl.backend.util_get_display_email(user), bs.front_data.get('msn_pop_id')),
+					nid = str(int(NetworkID.TEMPORARYGROUP)), uuid = self.group_id,
+					from_email = self.ctrl.backend.util_get_display_email(cs_other.user),
+				))
 	
 	def on_chat_invite_declined(
 		self, chat: Chat, invitee: User, *, invitee_id: Optional[str] = None,
@@ -2602,8 +3203,8 @@ class ChatEventHandler(event.ChatEventHandler):
 		chat = cs.chat
 		circle = chat.circle
 		
-		membership = circle.memberships[cs_other.user.uuid]
-		if membership.state == CircleState.Empty: return
+		membership = circle.memberships.get(cs_other.user.uuid)
+		if membership is None or membership.state == CircleState.Empty: return
 		
 		if not (initial and cs_other.user.status.is_offlineish()):
 			for m in build_presence_notif(
@@ -2627,29 +3228,43 @@ class ChatEventHandler(event.ChatEventHandler):
 		chat = cs.chat
 		circle = chat.circle
 		if data.type is not MessageType.TypingDone:
+			dest_pop_id = data.front_cache.get('msn_p2p_dest_pop_id')
+			if dest_pop_id is not None and (bs.front_data.get('msn_pop_id') or '').lower() != dest_pop_id.lower(): return
 			if data.sender is bs.user and data.sender_pop_id == bs.front_data.get('msn_pop_id'):
-				self.ctrl.send_reply('SDG', 0, messagedata_to_sdg(self, data, user))
+				sdg = messagedata_to_sdg(self, data, user)
 			else:
-				self.ctrl.send_reply('SDG', 0, messagedata_to_sdg(self, data, user, circle = circle))
-
+				sdg = messagedata_to_sdg(self, data, user, circle = circle, group_id = self.group_id)
+			if sdg is not None:
+				self.ctrl.send_reply('SDG', 0, sdg)
+	
 	def _send_when_user_joins(self, user_uuid: str, data: MessageData) -> None:
+		if self._user_in_chat(user_uuid):
+			for data_pending in self.pending.pop(user_uuid, ()):
+				self.cs.send_message_to_user(user_uuid, data_pending)
+			self.cs.send_message_to_everyone(data)
+			return
+		
 		# Send to everyone currently in chat
 		self.cs.send_message_to_everyone(data)
 		
-		if self._user_in_chat(user_uuid):
+		pending = self.pending.get(user_uuid)
+		if pending is None:
+			pending = self.pending[user_uuid] = [data]
+			user_other = self.ctrl.backend._load_user_record(user_uuid)
+			try:
+				if user_other is not None:
+					self.cs.invite(user_other)
+			except Exception:
+				if self.pending.get(user_uuid) is pending:
+					del self.pending[user_uuid]
+				raise
+			self.loop.call_later(PENDING_TIMEOUT, self._expire_pending, user_uuid, pending)
 			return
-		
-		# If `user_uuid` hasn't joined yet, send it later
-		self.loop.create_task(self._send_delayed(user_uuid, data))
-
-	async def _send_delayed(self, user_uuid: str, data: MessageData) -> None:
-		delay = 0.1
-		for _ in range(3):
-			await asyncio.sleep(delay)
-			delay *= 3
-			if self._user_in_chat(user_uuid):
-				self.cs.send_message_to_user(user_uuid, data)
-				return
+		pending.append(data)
+	
+	def _expire_pending(self, user_uuid: str, pending: List[MessageData]) -> None:
+		if self.pending.get(user_uuid) is pending:
+			del self.pending[user_uuid]
 	
 	def _user_in_chat(self, user_uuid: str) -> bool:
 		for cs_other in self.cs.chat.get_roster():
@@ -2666,6 +3281,20 @@ def _get_circle_roster(self, chat: Chat, cs: ChatSession) -> str:
 					or cs1.user is not cs.user)
 	
 	return users
+
+def _ipg_payload(
+	backend: Backend, notification_id: int, to_user: User, from_user: Optional[User], from_email: str, msg_id: int, text: str,
+) -> bytes:
+	(to_high, to_low) = uuid_to_high_low(to_user.uuid)
+	(from_high, from_low) = (uuid_to_high_low(from_user.uuid) if from_user is not None else (0, 0))
+	to_email = backend.util_get_display_email(to_user)
+	if from_user is not None:
+		from_email = backend.util_get_display_email(from_user)
+	return IPG_PAYLOAD.format(
+		id = notification_id, siteurl = quoteattr(settings.ALERT_SITE_URL), to_pid = quoteattr(puid(to_high, to_low)),
+		to_email = quoteattr(to_email), from_pid = quoteattr(puid(from_high, from_low)), from_email = quoteattr(from_email),
+		msg_id = msg_id, text = xml_escape(text),
+	).replace('\n', '\r\n').encode('utf-8')
 
 def _split_email_epid(email: str) -> Tuple[str, NetworkID, Optional[str]]:
 	email_epid = email.split(';', 1)
@@ -2686,113 +3315,232 @@ def _split_email_sdg(email: str) -> Tuple[str, NetworkID, Optional[str]]:
 def _encode_email_epid(email: str, pop_id: Optional[str]) -> str:
 	return f'{email};epid={{{pop_id}}}' if pop_id else email
 
-def messagedata_from_sdg(sender: User, sender_pop_id: Optional[str], data: bytes, i: int) -> Optional[MessageData]:
+def _err_code(ex: Exception, dialect: int) -> int:
 	try:
-		j = data.index(b'\r\n\r\n', i) + 4
-		sdg_messaging = data[j:]
-		n = sdg_messaging.index(b'\r\n\r\n') + 4
-		headers = Parser().parsestr(sdg_messaging[:n].decode('utf-8'))
-		body_raw = sdg_messaging[n:]
+		return Err.GetCodeForException(ex, dialect)
+	except ValueError:
+		return Err.InternalServerError
 
-		content_length = headers.get('Content-Length')
-		if content_length is None:
-			return None
+def _join_pop_id(chat: Chat, bs: BackendSession) -> Optional[str]:
+	pop_id = bs.front_data.get('msn_pop_id')
+	if pop_id is None: return None
+	for user_other, pop_id_other in chat._users_by_sess.values():
+		if user_other is bs.user and pop_id_other is None: return None
+	return pop_id
 
-		message_length = int(str(content_length))
-		if len(body_raw) < message_length:
-			return None
+def _private_chat_peer(cs: ChatSession, user: User) -> Optional[User]:
+	for cs_other in cs.chat.get_roster():
+		if cs_other.user is not user: return cs_other.user
+	return None
 
-		body_raw = body_raw[:message_length]
-		message_type_str = str(headers.get('Message-Type'))
-		message_subtype = str(headers.get('Message-Subtype', ''))
+def _private_chat_peer_uuid(cs: ChatSession, user: User) -> Optional[str]:
+	peer = _private_chat_peer(cs, user)
+	return (peer.uuid if peer is not None else None)
 
-		type_mapping = {
-			'Text': MessageType.Chat,
-			'Nudge': MessageType.Nudge,
-			'Control': MessageType.Typing if message_subtype == 'Typing' else MessageType.Chat,
-			'Control/Typing': MessageType.Typing,
-			'Data': MessageType.MSNP2P,
-			'Signal/P2P': MessageType.MSNP2PInvite
-		}
+def send_group_roster(ctrl: 'MSNPCtrlNS', bs: BackendSession, group_id: str, users: List[Tuple[str, bool]], *, full: bool) -> None:
+	payload = _group_roster_payload(users)
+	ctrl.send_reply('NFY', 'PUT', encode_payload(PAYLOAD_MSG_15,
+		to_email = _encode_email_epid(ctrl.backend.util_get_display_email(bs.user), bs.front_data.get('msn_pop_id')), group_id = group_id,
+		notif_type = ('Full' if full else 'Partial'), cl = len(payload.encode('utf-8')), payload = payload,
+	))
 
-		type = type_mapping.get(message_type_str, MessageType.Chat)
-		text = body_raw.decode('utf-8') if type == MessageType.Chat or MessageType.MSNP2P else ''
+def _chat_users(chat: Chat) -> List[User]:
+	users = [] # type: List[User]
+	for cs_other in chat.get_roster():
+		if cs_other.user not in users: users.append(cs_other.user)
+	return users
+
+def _ensure_group_id(chat: Chat) -> str:
+	group_id = chat.ids.get('tempgroup')
+	if group_id is None:
+		group_id = gen_uuid().lower()
+		chat.add_id('tempgroup', group_id)
+	return group_id
+
+def _parse_address(address: str) -> Tuple[Optional[NetworkID], str, Dict[str, str]]:
+	parts = address.strip().split(';')
+	params = {} # type: Dict[str, str]
+	for part in parts[1:]:
+		if '=' not in part: continue
+		name, value = part.split('=', 1)
+		params[name.strip().lower()] = value.strip()
+	try:
+		networkid, account = decode_email_networkid(parts[0])
+	except (ValueError, IndexError):
+		return None, parts[0], params
+	return networkid, account, params
+
+def _parse_multimime(data: bytes) -> Tuple[Any, Any, Any, bytes]:
+	i = data.index(b'\r\n\r\n') + 4
+	j = data.index(b'\r\n\r\n', i) + 4
+	try:
+		k = data.index(b'\r\n\r\n', j) + 4
+	except ValueError:
+		k = len(data)
+	routing = Parser().parsestr(data[:i].decode('utf-8'))
+	reliability = Parser().parsestr(data[i:j].decode('utf-8'))
+	content = Parser().parsestr(data[j:k].decode('utf-8'))
+	body = data[k:]
+	content_length = str(content.get('Content-Length') or '').strip()
+	if content_length.isdigit():
+		body = body[:int(content_length)]
+	return routing, reliability, content, body
+
+def _group_roster_payload(users: List[Tuple[str, bool]]) -> str:
+	return CIRCLE.format(CIRCLE_ROSTER.format(users = ''.join(
+		TEMPGROUP_USER.format(email = email, state = (TEMPGROUP_USER_PENDING if pending else '')) for email, pending in users
+	)))
+
+def _slp_signal_parties(slp_data: bytes) -> Tuple[Optional[str], Optional[str]]:
+	slp = parse_slp(slp_data)
+	if slp is None: return None, None
+	def strip(value: Optional[str]) -> Optional[str]:
+		if value is None: return None
+		value = value.strip().strip('<>')
+		return value.split(':', 1)[1] if value.lower().startswith('msnmsgr:') else value
+	return strip(slp.get('To')), strip(slp.get('From'))
+
+def _parse_sdg_messaging(data: bytes, i: int) -> Tuple[Any, bytes]:
+	j = data.index(b'\r\n\r\n', i) + 4
+	k = data.index(b'\r\n\r\n', j) + 4
+	headers = Parser().parsestr(data[j:k].decode('utf-8'))
+	body = data[k:]
+	content_length = headers.get('Content-Length')
+	if content_length is not None:
+		body = body[:int(str(content_length))]
+	return headers, body
+
+def messagedata_from_sdg(sender: User, sender_pop_id: Optional[str], data: bytes, i: int) -> MessageData:
+	front_cache = { 'msnp_sdg': data } # type: Dict[str, Any]
+	try:
+		headers, body_raw = _parse_sdg_messaging(data, i)
+		message_type = str(headers.get('Message-Type'))
+		
+		if message_type == 'Text':
+			type = MessageType.Chat
+			text = body_raw.decode('utf-8') # type: Any
+			if headers.get('X-MMS-IM-Format') is not None:
+				front_cache['msn_im_format'] = str(headers.get('X-MMS-IM-Format'))
+		elif message_type == 'Nudge':
+			type = MessageType.Nudge
+			text = ''
+		elif message_type == 'Control/Typing' or (message_type == 'Control' and headers.get('Message-Subtype') == 'Typing'):
+			type = MessageType.Typing
+			text = ''
+		elif message_type == 'Control/ClearTyping':
+			type = MessageType.TypingDone
+			text = ''
+		elif message_type == 'Data':
+			type = MessageType.MSNP2P
+			text = body_raw
+			front_cache['msn_p2p'] = split_sdg_p2p(body_raw, str(headers.get('Bridging-Offsets') or '0'))
+			if str(headers.get('Pipe') or '').isdigit():
+				front_cache['msn_sdg_pipe'] = int(str(headers.get('Pipe')))
+		elif message_type == 'CustomEmoticon':
+			type = MessageType.Emoticon
+			text = body_raw
+			front_cache['msn_emoticon'] = headers.get_content_type()
+		elif message_type in DATACAST_MSNOBJ.values():
+			type = MessageType.Other
+			text = body_raw.decode('utf-8')
+			front_cache['msn_datacast'] = next(id for id, datacast_type in DATACAST_MSNOBJ.items() if datacast_type == message_type)
+		elif message_type.startswith('Signal/'):
+			type = MessageType.Ignored
+			text = ''
+		else:
+			raise ValueError(message_type)
 	except Exception:
 		type = MessageType.Chat
-		text = "CrossTalk System Message: This message cannot be viewed on the client you're currently using."
-
-	message = MessageData(sender=sender, sender_pop_id=sender_pop_id, type=type, text=text)
-	message.front_cache['msnp_sdg'] = data
+		text = UNSUPPORTED_MESSAGE_TEXT
+	
+	message = MessageData(sender = sender, sender_pop_id = sender_pop_id, type = type, text = text)
+	message.front_cache.update(front_cache)
 	return message
 
-def messagedata_to_sdg(self, data: MessageData, user: User, *, circle: Optional[Circle] = None) -> bytes:
-	if 'msnp_sdg' not in data.front_cache:
-		text = data.text or (b'' if data.type == MessageType.MSNP2P else '')
-		if data.type == MessageType.Typing:
-			if circle:
-				s = (
-					f'Content-Length: 2\r\nContent-Type: text/x-msmsgscontrol\r\n'
-					f'Content-Transfer-Encoding: 7bit\r\nMessage-Type: Control\r\n'
-					f'Message-Subtype: Typing\r\nMIME-Version: 1.0\r\nTypingUser: {self.ctrl.backend.util_get_display_email(data.sender)}\r\n\r\n\r\n'
-				).encode('utf-8')
-			else:
-				s = 'Message-Type: Control/Typing\r\nContent-Length: 0\r\n\r\n'.encode('utf-8')
-		elif data.type == MessageType.Nudge:
-			s = (
-				'Content-Length: 9\r\nContent-Type: text/plain; charset=UTF-8\r\n'
-				'Content-Transfer-Encoding: 7bit\r\nMessage-Type: Nudge\r\n'
-				'MIME-Version: 1.0\r\n\r\nID: 1\r\n\r\n'
-			).encode('utf-8')
-		elif data.type == MessageType.Chat:
-			s = (
-				f'Content-Length: {len(text)}\r\nContent-Type: text/plain; charset=UTF-8\r\n'
-				f'Content-Transfer-Encoding: 7bit\r\nMessage-Type: Text\r\n'
-				f'MIME-Version: 1.0\r\n\r\n'
-			).encode('utf-8') + text.encode('utf-8')
-		elif data.type == MessageType.MSNP2P:
-			s = (
-				b'Bridging-Offsets: 0\r\n'
-				+ f'Content-Length: {len(text)}\r\n'.encode()
-				+ b'Content-Transfer-Encoding: binary\r\n'
-				+ b'Content-Type: application/x-msnmsgrp2p\r\n'
-				+ b'Message-Type: Data\r\n\r\n'
-				+ text
-			)
-		elif data.type == MessageType.MSNP2PInvite:
-			s = (
-				f'Content-Length: {len(text)}\r\n'.encode()
-				+ b'Content-Type: text/plain; charset=UTF-8\r\n'
-				+ b'Message-Type: Signal/P2P\r\n\r\n'
-			).encode('utf-8') + text.encode('utf-8')
-		else:
-			raise ValueError("Unknown message type", data.type)
-
-		sender_display_email = self.ctrl.backend.util_get_display_email(data.sender)
+def messagedata_to_sdg(self, data: MessageData, user: User, *, circle: Optional[Circle] = None, group_id: Optional[str] = None) -> Optional[bytes]:
+	if data.type == MessageType.MSNP2P and 'msnp_sdg' not in data.front_cache:
+		pop_id = self.bs.front_data.get('msn_pop_id')
+		state = get_p2p_state(self.cs.chat.front_data, user.uuid, data.sender.uuid)
 		user_display_email = self.ctrl.backend.util_get_display_email(user)
-
-		to = f'9:00000000-0000-0000-0009-{circle.chat_id}@live.com;path=IM' if circle else f'1:{_encode_email_epid(user_display_email, self.bs.front_data.get('msn_pop_id'))}'
-		pre = f'Routing: 1.0\r\nTo: {to}\r\n'
-
-		if data.type == MessageType.MSNP2P:
-			pre += 'Options: 0\r\nService-Channel: PE\r\n'
+		(dest_email, dest_pop_id) = decode_email_pop(data.front_cache.get('msn_p2p_dest') or '')
+		if dest_email and dest_email.lower() not in (user.email.lower(), user_display_email.lower()): return None
+		p2pv2 = bool(data.front_cache.get('msn_p2pv2', dest_pop_id is not None))
+		dest_pop_id = (normalize_pop_id(dest_pop_id) if dest_pop_id is not None else state.get('pop_id'))
+		if dest_pop_id is not None and pop_id is not None and dest_pop_id.lower() != pop_id.lower(): return None
+		return build_sdg_data(
+			_encode_email_epid(user_display_email, pop_id),
+			_encode_email_epid(self.ctrl.backend.util_get_display_email(data.sender), (data.sender_pop_id if p2pv2 else None)), [data.text], state['pipe'],
+		)
+	if 'msnp_sdg' in data.front_cache:
+		return data.front_cache['msnp_sdg']
+	
+	sender_display_email = self.ctrl.backend.util_get_display_email(data.sender)
+	user_display_email = self.ctrl.backend.util_get_display_email(user)
+	
+	if data.type == MessageType.Typing:
+		if circle or group_id:
+			s = (
+				f'Content-Length: 2\r\nContent-Type: text/x-msmsgscontrol\r\n'
+				f'Content-Transfer-Encoding: 7bit\r\nMessage-Type: Control\r\n'
+				f'Message-Subtype: Typing\r\nMIME-Version: 1.0\r\nTypingUser: {sender_display_email}\r\n\r\n\r\n'
+			).encode('utf-8')
 		else:
-			pre += 'Service-Channel: IM/Online\r\n'
+			s = 'Message-Type: Control/Typing\r\nContent-Length: 0\r\n\r\n'.encode('utf-8')
+	elif data.type == MessageType.Nudge:
+		s = (
+			'Content-Length: 9\r\nContent-Type: text/plain; charset=UTF-8\r\n'
+			'Content-Transfer-Encoding: 7bit\r\nMessage-Type: Nudge\r\n'
+			'MIME-Version: 1.0\r\n\r\nID: 1\r\n\r\n'
+		).encode('utf-8')
+	elif data.type == MessageType.Chat or data.type in (MessageType.Ink, MessageType.MSNP2PInvite):
+		if data.type is MessageType.Chat:
+			text = data.text or ''
+		elif data.type is MessageType.Ink or b'Invitation-Command: INVITE' in (data.front_cache.get('msnp') or b''):
+			text = UNSUPPORTED_MESSAGE_TEXT
+		else:
+			return None
+		body = text.encode('utf-8')
+		im_format = data.front_cache.get('msn_im_format')
+		s = (
+			f'Content-Length: {len(body)}\r\nContent-Type: text/plain; charset=UTF-8\r\n'
+			f'Content-Transfer-Encoding: 7bit\r\nMessage-Type: Text\r\n'
+			+ (f'X-MMS-IM-Format: {im_format}\r\n' if im_format else '')
+			+ f'MIME-Version: 1.0\r\n\r\n'
+		).encode('utf-8') + body
+	elif data.type == MessageType.Emoticon:
+		emoticons = (data.text if isinstance(data.text, bytes) else (data.text or '').encode('utf-8'))
+		s = (
+			f'Content-Length: {len(emoticons)}\r\nContent-Type: {data.front_cache.get("msn_emoticon") or "text/x-mms-emoticon"}\r\n'
+			f'Message-Type: CustomEmoticon\r\n\r\n'
+		).encode('utf-8') + emoticons
+	elif data.type == MessageType.Other and data.front_cache.get('msn_datacast') in DATACAST_MSNOBJ:
+		body = (data.text or '').encode('utf-8')
+		s = (
+			f'Message-Type: {DATACAST_MSNOBJ[data.front_cache["msn_datacast"]]}\r\nContent-Length: {len(body)}\r\n'
+			f'Content-Type: text/plain; charset=UTF-8\r\n\r\n'
+		).encode('utf-8') + body
+	else:
+		return None
 
-		timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
-		pre += f'Original-Arrival-Time: {timestamp}\r\n'
-		pre += f'From: 1:{_encode_email_epid(sender_display_email, data.sender_pop_id)}\r\n\r\n'
-		pre = pre.encode('utf-8')
+	if circle:
+		to = f'9:00000000-0000-0000-0009-{circle.chat_id}@live.com;path=IM'
+	elif group_id:
+		to = f'10:{group_id}@live.com;path=IM'
+	else:
+		to = f'1:{_encode_email_epid(user_display_email, self.bs.front_data.get("msn_pop_id"))}'
+	pre = f'Routing: 1.0\r\nTo: {to}\r\n'
+	pre += 'Service-Channel: IM/Online\r\n'
+	timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+	pre += f'Original-Arrival-Time: {timestamp}\r\n'
+	pre += f'From: 1:{_encode_email_epid(sender_display_email, data.sender_pop_id)}\r\n\r\n'
+	pre_bytes = pre.encode('utf-8')
 
-		r = 'Reliability: 1.0'
-		if circle:
-			r += '\r\nStream: 0\r\nSegment: 0'
-		r += '\r\n\r\n'
-		r += 'Messaging: 2.0\r\n'
-		r = r.encode('utf-8')
-
-		data.front_cache['msnp_sdg'] = pre + r + s
-
-	return data.front_cache['msnp_sdg']
+	r = 'Reliability: 1.0'
+	if circle or group_id:
+		r += '\r\nStream: 0\r\nSegment: 0'
+	r += '\r\n\r\n'
+	r += 'Messaging: 2.0\r\n'
+	return pre_bytes + r.encode('utf-8') + s
 
 PAYLOAD_MSG_0 = '''Routing: 1.0
 To: 1:{email_address};epid={endpoint_ID}
@@ -2966,27 +3714,139 @@ Inbox-Unread: {unread}
 Folders-Unread: 0
 Inbox-URL: /cgi-bin/MaiL
 Folders-URL: /cgi-bin/Folders
-Post-URL: http://mail.ugnet.gay
+Post-URL: http://mail.ugnet.xyz
 '''
+
+PUT_FRONT_DATA_KEYS = (
+	'msn_msnobj', 'msn_msnobj_ddp', 'msn_msnobj_scene', 'msn_colorscheme', 'msn_sigsound', 'msn_capabilities', 'msn_capabilitiesex',
+	'msn_PE', 'msn_PE_VER', 'msn_PE_TYP', 'msn_PE_capabilities', 'msn_PE_capabilitiesex', 'msn_client_type', 'msn_epname',
+	'msn_endpoint_idle', 'msn_ep_state', 'msn_pe_extra',
+)
+
+PENDING_TIMEOUT = 60
+
+SDG_SIGNALS = {
+	3: ('Signal/P2P', 'PE'),
+	5: ('Signal/CloseIMWindow', 'IM/Online'),
+	6: ('Signal/ForceAbchSync', 'PD'),
+	10: ('Signal/Turn', 'PE'),
+	12: ('Signal/AudioTunnel', 'IM/Online'),
+}
+SDG_SIGNAL_UUN_TYPES = { message_type: uun_type for uun_type, (message_type, _) in SDG_SIGNALS.items() }
+
+PAYLOAD_MSG_12 = '''Routing: 1.0
+To: 1:{to_email}
+From: 1:{from_email}
+Options: 0
+Service-Channel: {service_channel}
+
+Reliability: 1.0
+
+Messaging: 2.0
+Message-Type: {message_type}
+Content-Type: text/plain; charset=UTF-8
+Content-Length: {cl}
+
+'''
+
+PAYLOAD_MSG_13 = '''Routing: 1.0
+To: 1:{email}
+From: 1:{email}
+
+Reliability: 1.0
+
+Notification: 1.0
+NotifNum: 0
+Uri: /user
+NotifType: Partial
+Content-Type: application/user+xml
+Content-Length: {cl}
+
+{payload}'''
+
+PAYLOAD_MSG_14 = '''Routing: 1.0
+To: 1:{to_email}
+From: 1:{from_email}
+
+Reliability: 1.0
+Stream: 1
+
+'''
+
+PAYLOAD_MSG_15 = '''Routing: 1.0
+To: 1:{to_email}
+From: 10:{group_id}@live.com
+
+Reliability: 1.0
+Stream: 0
+
+Notification: 1.0
+NotifNum: 0
+Uri: /circle
+NotifType: {notif_type}
+Content-Type: application/circles+xml
+Content-Length: {cl}
+
+{payload}'''
+
+PAYLOAD_MSG_16 = '''Routing: 1.0
+To: 1:{to_email}
+From: 10:{group_id}@live.com
+
+Reliability: 1.0
+
+Publication: 1.0
+Uri: /circle
+Content-Type: application/multiparty+xml
+Content-Length: 0
+
+'''
+
+TEMPGROUP_USER = '<user><id>1:{email}</id>{state}</user>'
+TEMPGROUP_USER_PENDING = '<state>Pending</state>'
+
+IPG_PAYLOAD = '''<NOTIFICATION id="{id}" siteid="111100400" siteurl={siteurl}>
+	<TO name={to_email} pid={to_pid} email={to_email}>
+		<VIA agent="mobile" />
+	</TO>
+	<FROM pid={from_pid} name={from_email} />
+	<MSG pri="1" id="{msg_id}">
+		<ACTION url="/" />
+		<SUBSCR url="/" />
+		<CAT id="110110001" />
+		<BODY lang="1033">
+			<TEXT>{text}</TEXT>
+		</BODY>
+	</MSG>
+</NOTIFICATION>'''
+
+MOBILE_ERR_USER_DISABLED = 551
+MOBILE_ERR_SMS_NOT_ALLOWED = 595
+
+ERR_SENDER_NOT_MEMBER = 250
+ERR_INVALID_CIRCLE = 252
+ERR_INVALID_TEMP_GROUP = 254
+ERR_SDG_THROTTLED = 801
 
 SHIELDS = '''<?xml version="1.0" encoding="utf-8" ?>
 <config>
 	<shield><cli maj="7" min="0" minbld="0" maxbld="9999" deny=" " /></shield>
 	<block></block>
 </config>'''.encode('utf-8')
-SHIELDS_MSNP13 = '''<Policies>
+GCF_POLICY_ABCH = '<policy><set id="push" service="ABCH" priority="200">\
+	  <r id="pushstorage" threshold="30000" />	</set><set id="delaysup" service="ABCH" priority="150">\
+  <r id="whatsnew" threshold="30000" />  <r id="whatsnew_storage_ABCH_delay" timer="30000" />\
+  <r id="whatsnewt_link" threshold="15000" trigger="QueryActivities" /></set>  <c id="PROFILE_Rampup">100</c></policy>'
+SHIELDS_MSNP13 = ('''<Policies>
 	<Policy type="SHIELDS" checksum="D9705A71BA841CB38955822E048970C3"><config> <shield>\
 <cli maj="7" min="0" minbld="0" maxbld="9999" deny=" " /></shield> <block></block></config></Policy>
-	<Policy type="ABCH" checksum="03DC55910A9CB79133F1576221A80346"><policy><set id="push" service="ABCH" priority="200">\
-	  <r id="pushstorage" threshold="180000" />	</set><set id="delaysup" service="ABCH" priority="150">\
-  <r id="whatsnew" threshold="1800000" />  <r id="whatsnew_storage_ABCH_delay" timer="1800000" />\
-  <r id="whatsnewt_link" threshold="900000" trigger="QueryActivities" /></set>  <c id="PROFILE_Rampup">100</c></policy></Policy>
+	<Policy type="ABCH" checksum="''' + md5(GCF_POLICY_ABCH.encode('utf-8')).hexdigest().upper() + '">' + GCF_POLICY_ABCH + '''</Policy>
 	<Policy type="ERRORRESPONSETABLE" checksum="6127EEDCE860F45C1692896F5248AF6F"><Policy> <Feature type="3" name="P2P">\
   <Entry hr="0x81000398" action="3"/>  <Entry hr="0x82000020" action="3"/> </Feature> <Feature type="4">\
   <Entry hr="0x81000440" /> </Feature> <Feature type="6" name="TURN">  <Entry hr="0x8007274C" action="3" />\
   <Entry hr="0x82000020" action="3" />  <Entry hr="0x8007274A" action="3" /> </Feature></Policy></Policy>
 	<Policy type="P2P" checksum="815D4F1FF8E39A85F1F97C4B16C45177"><ObjStr SndDly="1" /></Policy>
-</Policies>'''.encode('utf-8')
+</Policies>''').encode('utf-8')
 CIRCLE_ROSTER = '<roster><id>IM</id>{users}</roster>'
 CIRCLE_USER = '<user><id>1:{email}</id></user>'
 
@@ -2997,44 +3857,53 @@ TIMESTAMP = '2000-01-01T00:00:00.0-00:00'
 
 _QRY_KEYPAIRS = {
 	# MSNP6 - 9
-	'msmsgs@msnmsgr.com': ('Q1P7W2E4J9R8U3S5', 10),
-	'msntv@msnmsgr.com': ('<unknown>', 10), # found in MSN TV 2.7 build 16109
-	'macmsgr@msnmsgr.com': ('A8J3D5F7L3K2V6F4', 10),
-	'assist@msnmsgr.com': ('L2P3B7C6V9J4T8D5', 10),
-	'appshare@msnmsgr.com': ('W5N2C9D7A6P3K4J8', 10),
-	'pocketpc@msnmsgr.com': ('<unknown>', 10),
-	'TEST00578M1WM}RR': ('<unknown>', 10),
-	'PROD0038W!61ZTF9': ('VT6PX?UQTM4WM%YR', 10),
-	'PROD0058#7IL2{QD': ('QHDCY@7R1TB6W?5B', 10),
-	'PROD0061VRRZH@4F': ('JXQ6J@TUOGYV@N0M', 10),
-	'PROD0062I2RVG#RV': ('LPOFJ{8L6AM2N!G', 10),
-	'PROD0066X_86JBY8': ('%_IP#M2WDG247}@I', 10),
-	'PROD00678K?EPLA}': ('MP8JK{DUDLDMC{9L', 10),
-	'PROD0074Z}QA4HPI': ('5JHDY@F5_KLEF?3O', 10),
-	'PROD0075THRTM{7!': ('WLJIQ$8LDLNI_J4Q', 10),
-	'PROD0076ENE8*@AW': ('CEQJ8}OE0!WTSWII', 10),
-	'PROD0039E3VGM%GB': ('B7WRX$T9S3875{68', 10), # found in MSN Messenger 4.7.0106
-	'PROD00504RLUG%WL': ('I2EBK%PYNLZL5_J4', 10),
-	'PROD00517IFH4@RV': ('MYRED!3QTCFWG@9G', 10), # found in Windows Messenger 5.1.0701
-	'PROD00444_M6XYJT': ('UMJBL@QN17VEI{5L', 10), # found in Messenger for Mac 3.0
-	'PROD0045YI56T?TX': ('FV!WOP5UKXO8$LV$', 10),
-	'PROD0046K9O#QFXY': ('8{B7#LEX_V5HV@SQ', 10),
+	'msmsgs@msnmsgr.com': 'Q1P7W2E4J9R8U3S5',
+	'msntv@msnmsgr.com': 'P3U6T9R8B4N3C2F5', # found in MSN TV 2.7 build 16109
+	'macmsgr@msnmsgr.com': 'A8J3D5F7L3K2V6F4',
+	'assist@msnmsgr.com': 'L2P3B7C6V9J4T8D5',
+	'appshare@msnmsgr.com': 'W5N2C9D7A6P3K4J8',
+	'pocketpc@msnmsgr.com': 'J2G1A7P4V9H3R6Q5',
+	'PROD0038W!61ZTF9': 'VT6PX?UQTM4WM%YR',
+	'PROD0058#7IL2{QD': 'QHDCY@7R1TB6W?5B',
+	'PROD0061VRRZH@4F': 'JXQ6J@TUOGYV@N0M',
+	'PROD0062I2RVG#RV': 'LPOFJ{8L6AM2N!G_',
+	'PROD0066X_86JBY8': '%_IP#M2WDG247}@I',
+	'PROD00678K?EPLA}': 'MP8JK{DUDLDMC{9L',
+	'PROD0074Z}QA4HPI': '5JHDY@F5_KLEF?3O',
+	'PROD0075THRTM{7!': 'WLJIQ$8LDLNI_J4Q',
+	'PROD0076ENE8*@AW': 'CEQJ8}OE0!WTSWII',
+	'PROD0039E3VGM%GB': 'B7WRX$T9S3875{68', # found in MSN Messenger 4.7.0106
+	'PROD00504RLUG%WL': 'I2EBK%PYNLZL5_J4',
+	'PROD00517IFH4@RV': 'MYRED!3QTCFWG@9G', # found in Windows Messenger 5.1.0701
+	'PROD00444_M6XYJT': 'UMJBL@QN17VEI{5L', # found in Messenger for Mac 3.0
+	'PROD0045YI56T?TX': 'FV!WOP5UKXO8$LV$',
+	'PROD0046K9O#QFXY': '8{B7#LEX_V5HV@SQ',
 	# MSNP11 - 12
-	'PROD008955JTJ_S7': ('DHCPQ$8JI5HD3{4L', 12),
-	'PROD0090YUAUV{2B': ('YMM8C_H7KCQ2S_KL', 12),
-	'PROD00974#MT*RC2': ('LMCVO*18PQJ3H!K3', 12),
-	'PROD0101{0RM?UBW': ('CFHUR$52U_{VIX5T', 12),
-	'PROD0102LUNTP%M?': ('JD5QT%#ILEBP5?LI', 12),
-	"PROD0104U6VVM{UJ": ('VK67B}379XYM5}$T', 12),
+	'PROD008955JTJ_S7': 'DHCPQ$8JI5HD3{4L',
+	'PROD0090YUAUV{2B': 'YMM8C_H7KCQ2S_KL',
+	'PROD00974#MT*RC2': 'LMCVO*18PQJ3H!K3',
+	'PROD0101{0RM?UBW': 'CFHUR$52U_{VIX5T',
+	'PROD0102LUNTP%M?': 'JD5QT%#ILEBP5?LI',
+	"PROD0104U6VVM{UJ": 'VK67B}379XYM5}$T',
 	# MSNP13 - 14
-	'PROD01065C%ZFN6F': ('O4BG@C7BWLYQX?5G', 14),
-	'PROD0112J1LW7%NB': ('RH96F{PHI8PPX_TJ', 14),
+	'PROD01065C%ZFN6F': 'O4BG@C7BWLYQX?5G',
+	'PROD0112J1LW7%NB': 'RH96F{PHI8PPX_TJ',
 	# MSNP15+
-	'PROD0113H11T8$X_': ('RG@XY*28Q5QHS%Q5', 21),
-	'PROD0114ES4Z%Q5W': ('PK}_A_0N_K%O?A9S', 21),
-	'PROD0116PE?TSI1': ('EXFK#_48PJR82_3G', 21),
-	'PROD0118R6%2WYOS': ('YIXPX@5I2P0UT*LK', 21),
-	'PROD0119GSJUC$18': ('ILTXC!4IXB5FB*PX', 21),
+	'PROD0113H11T8$X_': 'RG@XY*28Q5QHS%Q5',
+	'PROD0114ES4Z%Q5W': 'PK}_A_0N_K%O?A9S',
+	'PROD0116PE?TSI1_': 'EXFK#_48PJR82_3G',
+	'PROD0118R6%2WYOS': 'YIXPX@5I2P0UT*LK',
+	'PROD0119GSJUC$18': 'ILTXC!4IXB5FB*PX',
 	# Thanks J.M. for making the tweet with this WLM 2009 ID-key combo. ^_^
-	'PROD0120PW!CCV9@': ('C1BX{V4W}Q3*10SM', 21),
+	'PROD0120PW!CCV9@': 'C1BX{V4W}Q3*10SM',
+	'smartphone@msnmsgr.com': 'L3S9P4D5V7N1C6Z8',
+	'PROD0063ZIEAF}0V': 'WDHAC}O7WBHFV{3_',
+	'PROD00651XKFM@S@': '9B4E7$JG88YHX@LE',
+	'PROD00647HVX2{MN': 'DEVUD@2LO6HUE$EV',
+	'PROD0122P%C9%RV1': 'BN3WI}H4LUFPJ{2S',
+	'PROD0123E1_08UHK': 'PRXSC!2$!KJ7_MVW',
+	'PROD0121MRI8R?C_': 'R48!JWGWT$G4J74_',
+	'PROD0042@3Q14{82': 'LYIS1?Z4!WPG}L2R',
+	'PROD00437_19OG@3': '8V1G#ROXF1MYJ#4V',
+	'PROD0056U!SS0YG5': 'MOEXO_Y@G_94S$NF',
 }

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% from '_ui.html' import hub, csrf_field %}
+{% block content %}
+{{ hub('sessions', '{:,}'.format(count) ~ ' open' ~ (' in ' ~ program_names.get(program, program) if program else '') ~ '.') }}
+
+{% if programs %}
+<nav class="ct-pivot ct-pivot-sm mb-3" aria-label="Filter by client" data-ct-swap-pivot>
+	<a href="/sessions" data-ct-swap-link{% if not program %} aria-current="page"{% endif %}>everything <span class="ct-count">{{ total }}</span></a>
+	{% for p, name in programs %}<a href="/sessions?program={{ p | urlencode }}" data-ct-swap-link{% if p == program %} aria-current="page"{% endif %}>{{ name | lower }}</a>{% endfor %}
+</nav>
+{% endif %}
+
+{% if sessions %}
+<div class="ct-card adm-table-card">
+	<div class="table-responsive">
+		<table class="ct-table ct-table-stack">
+			<thead><tr><th scope="col">who</th><th scope="col">client</th><th scope="col">status</th><th scope="col" class="text-end"><span class="visually-hidden">actions</span></th></tr></thead>
+			<tbody>
+				{% for s in sessions %}
+				<tr>
+					<td><a href="/users/{{ s.uuid }}" data-ct-swap-link><strong>{{ s.username }}</strong></a><br><small class="ct-muted">{{ s.email }}</small></td>
+					<td data-label="client">{{ program_names.get(s.client.program, s.client.program) }} {{ s.client.version }}<br><small class="ct-muted">{{ s.client.via }}</small></td>
+					<td data-label="status">{% if s.visible %}<span class="ct-presence me-1" aria-hidden="true"></span>{% endif %}{{ s.status | lower }}</td>
+					<td class="text-end">
+						<form method="post" class="m-0">
+							{{ csrf_field(csrf) }}
+							<input type="hidden" name="session" value="{{ s.id }}">
+							<input type="hidden" name="program" value="{{ program }}">
+							<button type="submit" class="btn btn-sm btn-outline-danger">Sign out<span class="visually-hidden"> {{ s.username }} from {{ s.client.program }}</span></button>
+						</form>
+					</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+</div>
+{% else %}
+<p class="ct-muted">Nobody is signed in{% if program %} with {{ program_names.get(program, program) }}{% endif %}.</p>
+{% endif %}
+{% endblock %}

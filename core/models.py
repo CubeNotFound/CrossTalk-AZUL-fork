@@ -144,11 +144,36 @@ class Contact:
 		if found_group is not None:
 			self._groups.discard(group)
 
+AIM_PD_KEY = 'AIM_PD'
+AIM_SSI_KEY = 'AIM_SSI'
+AIM_CLASS_FREE = 0x0010
+
+def _aim_pd_mode(user: User) -> Optional[Dict[str, Any]]:
+	pd = user.settings.get(AIM_PD_KEY)
+	if not isinstance(pd, dict) or pd.get('mode') not in (1, 2, 3, 4, 5):
+		return None
+	if user.settings.get('BLP', 'AL') != pd.get('blp'):
+		return None
+	return pd
+
 def _is_blocking(blocker: User, blockee: User) -> bool:
 	detail = blocker.detail
 	assert detail is not None
 	contact = detail.contacts.get(blockee.uuid)
 	lists = (contact and contact.lists or 0)
+	pd = _aim_pd_mode(blocker)
+	if pd is not None:
+		mask = pd.get('mask')
+		if mask is not None and not (int(mask) & AIM_CLASS_FREE): return True
+		mode = pd['mode']
+		if mode == 1: return False
+		if mode == 2: return True
+		if mode == 4: return bool(lists & ContactList.BL)
+		if mode == 5: return not (lists & ContactList.FL)
+		# mode 3: only explicit permits (AL without FL, or AL entries the client listed itself) get through
+		name = blockee.username.lower()
+		permits = (blocker.settings.get(AIM_SSI_KEY) or {}).get('permits', [])
+		return not (lists & ContactList.AL and (not lists & ContactList.FL or name in permits))
 	if lists & ContactList.BL: return True
 	if lists & ContactList.AL: return False
 	return (blocker.settings.get('BLP', 'AL') == 'BL')
@@ -399,6 +424,35 @@ class TextWithData:
 		self.text = text
 		self.yahoo_utf8 = yahoo_utf8
 
+class ActivityType(IntEnum):
+	StatusMessage = 1
+	Photo = 2
+	DisplayPicture = 3
+	Announcement = 20
+
+class Activity:
+	__slots__ = ('id', 'user', 'type', 'title', 'text', 'url', 'date_created')
+	
+	id: int
+	user: Optional[User]
+	type: ActivityType
+	title: Optional[str]
+	text: Optional[str]
+	url: Optional[str]
+	date_created: datetime
+	
+	def __init__(
+		self, id: int, user: Optional[User], type: ActivityType, title: Optional[str], text: Optional[str], url: Optional[str], date_created: datetime,
+	) -> None:
+		self.id = id
+		# `None` for service announcements
+		self.user = user
+		self.type = type
+		self.title = title
+		self.text = text
+		self.url = url
+		self.date_created = date_created
+		
 class RoamingInfo:
 	__slots__ = ('name', 'name_last_modified', 'message', 'message_last_modified')
 	

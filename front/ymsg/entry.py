@@ -9,8 +9,8 @@ from .ymsg_ctrl import YMSGCtrlBase
 
 def register(loop: asyncio.AbstractEventLoop, backend: Backend, http_app: web.Application, *, devmode: bool = False) -> None:
 	from util.misc import ProtocolRunner
-	from . import pager, http, videochat, voicechat
-	
+	from . import pager, http, videochat, voicechat, avatar_sync#, sip
+
 	backend.add_runner(ProtocolRunner('0.0.0.0', 5050, ListenerYMSG, args = ['Yahoo', backend, pager.YMSGCtrlPager], service = "YMSG Pager"))
 	# Funny that Yahoo! used the FTP transfer, Telnet, SMTP, and NNTP (Usenet) ports as the fallback ports.
 	backend.add_runner(ProtocolRunner('0.0.0.0', 20, ListenerYMSG, args = ['Yahoo', backend, pager.YMSGCtrlPager], service = "YMSG Pager"))
@@ -25,6 +25,8 @@ def register(loop: asyncio.AbstractEventLoop, backend: Backend, http_app: web.Ap
 	http.register(http_app, devmode = devmode)
 	voicechat.register(backend)
 	videochat.register(backend)
+	#sip.register(backend)
+	loop.create_task(avatar_sync.worker_sync_avatars(backend))
 
 class ListenerYMSG(asyncio.Protocol):
 	logger: Logger
@@ -56,12 +58,9 @@ class ListenerYMSG(asyncio.Protocol):
 		if self.backend.maintenance_mode:
 			transport.close()
 			return
-		self.controller.transport = None
-		if self.controller.transport is None:
-			self.controller.transport = self.transport
+		self.controller.transport = transport
 		self.controller.data_received(data)
 		transport.write(self.controller.flush())
-		self.controller.transport = transport
 	
 	def _on_close(self) -> None:
 		if self.transport is None: return

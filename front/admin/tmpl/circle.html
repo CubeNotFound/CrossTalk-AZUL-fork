@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% from '_ui.html' import csrf_field %}
+{% block content %}
+<p class="ct-back"><a href="/circles" data-ct-swap-link>Circles</a></p>
+
+<section class="ct-card adm-identity" aria-labelledby="circleName">
+	<span class="adm-glyph adm-glyph-lg" aria-hidden="true">{{ (circle.name or '?')[:1] }}</span>
+	<div class="min-w-0 flex-grow-1">
+		<h1 class="adm-identity-name" id="circleName">{{ circle.name }}</h1>
+		<p class="ct-muted mb-0">{{ members | length }} member{{ 's' if members | length != 1 else '' }} · {{ members | selectattr('in_chat') | list | length }} in the conversation now · <code>{{ circle.chat_id }}</code></p>
+	</div>
+</section>
+
+<section class="ct-card" aria-labelledby="circleMembers">
+	<h2 class="ct-card-title" id="circleMembers">members</h2>
+	<ul class="adm-roster">
+		{% for m in members %}
+		{% set invited = m.role == 4 and m.state == 1 %}
+		<li class="adm-roster-row">
+			<a class="adm-roster-who" href="/users/{{ m.uuid }}" data-ct-swap-link>
+				<span class="adm-avatar">
+					<img src="http://{{ settings.USERSTORAGE_HOST }}/avatar/{{ m.uuid }}/im" alt="" width="36" height="36" loading="lazy">
+					{% if m.online %}<span class="ct-presence" aria-hidden="true"></span>{% endif %}
+				</span>
+				<span class="adm-person-body">
+					<span class="adm-person-name">{{ m.username }}</span>
+					<span class="adm-person-meta">{% if invited %}invited{% if m.inviter_email %} by {{ m.inviter_email }}{% endif %}{% elif m.in_chat %}in the conversation{% elif m.online %}signed in{% else %}{{ m.email }}{% endif %}</span>
+				</span>
+			</a>
+			<div class="adm-roster-actions">
+				{% if invited %}
+				<form method="post" class="m-0">
+					{{ csrf_field(csrf) }}
+					<input type="hidden" name="action" value="revoke">
+					<input type="hidden" name="uuid" value="{{ m.uuid }}">
+					<button type="submit" class="btn btn-sm btn-outline-secondary">Withdraw invite<span class="visually-hidden"> for {{ m.username }}</span></button>
+				</form>
+				{% else %}
+				<form method="post" class="d-flex align-items-center gap-2 m-0">
+					{{ csrf_field(csrf) }}
+					<input type="hidden" name="action" value="role">
+					<input type="hidden" name="uuid" value="{{ m.uuid }}">
+					<label class="visually-hidden" for="role-{{ loop.index }}">Role for {{ m.username }}</label>
+					<select class="form-select form-select-sm" id="role-{{ loop.index }}" name="role">
+						{% for value, name in [(1, 'owner'), (2, 'administrator'), (3, 'member')] %}
+						<option value="{{ value }}"{% if m.role == value %} selected{% endif %}>{{ name }}</option>
+						{% endfor %}
+					</select>
+					<button type="submit" class="btn btn-sm btn-outline-secondary">Set<span class="visually-hidden"> the role for {{ m.username }}</span></button>
+				</form>
+				<form method="post" class="m-0">
+					{{ csrf_field(csrf) }}
+					<input type="hidden" name="action" value="remove">
+					<input type="hidden" name="uuid" value="{{ m.uuid }}">
+					<button type="submit" class="btn btn-sm btn-outline-danger">Remove<span class="visually-hidden"> {{ m.username }}</span></button>
+				</form>
+				{% endif %}
+			</div>
+		</li>
+		{% endfor %}
+	</ul>
+</section>
+
+<section class="ct-card adm-danger" aria-labelledby="circleDelete">
+	<h2 class="ct-card-title" id="circleDelete">delete this circle</h2>
+	<p>Ends the conversation for everyone and takes the circle off every member's contact list. It can't be undone.</p>
+	<form method="post" class="adm-confirm">
+		{{ csrf_field(csrf) }}
+		<input type="hidden" name="action" value="delete">
+		<label for="circleConfirm" class="form-label">Type <strong>{{ circle.name }}</strong> to confirm</label>
+		<div class="d-flex flex-wrap gap-2">
+			<input type="text" class="form-control" id="circleConfirm" name="confirm" autocomplete="off" spellcheck="false" required>
+			<button type="submit" class="btn btn-danger">Delete circle</button>
+		</div>
+	</form>
+</section>
+{% endblock %}

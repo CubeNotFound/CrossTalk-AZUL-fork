@@ -4,58 +4,231 @@
 	xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 	<soap:Header>
 		<WNServiceHeader xmlns="http://www.msn.com/webservices/AddressBook">
-			<Version>15.1.1216.0</Version>
+			<Version>17.4.0.0</Version>
+			<InExperimentalSample>false</InExperimentalSample>
 		</WNServiceHeader>
 	</soap:Header>
 	<soap:Body>
-		<GetContactsRecentActivityResponse xmlns="http://www.msn.com/webservices/AddressBook">
-			<GetContactsRecentActivityResult>
+		<{{ action }}Response xmlns="http://www.msn.com/webservices/AddressBook">
+			<{{ action }}Result>
 				<Activities>
+					{%- for activity in activities %}
+					{%- if activity.user %}
+					{%- set tile = 'https://' ~ settings.USERSTORAGE_HOST ~ '/avatar/' ~ activity.user.uuid ~ '/im' %}
+					{%- set profile = 'https://' ~ settings.WEBSITE_HOST ~ '/profile/+' ~ activity.user.username %}
+					{%- else %}
+					{%- set profile = activity.url or 'https://' ~ settings.WEBSITE_HOST %}
+					{%- endif %}
 					<ActivityDetails>
-						<OwnerCID>0</OwnerCID>
-						<ObjectId>Fri, 08 Jan 2025 4:59:43 CDT</ObjectId>
-						<ApplicationId>420</ApplicationId>
-						<ChangeType>20</ChangeType>
-						<PublishDate>{date}</PublishDate>
+						<OwnerCID>{{ owner_cid }}</OwnerCID>
+						<ObjectId>{% if activity.type == 1 %}msgr_status_{{ activity.id }}{% elif activity.type == 3 %}msgr_dp_{{ activity.id }}{% elif activity.type == 2 %}msgr_photo_{{ activity.id }}{% else %}announcement_{{ activity.date_created.strftime('%Y%m%d%H%M%S') }}_{{ activity.id }}{% endif %}</ObjectId>
+						<ApplicationId>{{ 1275182653 if activity.user else 420 }}</ApplicationId>
+						<ChangeType>{{ activity.type|int }}</ChangeType>
+						<PublishDate>{{ date_format(activity.date_created) }}</PublishDate>
 						<TemplateVariables>
-							<TemplateVariable xsi:type="TextTemplateVariable">
-								<Name>Name</Name>
-								<Value>{title}</Value>
+							{%- if activity.user %}
+							<TemplateVariable xsi:type="PublisherIdTemplateVariable">
+								<Notations>
+									<Notation><Name>Live.RecentActivity.UserTileM</Name><Value>{{ tile }}</Value></Notation>
+									<Notation><Name>Live.RecentActivity.UserTileL</Name><Value>{{ tile }}</Value></Notation>
+									<Notation><Name>Live.RecentActivity.UserTileXL</Name><Value>{{ tile }}</Value></Notation>
+								</Notations>
+								<Name>publisher</Name>
+								<Id>{{ cid_format(activity.user.uuid, decimal = True) }}</Id>
+								<NameHint>{{ activity.user.status.name|e }}</NameHint>
+								<ProfilePictureUrl>{{ tile }}</ProfilePictureUrl>
+								<ProfileUrlHint>{{ profile }}</ProfileUrlHint>
+								<IsFavorite>{{ bool_to_str(activity.user.uuid in detail.contacts and contact_is_favorite(detail, detail.contacts[activity.user.uuid])) }}</IsFavorite>
 							</TemplateVariable>
-				<TemplateVariable xsi:type="HlinkTemplateVariable">
-								<Name>Url</Name>
-								<Value>{url}</Value>
-				</TemplateVariable>
+							<TemplateVariable xsi:type="HlinkTemplateVariable">
+								<Notations>
+									<Notation><Name>Live.RecentActivity.IsSelfPageUrl</Name><Value>true</Value></Notation>
+								</Notations>
+								<Name>AppName</Name>
+								<Value>{{ profile }}</Value>
+								<ValueAsSafeLink>{{ profile }}</ValueAsSafeLink>
+							</TemplateVariable>
+							{%- if activity.type == 3 %}
+							<TemplateVariable xsi:type="TextTemplateVariable">
+								<Name>StatusText</Name>
+								<Value>has a new display picture</Value>
+							</TemplateVariable>
+							<TemplateVariable xsi:type="ImageTemplateVariable">
+								<Name>DisplayPicture</Name>
+								<Value>{{ tile }}</Value>
+								<Href>{{ profile }}</Href>
+								<HrefAsSafeLink>{{ profile }}</HrefAsSafeLink>
+							</TemplateVariable>
+							{%- elif activity.type == 2 %}
+							<TemplateVariable xsi:type="TextTemplateVariable">
+								<Name>CanonicalStatusText</Name>
+								<Value>{{ (activity.text or 'shared a photo')|e }}</Value>
+							</TemplateVariable>
+							<TemplateVariable xsi:type="ImageTemplateVariable">
+								<Name>Photo</Name>
+								<Value>{{ activity.url|e }}</Value>
+								<Href>{{ activity.url|e }}</Href>
+								<HrefAsSafeLink>{{ activity.url|e }}</HrefAsSafeLink>
+							</TemplateVariable>
+							{%- else %}
+							<TemplateVariable xsi:type="TextTemplateVariable">
+								<Name>CanonicalStatusText</Name>
+								<Value>{{ activity.text|e }}</Value>
+							</TemplateVariable>
+							{%- endif %}
+							{%- else %}
+							<TemplateVariable xsi:type="PublisherIdTemplateVariable">
+								<Name>publisher</Name>
+								<Id>0</Id>
+								<NameHint>{{ activity.title|e }}</NameHint>
+								<ProfilePictureUrl></ProfilePictureUrl>
+								<ProfileUrlHint>{{ profile|e }}</ProfileUrlHint>
+								<IsFavorite>false</IsFavorite>
+							</TemplateVariable>
+							<TemplateVariable xsi:type="HlinkTemplateVariable">
+								<Name>AppName</Name>
+								<Value>{{ profile|e }}</Value>
+								<Text>Announcements</Text>
+								<ValueAsSafeLink>{{ profile|e }}</ValueAsSafeLink>
+							</TemplateVariable>
+							<TemplateVariable xsi:type="TextTemplateVariable">
+								<Name>CanonicalStatusText</Name>
+								<Value>{{ activity.text|e }}</Value>
+							</TemplateVariable>
+							{%- endif %}
 						</TemplateVariables>
+						<ActivityID>1000000{{ activity.type|int if activity.user else 0 }}-0000-4000-8000-{{ '%012x'|format(activity.id) }}</ActivityID>
+						<CommentInfo>
+							<CommentCount>0</CommentCount>
+						</CommentInfo>
+						<RelevanceInfo>
+							<TimeWeightedScore>{{ '%.7f'|format(1 / (1 + (now - activity.date_created).total_seconds() / 86400)) }}</TimeWeightedScore>
+						</RelevanceInfo>
+						<CanPublishComments>false</CanPublishComments>
+						<VisibilityHint>0</VisibilityHint>
+						<CanPublishCommentsSet>false</CanPublishCommentsSet>
 					</ActivityDetails>
+					{%- endfor %}
 				</Activities>
 				<Templates>
+					{%- if 3 in types %}
 					<RecentActivityTemplateContainer>
-						<ApplicationId>420</ApplicationId>
-						<ApplicationName>{appName}</ApplicationName>
+						<ApplicationId>1275182653</ApplicationId>
+						<ApplicationName>Messenger</ApplicationName>
 						<MiniIconSizeX>0</MiniIconSizeX>
 						<MiniIconSizeY>0</MiniIconSizeY>
-						<ChangeType>20</ChangeType>
-						<Locale>en-us</Locale>
+						<ChangeType>3</ChangeType>
+						<Locale>{{ locale|e }}</Locale>
 						<RequestedLocales>
-							<string>en-US</string>
+							<string>{{ locale|e }}</string>
 						</RequestedLocales>
-						<TemplateRevision>1</TemplateRevision>
+						<TemplateRevision>2116</TemplateRevision>
 						<Templates>
 							<RecentActivityTemplate>
 								<Cardinality>One</Cardinality>
-								<Data>CrossTalk News</Data>
-								<Title>{content}</Title>
+								<Data>{image:DisplayPicture style=&quot;floatleft&quot;}</Data>
+								<Title>{publisher-id:publisher} {text:StatusText=&quot;has a new display picture&quot;}</Title>
+								<LayoutDetails>
+									<TemplateTypeDetails>
+										<TemplateType>MessengerGrid</TemplateType>
+										<LayoutProperties>
+											<LayoutProperty><Name>Type</Name><Value>Photo</Value></LayoutProperty>
+											<LayoutProperty><Name>PrimaryImage</Name><Value>{image:DisplayPicture}</Value></LayoutProperty>
+											<LayoutProperty><Name>Publisher</Name><Value>{publisher-id:publisher}</Value></LayoutProperty>
+											<LayoutProperty><Name>Action</Name><Value>{text:StatusText=&quot;has a new display picture&quot;}</Value></LayoutProperty>
+										</LayoutProperties>
+									</TemplateTypeDetails>
+								</LayoutDetails>
 							</RecentActivityTemplate>
 						</Templates>
 						<ActivityType>
-							<string>blog</string>
+							<string>status</string>
+							<string>photo</string>
 						</ActivityType>
 						<CanMergeItemsWithSameObjectID>false</CanMergeItemsWithSameObjectID>
+						<RequiresNotification>false</RequiresNotification>
 					</RecentActivityTemplateContainer>
+					{%- endif %}
+					{%- if 2 in types %}
+					<RecentActivityTemplateContainer>
+						<ApplicationId>1275182653</ApplicationId>
+						<ApplicationName>Messenger</ApplicationName>
+						<MiniIconSizeX>0</MiniIconSizeX>
+						<MiniIconSizeY>0</MiniIconSizeY>
+						<ChangeType>2</ChangeType>
+						<Locale>{{ locale|e }}</Locale>
+						<RequestedLocales>
+							<string>{{ locale|e }}</string>
+						</RequestedLocales>
+						<TemplateRevision>2116</TemplateRevision>
+						<Templates>
+							<RecentActivityTemplate>
+								<Cardinality>One</Cardinality>
+								<Data>{image:Photo style=&quot;floatleft&quot;}</Data>
+								<Title>{publisher-id:publisher} {text:CanonicalStatusText}</Title>
+								<LayoutDetails>
+									<TemplateTypeDetails>
+										<TemplateType>MessengerGrid</TemplateType>
+										<LayoutProperties>
+											<LayoutProperty><Name>Type</Name><Value>Photo</Value></LayoutProperty>
+											<LayoutProperty><Name>PrimaryImage</Name><Value>{image:Photo}</Value></LayoutProperty>
+											<LayoutProperty><Name>Publisher</Name><Value>{publisher-id:publisher}</Value></LayoutProperty>
+											<LayoutProperty><Name>Action</Name><Value>{text:CanonicalStatusText}</Value></LayoutProperty>
+										</LayoutProperties>
+									</TemplateTypeDetails>
+								</LayoutDetails>
+							</RecentActivityTemplate>
+						</Templates>
+						<ActivityType>
+							<string>status</string>
+							<string>photo</string>
+						</ActivityType>
+						<CanMergeItemsWithSameObjectID>false</CanMergeItemsWithSameObjectID>
+						<RequiresNotification>false</RequiresNotification>
+					</RecentActivityTemplateContainer>
+					{%- endif %}
+					{%- for change_type, application_id, application_name in ((1, 1275182653, 'Messenger'), (20, 420, 'Announcements')) if change_type in types %}
+					<RecentActivityTemplateContainer>
+						<ApplicationId>{{ application_id }}</ApplicationId>
+						<ApplicationName>{{ application_name }}</ApplicationName>
+						<MiniIconSizeX>0</MiniIconSizeX>
+						<MiniIconSizeY>0</MiniIconSizeY>
+						<ChangeType>{{ change_type }}</ChangeType>
+						<Locale>{{ locale|e }}</Locale>
+						<RequestedLocales>
+							<string>{{ locale|e }}</string>
+						</RequestedLocales>
+						<TemplateRevision>2116</TemplateRevision>
+						<Templates>
+							<RecentActivityTemplate>
+								<Cardinality>One</Cardinality>
+								<Data></Data>
+								<Title>{publisher-id:publisher} {text:CanonicalStatusText}</Title>
+								<LayoutDetails>
+									<TemplateTypeDetails>
+										<TemplateType>MessengerGrid</TemplateType>
+										<LayoutProperties>
+											<LayoutProperty><Name>Type</Name><Value>Status</Value></LayoutProperty>
+											<LayoutProperty><Name>Publisher</Name><Value>{publisher-id:publisher}</Value></LayoutProperty>
+											<LayoutProperty><Name>Action</Name><Value>{text:CanonicalStatusText}</Value></LayoutProperty>
+											{%- if change_type == 20 %}
+											<LayoutProperty><Name>Footer</Name><Value>via {hlink:AppName}</Value></LayoutProperty>
+											{%- endif %}
+										</LayoutProperties>
+									</TemplateTypeDetails>
+								</LayoutDetails>
+							</RecentActivityTemplate>
+						</Templates>
+						<ActivityType>
+							<string>status</string>
+						</ActivityType>
+						<CanMergeItemsWithSameObjectID>false</CanMergeItemsWithSameObjectID>
+						<RequiresNotification>false</RequiresNotification>
+					</RecentActivityTemplateContainer>
+					{%- endfor %}
 				</Templates>
-				<FeedUrl>http://{{ settings.WEBSITE_HOST }}</FeedUrl>
-			</GetContactsRecentActivityResult>
-		</GetContactsRecentActivityResponse>
+				<FeedUrl>https://{{ settings.SOCIAL_HOST }}</FeedUrl>
+			</{{ action }}Result>
+		</{{ action }}Response>
 	</soap:Body>
 </soap:Envelope>

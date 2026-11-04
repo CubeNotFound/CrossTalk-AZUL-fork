@@ -5,7 +5,7 @@
 	"category_id": 101,
 	"name": "Tic Tac Toe",
 	"description": "Play against your friends in a game of Tic Tac Toe. Originally developed by Microsoft.",
-	"url": "http://mactivities.msgrsvcs.ctsrv.gay/static/app-data/tic-tac-toe/tictactoe.htm",
+	"url": "http://mactivities.msgrsvcs.ctsrv.xyz/static/app-data/tic-tac-toe/tictactoe.htm",
 	"icon_url": null,
 	"type": "dir",
 	"height": 500,

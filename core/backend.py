@@ -1,7 +1,8 @@
-from typing import Dict, List, Set, Any, Tuple, Optional, Iterable
+from typing import Dict, List, Set, Any, Tuple, Optional, Iterable, Callable
 from abc import ABCMeta, abstractmethod
-import asyncio, traceback, settings, smtplib, pprint
-from collections import defaultdict
+from datetime import datetime
+import asyncio, traceback, settings, smtplib, pprint, re
+from collections import defaultdict, deque
 from enum import IntFlag
 
 from util.misc import gen_uuid, first_in_iterable, run_loop, Runner, server_temp_cleanup
@@ -10,11 +11,13 @@ from .user import UserService
 from .auth import AuthService, LoginAuthService, GenTokenStr
 from .stats import Stats
 from .client import Client
+from .abuse import AbuseService, RATED_MESSAGE_TYPES
 from .models import (
 	User, UserDetail, Group, ContactList, OIM, Contact, ContactDetail, Circle, CircleRole, CircleState,
 	CircleMembership, Chatroom, UserStatus, TextWithData, MessageData, MessageType, Substatus, LoginOption, _is_blocking,
 )
 from . import error, event
+from .alerts import Alert
 
 class Ack(IntFlag):
 	Zero = 0
@@ -26,7 +29,8 @@ class Backend:
 	__slots__ = (
 		'user_service', 'auth_service', 'login_auth_service', 'loop', 'notify_maintenance', 'maintenance_mode', 'maintenance_mins',  '_stats', '_sc',
 		'_chats_by_id', '_cses_by_bs_by_circle_id', '_user_by_uuid', '_worklist_sync_db', '_worklist_sync_circles',
-		'_worklist_notify', '_worklist_notify_self', '_runners', '_linked', '_dev',
+		'_worklist_notify', '_worklist_notify_self', '_runners', '_linked', '_dev', 'recent_alerts', 'on_user_deleted',
+		'_watches', 'abuse',
 	)
 	
 	user_service: UserService
@@ -48,7 +52,11 @@ class Backend:
 	_runners: List[Runner]
 	_linked: bool
 	_dev: Optional[Any]
-	
+	recent_alerts: 'deque[Dict[str, Any]]'
+	on_user_deleted: Optional[Callable[[str, str], None]]
+	_watches: '_WatchRegistry'
+	abuse: AbuseService
+
 	def __init__(self,
 		loop: asyncio.AbstractEventLoop, *,
 		user_service: UserService, login_auth_service: LoginAuthService, auth_service: AuthService, stats_service: Stats,
@@ -72,7 +80,11 @@ class Backend:
 		self._runners = []
 		self._linked = False
 		self._dev = None
-		
+		self.recent_alerts = deque(maxlen = 50)
+		self.on_user_deleted = None
+		self._watches = _WatchRegistry()
+		self.abuse = AbuseService(self)
+
 		server_temp_cleanup()
 		for circle in self.user_service.get_all_circles():
 			self.chat_create(circle = circle)
@@ -85,11 +97,15 @@ class Backend:
 		loop.create_task(self._worker_sync_stats())
 		loop.create_task(self._worker_notify())
 		loop.create_task(self._worker_notify_self())
+		loop.create_task(self._worker_purge_suspended())
 
-	def push_client_alert(self, icon_url: Optional[str], url: Optional[str], message: str = '') -> None:
+	def push_client_alert(self, alert: Alert) -> int:
 		print(f"[Backend] Pushing system alert")
+		delivered = 0
 		for bs in self._sc.iter_sessions():
-			bs.evt.on_client_alert(icon_url, url, message)
+			if bs.evt.on_client_alert(alert):
+				delivered += 1
+		return delivered
 
 	def push_maintenance_message(self, *args: Any, **kwargs: Any) -> None:
 		print(f"[Backend] Server going down for maintenance in {args[1]} minutes. Pushing system alert")
@@ -124,6 +140,8 @@ class Backend:
 		old_substatus = user.status.substatus
 		self._stats.on_logout()
 		self._sc.remove_session(sess)
+		# a closed session's client-side buddy list goes with it
+		self._watches.remove_session(sess)
 		print(f"[Presence] <Info> BackendSession {str(id(sess))} belonging to {user.username} ({user.email}) has been closed")
 		if self._sc.get_sessions_by_user(user):
 			# There are still other people logged in as this user,
@@ -162,6 +180,7 @@ class Backend:
 		self._stats.on_login()
 		self._stats.on_user_active(user, client)
 		self._sc.add_session(bs)
+		self._stats.on_online(self._sc.session_count())
 		user.detail = self._load_detail(user)
 		print(f"[Presence] <Info> {user.username} ({user.email}) has logged in with BackendSession ID {str(id(bs))}")
 		print(f"[Presence] <Info> They are using {client.program.upper()} {client.version} via {client.via}")
@@ -177,6 +196,8 @@ class Backend:
 	
 	def _load_detail(self, user: User) -> UserDetail:
 		if user.detail: return user.detail
+		pending = self._worklist_sync_db.get(user)
+		if pending is not None: return pending
 		detail = self.user_service.get_detail(user.uuid)
 		assert detail is not None
 		return detail
@@ -239,6 +260,20 @@ class Backend:
 	def _notify_self(self, bs: 'BackendSession', old_substatus: Substatus, *, update_status: bool = True, update_info: bool = True) -> None:
 		self._worklist_notify_self.append((bs, old_substatus, update_status, update_info))
 	
+	def notify_whats_new(self, user: User) -> None:
+		# `user` has a new "What's New" activity: their own places and every contact watching them get to refetch it
+		for bs in self._sc.get_sessions_by_user(user):
+			bs.evt.msn_on_whats_new(user)
+		detail = self._load_detail(user)
+		for ctc in detail.contacts.values():
+			if ctc.lists & ContactList.BL: continue
+			for bs_other in self._sc.get_sessions_by_user(ctc.head):
+				detail_other = bs_other.user.detail
+				if detail_other is None: continue
+				ctc_me = detail_other.contacts.get(user.uuid)
+				if ctc_me is None or not ctc_me.lists & ContactList.FL: continue
+				bs_other.evt.msn_on_whats_new(user)
+	
 	def _mark_modified(self, user: User, *, detail: Optional[UserDetail] = None) -> None:
 		ud = user.detail or detail
 		if detail: assert ud is detail
@@ -263,6 +298,54 @@ class Backend:
 	def util_get_uuid_from_user_id(self, uid: int) -> Optional[str]:
 		return self.user_service.get_uuid_user_id(uid)
 
+	def util_get_uuid_from_uin(self, uin: int) -> Optional[str]:
+		return self.user_service.get_uuid_uin(uin)
+
+	def util_get_uuid_from_screenname(self, name: str) -> Optional[str]:
+		# OSCAR and ICQ name an account by its screen name or by its UIN; an all-digit name is tried as a UIN first,
+		# falling back to a screen name that happens to be all digits
+		name = name.replace(' ', '')
+		if _UIN_RE.match(name) is not None:
+			uuid = self.util_get_uuid_from_uin(int(name))
+			if uuid is not None:
+				return uuid
+		return self.util_get_uuid_from_username(name)
+
+	def util_get_uuids_for_login(self, name: str) -> List[str]:
+		# every account a login name could mean, so a numeric screen name and someone else's UIN can both still sign on
+		name = name.replace(' ', '')
+		uuids = [] # type: List[str]
+		if _UIN_RE.match(name) is not None:
+			uuid = self.util_get_uuid_from_uin(int(name))
+			if uuid is not None:
+				uuids.append(uuid)
+		uuid = self.util_get_uuid_from_username(name)
+		if uuid is not None and uuid not in uuids:
+			uuids.append(uuid)
+		return uuids
+
+	def util_watch(self, bs: 'BackendSession', uuid: str) -> None:
+		# a session-only interest in someone's presence (OSCAR's client-side buddy list), kept out of the stored contact list
+		self._watches.add(bs, uuid)
+
+	def util_unwatch(self, bs: 'BackendSession', uuid: str) -> None:
+		self._watches.remove(bs, uuid)
+
+	def util_unwatch_all(self, bs: 'BackendSession') -> None:
+		self._watches.remove_session(bs)
+
+	def util_get_watched(self, bs: 'BackendSession') -> Set[str]:
+		return self._watches.watched_by(bs)
+
+	def util_get_watchers(self, uuid: str) -> List['BackendSession']:
+		return self._watches.watchers_of(uuid)
+
+	def util_message_allowed(self, user: User, data: MessageData) -> bool:
+		if data.type not in RATED_MESSAGE_TYPES: return True
+		if 'abuse_allowed' not in data.front_cache:
+			data.front_cache['abuse_allowed'] = self.abuse.allow_message(user)
+		return bool(data.front_cache['abuse_allowed'])
+
 	def util_set_sess_token(self, sess: 'BackendSession', token: str) -> None:
 		self._sc.set_nc_by_token(sess, token)
 	
@@ -271,6 +354,177 @@ class Backend:
 	
 	def util_get_sessions_by_user(self, user: User) -> List['BackendSession']:
 		return self._sc.get_sessions_by_user(user)
+	
+	def util_contact_groups(self, user: User) -> List[Group]:
+		detail = self._load_detail(user)
+		return sorted(detail._groups_by_id.values(), key = lambda group: (not group.is_favorite, group.name.lower()))
+
+	def util_add_contact(
+		self, user: User, contact_uuid: str, *, group_id: Optional[str] = None, new_group: Optional[str] = None,
+	) -> Tuple[bool, Optional[Group]]:
+		detail = self._load_detail(user)
+		group = None
+		if group_id is not None:
+			group = detail.get_group_by_id(group_id)
+			if group is None:
+				raise error.GroupDoesNotExist()
+		old_ctc = detail.contacts.get(contact_uuid)
+		already = old_ctc is not None and bool(old_ctc.lists & ContactList.FL) and bool(old_ctc.lists & ContactList.AL)
+		if group is not None and old_ctc is not None and old_ctc.lists & ContactList.FL and old_ctc.group_in_entry(group):
+			group = None
+		if already and group is None and new_group is None:
+			return False, None
+		sessions = self._sc.get_sessions_by_user(user)
+		if sessions:
+			session = sessions[0] # type: Any
+		else:
+			session = _OfflineSessionShim(self, user)
+			user.detail = detail
+		try:
+			if new_group is not None:
+				group = BackendSession.me_group_add(session, new_group)
+			if not already:
+				BackendSession.me_contact_add(session, contact_uuid, ContactList.FL | ContactList.AL, needs_notify = True)
+			if group is not None:
+				BackendSession.me_group_contact_add(session, group.id, contact_uuid)
+		finally:
+			if not sessions:
+				user.detail = None
+		for bs in sessions:
+			bs.evt.msn_on_notify_ab()
+		return not already, group
+	
+	def util_add_group(self, user: User, name: str) -> Group:
+		detail = self._load_detail(user)
+		sessions = self._sc.get_sessions_by_user(user)
+		if sessions:
+			session = sessions[0] # type: Any
+		else:
+			session = _OfflineSessionShim(self, user)
+			user.detail = detail
+		try:
+			group = BackendSession.me_group_add(session, name)
+		finally:
+			if not sessions:
+				user.detail = None
+		for bs in sessions:
+			bs.evt.msn_on_notify_ab()
+		return group
+	
+	def util_contact_states(self, user: User, uuids: Iterable[str]) -> Dict[str, str]:
+		detail = self._load_detail(user)
+		states: dict[str, str] = {}
+		for uuid in uuids:
+			if uuid == user.uuid:
+				states[uuid] = 'self'
+				continue
+			ctc = detail.contacts.get(uuid)
+			if ctc is None or not ctc.lists & ContactList.FL:
+				states[uuid] = 'none'
+			elif ctc.lists & ContactList.BL:
+				states[uuid] = 'blocked'
+			else:
+				states[uuid] = 'contact'
+		return states
+	
+	def util_delete_circle(self, circle: Circle) -> List[User]:
+		members = [membership.head for membership in circle.memberships.values() if membership.state != CircleState.Empty]
+		chat = self.chat_get('persistent', circle.chat_id)
+		if chat is not None:
+			for cs in list(chat.get_roster()):
+				cs.close()
+			for scope, chat_id in list(chat.ids.items()):
+				self._chats_by_id.pop((scope, chat_id), None)
+		self._cses_by_bs_by_circle_id.pop(circle.chat_id, None)
+		self._worklist_sync_circles.pop(circle.chat_id, None)
+		self.user_service.delete_circle(circle.chat_id)
+		for user in members:
+			for bs in self.util_get_sessions_by_user(user):
+				bs.evt.on_left_circle(circle)
+		print(f'[Circle] <Info> {circle.name} (ID: {circle.chat_id}) has been deleted')
+		return members
+	
+	def util_delete_user(self, uuid: str) -> Optional[User]:
+		user = self._load_user_record(uuid)
+		if user is None:
+			return None
+		for bs in self.util_get_sessions_by_user(user):
+			try:
+				bs.close()
+			except Exception:
+				traceback.print_exc()
+		for other in list(self._user_by_uuid.values()):
+			if other is not user and other.detail is not None:
+				other.detail.contacts.pop(uuid, None)
+		for pending in self._worklist_sync_db.values():
+			if pending is not None:
+				pending.contacts.pop(uuid, None)
+		self._worklist_sync_db.pop(user, None)
+		
+		new_owners: dict[str, Circle] = {}
+		for circle in self.user_service.get_all_circles():
+			membership = circle.memberships.get(uuid)
+			if membership is None and circle.owner_uuid != uuid:
+				continue
+			others = sorted((
+				m for m in circle.memberships.values()
+				if m.head.uuid != uuid and m.state == CircleState.Accepted and CircleRole.Admin <= m.role <= CircleRole.Member
+			), key = lambda m: int(m.role))
+			admins_left = [m for m in others if m.role == CircleRole.Admin]
+			was_admin = membership is not None and membership.role == CircleRole.Admin and membership.state != CircleState.Empty
+			if circle.owner_uuid == uuid or (was_admin and not admins_left):
+				if not others:
+					self.util_delete_circle(circle)
+					continue
+				successor = others[0]
+				successor.role = CircleRole.Admin
+				if circle.owner_uuid == uuid:
+					circle.owner_id = successor.head.id
+					circle.owner_uuid = successor.head.uuid
+					circle.owner_friendly = successor.head.status.name or successor.head.email
+					new_owners[circle.chat_id] = circle
+				print(f"[Circle] <Info> {successor.head.username} ({successor.head.email}) now runs {circle.name} (ID: {circle.chat_id})")
+			circle.memberships.pop(uuid, None)
+			chat = self.chat_get('persistent', circle.chat_id)
+			if chat is not None:
+				for cs_other in chat.get_roster():
+					if cs_other.user is not user:
+						cs_other.bs.evt.on_circle_updated(circle)
+			self._mark_circle_modified(circle)
+		
+		if not self.user_service.delete_user(uuid, new_owners):
+			return None
+		self._user_by_uuid.pop(uuid, None)
+		return user
+	
+	def util_purge_suspended(self, now: Optional[datetime] = None) -> List[str]:
+		days = getattr(settings, 'SUSPENDED_ACCOUNT_DAYS', None)
+		if days is None:
+			return []
+		deleted = []
+		for uuid in self.user_service.expired_suspensions(int(days), now):
+			try:
+				user = self.util_delete_user(uuid)
+			except Exception:
+				traceback.print_exc()
+				continue
+			if user is None:
+				continue
+			print(f"[Backend] <Info> {user.username} ({user.email}) was suspended over {days} days ago and has been deleted")
+			deleted.append(uuid)
+			if self.on_user_deleted is not None:
+				self.on_user_deleted(uuid, 'suspended')
+		return deleted
+	
+	def util_contact_state(self, user: User, contact: User) -> str:
+		if user.uuid == contact.uuid:
+			return 'self'
+		ctc = self._load_detail(user).contacts.get(contact.uuid)
+		if ctc is None or not ctc.lists & ContactList.FL:
+			return 'none'
+		if ctc.lists & ContactList.BL:
+			return 'blocked'
+		return 'contact'
 	
 	def util_get_circle_memberships_by_role(self, circle: Circle, role: CircleRole) -> Iterable[CircleMembership]:
 		return [membership for membership in circle.memberships.values() if membership.role == role]
@@ -350,6 +604,7 @@ class Backend:
 		membership.role = CircleRole.Member
 		membership.state = CircleState.Empty
 		
+		membership_inviter_email = membership.inviter_email
 		if membership.inviter_uuid is not None:
 			membership.inviter_uuid = None
 		if membership.inviter_email is not None:
@@ -361,7 +616,7 @@ class Backend:
 		
 		for bs_other in self.util_get_sessions_by_user(user):
 			print(f"[Circle] <Info> {user.username} ({user.email})'s invitation to {circle.name} (ID: {circle.chat_id}) has been revoked")
-			if membership_inviter_email is not None: print(f"[Circle] <Info> It was sent by {membership.inviter_email}")
+			if membership_inviter_email is not None: print(f"[Circle] <Info> It was sent by {membership_inviter_email}")
 			bs_other.evt.on_circle_invite_revoked(circle.chat_id)
 		
 		if chat is not None:
@@ -483,6 +738,15 @@ class Backend:
 		except:
 			traceback.print_exc()
 	
+	async def _worker_purge_suspended(self) -> None:
+		await asyncio.sleep(60)
+		while True:
+			try:
+				self.util_purge_suspended()
+			except Exception:
+				traceback.print_exc()
+			await asyncio.sleep(3600)
+	
 	async def _worker_sync_circles(self) -> None:
 		while True:
 			await asyncio.sleep(0.04)
@@ -520,7 +784,7 @@ class Backend:
 		while True:
 			await asyncio.sleep(60)
 			try:
-				self._stats.flush()
+				self._stats.flush(online = self._sc.session_count())
 			except:
 				traceback.print_exc()
 	
@@ -539,8 +803,7 @@ class Backend:
 		for bs, sess_id, on_contact_add, old_substatus, updated_phone_info, update_status, update_info_other, for_logout in worklist:
 			user = bs.user
 			detail = user.detail
-			assert detail is not None
-			for ctc in detail.contacts.values():
+			for ctc in (detail.contacts.values() if detail is not None else ()):
 				for bs_other in self._sc.get_sessions_by_user(ctc.head):
 					if bs_other.user is user: continue
 					detail_other = bs_other.user.detail
@@ -554,6 +817,15 @@ class Backend:
 						ctc_me, on_contact_add, old_substatus, sess_id = sess_id, updated_phone_info = updated_phone_info,
 						update_status = update_status, update_info_other = update_info_other,
 					)
+			# sessions that only watch `user` through a client-side buddy list, and weren't told above
+			for bs_other in self._watches.watchers_of(user.uuid):
+				if bs_other.user is user: continue
+				if detail is not None:
+					if _sees_through_list(user, detail, bs_other.user) or _is_blocking(user, bs_other.user): continue
+				bs_other.evt.on_presence_notification(
+					_watch_contact(user, bs_other.user), on_contact_add, old_substatus, sess_id = sess_id,
+					updated_phone_info = updated_phone_info, update_status = update_status, update_info_other = update_info_other,
+				)
 			for circle in self.user_service.get_circle_batch(user):
 				if circle.chat_id not in self._cses_by_bs_by_circle_id: continue
 				if bs not in self._cses_by_bs_by_circle_id[circle.chat_id]: continue
@@ -598,6 +870,19 @@ class Session(metaclass = ABCMeta):
 	
 	@abstractmethod
 	def _on_close(self, **kwargs: Any) -> None: pass
+
+class _OfflineSessionShim:
+	__slots__ = ('backend', 'user')
+
+	backend: Backend
+	user: User
+
+	def __init__(self, backend: Backend, user: User) -> None:
+		self.backend = backend
+		self.user = user
+
+	def _add_to_list(self, *args: Any, **kwargs: Any) -> Contact:
+		return BackendSession._add_to_list(self, *args, **kwargs) # type: ignore
 
 class BackendSession(Session):
 	__slots__ = ('backend', 'user', 'client', 'chat_enabled', 'evt', 'front_data')
@@ -733,7 +1018,44 @@ class BackendSession(Session):
 			)
 		if notify_self:
 			self.backend._notify_self(self, old_substatus, update_status = notify_status, update_info = notify_info_other)
+
+	def me_visibility_snapshot(self) -> Dict[str, bool]:
+		# which of the contacts that have us on their list can currently see us
+		user = self.user
+		detail = user.detail
+		if detail is None: return {}
+		snapshot = {} # type: Dict[str, bool]
+		for ctc in detail.contacts.values():
+			if not ctc.lists & ContactList.RL: continue
+			snapshot[ctc.head.uuid] = not _is_blocking(user, ctc.head)
+		# client-side buddy lists can see us too, without any list linking us
+		for bs_other in self.backend._watches.watchers_of(user.uuid):
+			if bs_other.user is user or bs_other.user.uuid in snapshot: continue
+			snapshot[bs_other.user.uuid] = not _is_blocking(user, bs_other.user)
+		return snapshot
 	
+	def me_visibility_changed(self, before: Dict[str, bool]) -> None:
+		# push an arrival/departure to every contact whose view of us changed since `before` was taken
+		backend = self.backend
+		user = self.user
+		detail = user.detail
+		if detail is None or user.status.substatus is Substatus.Offline: return
+		after = self.me_visibility_snapshot()
+		backend._sync_contact_statuses(user)
+		for uuid, visible in after.items():
+			if before.get(uuid) == visible: continue
+			ctc = detail.contacts.get(uuid)
+			if ctc is not None:
+				for sess_other in backend._sc.get_sessions_by_user(ctc.head):
+					detail_other = sess_other.user.detail
+					if detail_other is None: continue
+					ctc_me = detail_other.contacts.get(user.uuid)
+					if ctc_me is None or not ctc_me.lists & ContactList.FL: continue
+					sess_other.evt.on_presence_notification(ctc_me, False, user.status.substatus)
+			for sess_other in backend._watches.watchers_of(user.uuid):
+				if sess_other.user.uuid != uuid or _sees_through_list(user, detail, sess_other.user): continue
+				sess_other.evt.on_presence_notification(_watch_contact(user, sess_other.user), False, user.status.substatus)
+				
 	def me_group_add(self, name: str, *, is_favorite: Optional[bool] = None) -> Group:
 		if len(name) > MAX_GROUP_NAME_LENGTH:
 			raise error.GroupNameTooLong()
@@ -1043,7 +1365,7 @@ class BackendSession(Session):
 			invite_msg = f"""\
 Subject: {sender_email} wants to talk to you using CrossTalk!
 To: {email}
-From: undergr0und network administration <administration@ugnet.gay>
+From: CrossTalk network administration <administration@ugnet.xyz>
 
 This e-mail was sent to you because {sender_info} wants to chat with you using the CrossTalk service, and you don't have an account.
 
@@ -1066,7 +1388,7 @@ They've attached this message, as well:
 			with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
 				server.starttls()
 				server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
-				server.sendmail("administration@ugnet.gay", email, invite_msg)
+				server.sendmail("administration@ugnet.xyz", email, invite_msg)
 		else:
 			print(f"[Mailer] <Info> {sender_email} already has an account. Not sending an invitation e-mail.")
 			
@@ -1302,6 +1624,9 @@ class _SessionCollection:
 	def iter_sessions(self) -> Iterable[BackendSession]:
 		yield from self._sessions
 	
+	def session_count(self) -> int:
+		return len(self._sessions)
+	
 	def set_nc_by_token(self, sess: BackendSession, token: str) -> None:
 		self._sess_by_token[token] = sess
 		self._tokens_by_sess[sess].add(token)
@@ -1464,13 +1789,6 @@ class Chat:
 		
 		last_pop = False
 		
-		if len(self._users_by_sess) == 1 and self.circle is None:
-			_, last_user = next(iter(self._users_by_sess.values()))
-			if last_user == su[0]:
-				for scope_id in self.ids:
-					del self.backend._chats_by_id[scope_id]
-				last_pop = True
-		
 		sess_others = [sess_other for sess_other in self._users_by_sess.keys() if sess_other.user is su[0]]
 		
 		if sess_others:
@@ -1481,7 +1799,9 @@ class Chat:
 					break
 			if no_primary_pop:
 				sess_others[-1].primary_pop = True
-		elif last_pop:
+		else:
+			# `sess` was the user's last place in the chat: they've left it (every frontend tells its clients then; with MPoP,
+			# the places before it leaving are only for the clients that show places)
 			last_pop = True
 		
 		# Notify others that `sess` has left
@@ -1543,37 +1863,57 @@ class ChatSession(Session):
 		if len(ctc_sessions) == len(disabled_sessions): raise error.ContactNotOnline()
 		if len(ctc_sessions) == len(already_invited_sessions): raise error.ContactAlreadyOnContactList()
 	
-	def send_message_to_everyone(self, data: MessageData) -> None:
+	def send_message_to_everyone(self, data: MessageData) -> bool:
 		stats = self.chat._stats
 		client = self.bs.client
-		
-		if stats and data.type == MessageType.Chat or MessageType.Nudge or MessageType.Emoticon or MessageType.Ink:
+		backend = self.bs.backend
+
+		if client.program not in _UNRATED_PROGRAMS and not backend.util_message_allowed(self.user, data): return False
+
+		if stats and data.type in _STATS_MESSAGE_TYPES:
 			stats.on_message_sent(self.user, client)
 			stats.on_user_active(self.user, client)
-		
-		for cs_other in self.chat._users_by_sess.keys():
+
+		tracked: Set[str] = set()
+		for cs_other in list(self.chat._users_by_sess.keys()):
 			if cs_other is self: continue
 			if self.chat.circle is not None and self.chat.circle.memberships[cs_other.user.uuid].blocking: continue
 			cs_other.evt.on_message(data)
 			print(f"[Chat] <Info> {self.user.username} ({self.user.email}) has sent a messasge to {cs_other.user.username} ({cs_other.user.email}) of type {data.type}")
 			if stats:
 				stats.on_message_received(cs_other.user, client)
-	
-	def send_message_to_user(self, user_uuid: str, data: MessageData) -> None:
+			if data.type in RATED_MESSAGE_TYPES and cs_other.user.uuid not in tracked and 'abuse_tracked' not in data.front_cache:
+				tracked.add(cs_other.user.uuid)
+				backend.abuse.track_message(self.user, cs_other.user)
+		if tracked:
+			data.front_cache['abuse_tracked'] = True
+		return True
+
+	def send_message_to_user(self, user_uuid: str, data: MessageData) -> bool:
 		stats = self.chat._stats
 		client = self.bs.client
-		
-		if stats and data.type == MessageType.Chat or MessageType.Nudge or MessageType.Emoticon or MessageType.Ink:
+		backend = self.bs.backend
+
+		if client.program not in _UNRATED_PROGRAMS and not backend.util_message_allowed(self.user, data): return False
+
+		if stats and data.type in _STATS_MESSAGE_TYPES:
 			stats.on_message_sent(self.user, client)
 			stats.on_user_active(self.user, client)
-		
-		for cs_other in self.chat._users_by_sess.keys():
+
+		tracked = False
+		for cs_other in list(self.chat._users_by_sess.keys()):
 			if cs_other is self: continue
 			if cs_other.user.uuid != user_uuid: continue
 			print(f"[Chat] <Info> {self.user.username} ({self.user.email}) has sent a messasge to {cs_other.user.username} ({cs_other.user.email}) of type {data.type}")
 			cs_other.evt.on_message(data)
-			if stats and data.type == MessageType.Chat or MessageType.Nudge or MessageType.Emoticon or MessageType.Ink:
+			if stats and data.type in _STATS_MESSAGE_TYPES:
 				stats.on_message_received(cs_other.user, client)
+			if data.type in RATED_MESSAGE_TYPES and not tracked and 'abuse_tracked' not in data.front_cache:
+				tracked = True
+				backend.abuse.track_message(self.user, cs_other.user)
+		if tracked:
+			data.front_cache['abuse_tracked'] = True
+		return True
 
 def _gen_group_id(detail: UserDetail) -> str:
 	id = 1
@@ -1595,6 +1935,9 @@ def _gen_contact_id(detail: UserDetail) -> str:
 
 MAX_GROUP_NAME_LENGTH = 61
 
+_STATS_MESSAGE_TYPES = (MessageType.Chat, MessageType.Nudge, MessageType.Emoticon, MessageType.Ink)
+
+
 # TODO: PL
 LST_LIMITS = {
 	ContactList.FL: 1000,
@@ -1602,3 +1945,52 @@ LST_LIMITS = {
 	ContactList.BL: 1200,
 	ContactList.RL: 1500,
 }
+_UIN_RE = re.compile(r'^[0-9]{1,10}$')
+
+class _WatchRegistry:
+	__slots__ = ('_watchers_by_uuid', '_watched_by_sess')
+	
+	_watchers_by_uuid: Dict[str, Set['BackendSession']]
+	_watched_by_sess: Dict['BackendSession', Set[str]]
+	
+	def __init__(self) -> None:
+		self._watchers_by_uuid = {}
+		self._watched_by_sess = {}
+	
+	def add(self, bs: 'BackendSession', uuid: str) -> None:
+		self._watchers_by_uuid.setdefault(uuid, set()).add(bs)
+		self._watched_by_sess.setdefault(bs, set()).add(uuid)
+	
+	def remove(self, bs: 'BackendSession', uuid: str) -> None:
+		watchers = self._watchers_by_uuid.get(uuid)
+		if watchers is not None:
+			watchers.discard(bs)
+			if not watchers:
+				del self._watchers_by_uuid[uuid]
+		watched = self._watched_by_sess.get(bs)
+		if watched is not None:
+			watched.discard(uuid)
+			if not watched:
+				del self._watched_by_sess[bs]
+	
+	def remove_session(self, bs: 'BackendSession') -> None:
+		for uuid in list(self._watched_by_sess.get(bs, ())):
+			self.remove(bs, uuid)
+	
+	def watched_by(self, bs: 'BackendSession') -> Set[str]:
+		return set(self._watched_by_sess.get(bs, ()))
+	
+	def watchers_of(self, uuid: str) -> List['BackendSession']:
+		return [bs for bs in self._watchers_by_uuid.get(uuid, ()) if not bs.closed]
+
+def _sees_through_list(user: User, detail: UserDetail, other: User) -> bool:
+	if other.uuid not in detail.contacts: return False
+	detail_other = other.detail
+	if detail_other is None: return False
+	ctc_me = detail_other.contacts.get(user.uuid)
+	return ctc_me is not None and bool(ctc_me.lists & ContactList.FL)
+
+def _watch_contact(user: User, viewer: User) -> Contact:
+	ctc = Contact(user, set(), ContactList.Empty, UserStatus(user.status.name), ContactDetail('0'))
+	ctc.compute_visible_status(viewer)
+	return ctc

@@ -13,10 +13,12 @@ from core import error
 from core.backend import Backend, BackendSession
 from core.models import User, OIM, Substatus, NetworkID, CircleState, Circle
 
+
 def build_presence_notif(
 	trid: Optional[str], old_substatus: Optional[Substatus], ctc_head: User, user_me: User,
 	dialect: int, backend: Backend, iln_sent: bool, update_info: bool, *,
 	self_presence: bool = False, update_status: bool = True, circle: Optional['Circle'] = None, circle_owner: bool = False,
+	announced_epids: dict[str, set[str]] | None = None,
 ) -> Iterable[Tuple[Any, ...]]:
 	detail = user_me.detail
 	assert detail is not None
@@ -47,10 +49,9 @@ def build_presence_notif(
 	head_display_email = backend.util_get_display_email(head)
 	user_me_display_email = backend.util_get_display_email(user_me)
 	
-	# TODO: This is insanely ugly.
 	if dialect >= 19:
+		if circle is not None and circle_owner: return
 		cm = None # type: Optional[str]
-		pop_id_ctc = None # type: Optional[str]
 		
 		substatus = status.substatus
 		
@@ -64,70 +65,20 @@ def build_presence_notif(
 			cm = NFY_PUT_PRESENCE_USER_S_CM.format(cm = encode_xml_he(status.media or '', dialect))
 			nfy_rst += NFY_PUT_PRESENCE_USER_S_PE.format(
 				msnobj = encode_xml_he(ctc_sess.front_data.get('msn_msnobj') or '', dialect),
-				name = status.name or head_display_email, message = status.message,
+				name = encode_xml_he(status.name or head_display_email, dialect), message = encode_xml_he(status.message or '', dialect),
 				ddp = encode_xml_he(ctc_sess.front_data.get('msn_msnobj_ddp') or '', dialect),
 				colorscheme = encode_xml_he(ctc_sess.front_data.get('msn_colorscheme') or '', dialect),
 				scene = encode_xml_he(ctc_sess.front_data.get('msn_msnobj_scene') or '', dialect),
 				sigsound = encode_xml_he(ctc_sess.front_data.get('msn_sigsound') or '', dialect),
-			)
-			if ctc_sess.front_data.get('msn_pop_id') is not None:
-				pop_id_ctc = '{' + ctc_sess.front_data['msn_pop_id'] + '}'
-			nfy_rst += NFY_PUT_PRESENCE_USER_SEP_IM.format(
-				epid_attrib = (NFY_PUT_PRESENCE_USER_SEP_EPID.format(mguid = pop_id_ctc or '') if pop_id_ctc is not None else ''),
-				capabilities = encode_capabilities_capabilitiesex(
-					(ctc_sess.front_data.get('msn_capabilities') if ctc_sess.front_data.get('msn') is True else MAX_CAPABILITIES_BASIC),
-					ctc_sess.front_data.get('msn_capabilitiesex') or 0,
+				extra = ''.join(
+					'<{0}>{1}</{0}>'.format(name, encode_xml_he(value or '', dialect))
+					for name, value in (ctc_sess.front_data.get('msn_pe_extra') or {}).items()
 				),
 			)
-			if ctc_sess.front_data.get('msn_PE'):
-				pe_data = ''
-				pe_data += NFY_PUT_PRESENCE_USER_SEP_PE_VER.format(ver = ctc_sess.front_data.get('msn_PE_VER') or '')
-				pe_data += NFY_PUT_PRESENCE_USER_SEP_PE_TYP.format(typ = ctc_sess.front_data.get('msn_PE_TYP') or '')
-				pe_data += NFY_PUT_PRESENCE_USER_SEP_PE_CAP.format(
-					pe_capabilities = encode_capabilities_capabilitiesex(
-						ctc_sess.front_data.get('msn_PE_capabilities') or 0, ctc_sess.front_data.get('msn_PE_capabilitiesex') or 0,
-					)
-				)
-				nfy_rst += NFY_PUT_PRESENCE_USER_SEP_PE.format(
-					epid_attrib = (NFY_PUT_PRESENCE_USER_SEP_EPID.format(mguid = pop_id_ctc or '') if pop_id_ctc is not None else ''),
-					pe_data = pe_data,
-				)
-			if pop_id_ctc is not None:
-				nfy_rst += NFY_PUT_PRESENCE_USER_SEP_PD.format(
-					mguid = pop_id_ctc, ped_data = _list_private_endpoint_data(ctc_sess),
-				)
-			
+			nfy_rst += _build_nfy_sep(ctc_sess, dialect)
 			for ctc_sess_other in backend.util_get_sessions_by_user(ctc_sess.user):
-				if ctc_sess_other is ctc_sess: continue
-				if ctc_sess_other.front_data.get('msn_pop_id') is None: continue
-				
-				nfy_rst += NFY_PUT_PRESENCE_USER_SEP_IM.format(
-					epid_attrib = NFY_PUT_PRESENCE_USER_SEP_EPID.format(mguid = '{' + ctc_sess_other.front_data['msn_pop_id'] + '}'),
-					capabilities = encode_capabilities_capabilitiesex(
-						(
-							(ctc_sess_other.front_data.get('msn_capabilities') or 0)
-							if ctc_sess_other.front_data.get('msn') is True else MAX_CAPABILITIES_BASIC
-						),
-						ctc_sess_other.front_data.get('msn_capabilitiesex') or 0,
-					),
-				)
-				if ctc_sess_other.front_data.get('msn_PE'):
-					pe_data = ''
-					pe_data += NFY_PUT_PRESENCE_USER_SEP_PE_VER.format(ver = ctc_sess_other.front_data.get('msn_PE_VER') or '')
-					pe_data += NFY_PUT_PRESENCE_USER_SEP_PE_TYP.format(typ = ctc_sess_other.front_data.get('msn_PE_TYP') or '')
-					pe_data += NFY_PUT_PRESENCE_USER_SEP_PE_CAP.format(
-						pe_capabilities = encode_capabilities_capabilitiesex(
-							ctc_sess_other.front_data.get('msn_PE_capabilities') or 0,
-							ctc_sess_other.front_data.get('msn_PE_capabilitiesex') or 0,
-						),
-					)
-					nfy_rst += NFY_PUT_PRESENCE_USER_SEP_PE.format(
-						epid_attrib = NFY_PUT_PRESENCE_USER_SEP_EPID.format(mguid = '{' + ctc_sess_other.front_data['msn_pop_id'] + '}'),
-						pe_data = pe_data,
-					)
-				nfy_rst += NFY_PUT_PRESENCE_USER_SEP_PD.format(
-					mguid = '{' + ctc_sess_other.front_data['msn_pop_id'] + '}', ped_data = _list_private_endpoint_data(ctc_sess_other)
-				)
+				if ctc_sess_other is ctc_sess or ctc_sess_other.front_data.get('msn_pop_id') is None: continue
+				nfy_rst += _build_nfy_sep(ctc_sess_other, dialect)
 		
 		msn_status = MSNStatus.FromSubstatus(substatus)
 		
@@ -136,7 +87,9 @@ def build_presence_notif(
 		)
 		
 		nfy_payload = encode_payload(NFY_PUT_PRESENCE,
-			to = user_me_display_email, from_email = head_display_email, cl = len(nfy_presence_body), payload = nfy_presence_body,
+			to = user_me_display_email,
+			from_email = (encode_email_networkid(head_display_email, None, circle = circle).split(':', 1)[1] if circle is not None else head_display_email),
+			cl = len(nfy_presence_body.encode('utf-8')), payload = nfy_presence_body,
 		)
 		
 		yield ('NFY', 'PUT', nfy_payload)
@@ -159,28 +112,25 @@ def build_presence_notif(
 	if ctc_sess is None: return
 	
 	if status.substatus is not old_substatus or update_status:
-		msn_status = MSNStatus.FromSubstatus(status.substatus)
-		
+		msn_status = MSNStatus.FromSubstatus(status.substatus if status.substatus is not None else Substatus.Offline)
+
 		if trid and dialect < 18: frst = ('ILN', trid) # type: Tuple[Any, ...]
 		else: frst = ('NLN',)
 		rst = []
 		
 		if 8 <= dialect <= 15:
-			rst.append(((ctc_sess.front_data.get('msn_capabilities') or 0) if ctc_sess.front_data.get('msn') is True else MAX_CAPABILITIES_BASIC))
+			rst.append(get_session_capabilities(ctc_sess, dialect)[0])
 		elif dialect >= 16:
 			rst.append((
-				'0:0' if circle is not None and circle_owner else encode_capabilities_capabilitiesex(
-					((ctc_sess.front_data.get('msn_capabilities') or 0) if ctc_sess.front_data.get('msn') is True else MAX_CAPABILITIES_BASIC),
-					ctc_sess.front_data.get('msn_capabilitiesex') or 0,
-				)
+				'0:0' if circle is not None and circle_owner else encode_capabilities_capabilitiesex(*get_session_capabilities(ctc_sess, dialect))
 			))
 		if dialect >= 9:
 			rst.append(MSNObj(ctc_sess.front_data.get('msn_msnobj') or '<msnobj/>'))
 		
 		if dialect >= 18:
-			yield (*frst, msn_status.name, encode_email_networkid(head_display_email, None, circle = circle), status.name, *rst)
+			yield (*frst, msn_status.name, encode_email_networkid(head_display_email, None, circle = circle), (status.name or head_display_email), *rst)
 		else:
-			yield (*frst, msn_status.name, head_display_email, (int(NetworkID.WINDOWS_LIVE) if 14 <= dialect <= 17 else None), status.name, *rst)
+			yield (*frst, msn_status.name, head_display_email, (int(NetworkID.WINDOWS_LIVE) if 14 <= dialect <= 17 else None), (status.name or head_display_email), *rst)
 	
 	# MSNP16/18 requires `UBX`s when a user changes any sort of state (this makes MPoP and Circles work effectively)
 	if dialect < 11 or (not update_info and dialect < 16):
@@ -236,7 +186,7 @@ def cid_format(uuid: str, *, decimal: bool = False) -> str:
 		return cid
 	
 	# convert to decimal string
-	return str(struct.unpack('<q', binascii.unhexlify(cid))[0])
+	return str(struct.unpack('>q', binascii.unhexlify(cid))[0])
 
 def uuid_to_high_low(uuid_str: str) -> Tuple[int, int]:
 	import uuid
@@ -288,20 +238,13 @@ def extend_ubx_payload(dialect: int, backend: Backend, user: User, ctc_sess: 'Ba
 		)
 		if pop_id_ctc:
 			response += EPDATA_PAYLOAD.format(
-				mguid = '{' + pop_id_ctc + '}', capabilities = encode_capabilities_capabilitiesex(
-					((ctc_sess.front_data.get('msn_capabilities') or 0) if ctc_sess.front_data.get('msn') is True else MAX_CAPABILITIES_BASIC),
-					ctc_sess.front_data.get('msn_capabilitiesex') or 0,
-				),
+				mguid = '{' + pop_id_ctc + '}', capabilities = encode_capabilities_capabilitiesex(*get_session_capabilities(ctc_sess, dialect)),
 			)
 			for ctc_sess_other in backend.util_get_sessions_by_user(ctc_sess.user):
 				pop_id = ctc_sess_other.front_data.get('msn_pop_id') or ''
 				if pop_id.lower() == pop_id_ctc.lower(): continue
 				response += EPDATA_PAYLOAD.format(
-					mguid = '{' + pop_id + '}',
-					capabilities = encode_capabilities_capabilitiesex(
-						((ctc_sess.front_data.get('msn_capabilities') or 0) if ctc_sess.front_data.get('msn') is True else MAX_CAPABILITIES_BASIC),
-						ctc_sess_other.front_data.get('msn_capabilitiesex') or 0,
-					)
+					mguid = '{' + pop_id + '}', capabilities = encode_capabilities_capabilitiesex(*get_session_capabilities(ctc_sess_other, dialect)),
 				)
 			if ctc_sess.user is user:
 				for ctc_sess_other in backend.util_get_sessions_by_user(ctc_sess.user):
@@ -326,6 +269,35 @@ def _list_private_endpoint_data(ctc_sess: 'BackendSession') -> str:
 		ped_data += PRIVATEEPDATA_STATE_PAYLOAD.format(state = ctc_sess.front_data['msn_ep_state'])
 	
 	return ped_data
+
+def _build_nfy_sep(sess: 'BackendSession', dialect: int) -> str:
+	pop_id = sess.front_data.get('msn_pop_id')
+	epid_attrib = NFY_PUT_PRESENCE_USER_SEP_EPID.format(mguid = '{' + (pop_id or '00000000-0000-0000-0000-000000000000') + '}')
+	front_data = sess.front_data
+	pe_epid_attrib = (epid_attrib if front_data.get('msn_PE') else NFY_PUT_PRESENCE_USER_SEP_EPID.format(
+		mguid = '{' + (session_p2p_epid(sess) or NULL_EPID) + '}',
+	))
+	capabilities_known = (front_data.get('msn') is not True or 'msn_capabilities' in front_data)
+	
+	pe_data = ''
+	if front_data.get('msn_PE'):
+		pe_data += NFY_PUT_PRESENCE_USER_SEP_PE_VER.format(ver = front_data.get('msn_PE_VER') or '')
+		pe_data += NFY_PUT_PRESENCE_USER_SEP_PE_TYP.format(typ = front_data.get('msn_PE_TYP') or '')
+	if ('msn_PE_capabilities' in front_data if front_data.get('msn_PE') else capabilities_known):
+		pe_data += NFY_PUT_PRESENCE_USER_SEP_PE_CAP.format(
+			pe_capabilities = encode_capabilities_capabilitiesex(*get_session_capabilities(sess, dialect, pe = True)),
+		)
+	
+	if capabilities_known:
+		result = NFY_PUT_PRESENCE_USER_SEP_IM.format(
+			epid_attrib = epid_attrib, capabilities = encode_capabilities_capabilitiesex(*get_session_capabilities(sess, dialect)),
+		)
+	else:
+		result = NFY_PUT_PRESENCE_USER_SEP_IM_EMPTY.format(epid_attrib = epid_attrib)
+	result += NFY_PUT_PRESENCE_USER_SEP_PE.format(epid_attrib = pe_epid_attrib, pe_data = pe_data)
+	if pop_id is not None:
+		result += NFY_PUT_PRESENCE_USER_SEP_PD.format(mguid = '{' + pop_id + '}', ped_data = _list_private_endpoint_data(sess))
+	return result
 
 def gen_signedticket_xml(bs: BackendSession, backend: Backend) -> str:
 	from cryptography.hazmat.primitives import hashes
@@ -364,7 +336,7 @@ def gen_chal_response(chal: str, id: str, id_key: str, *, msnp11: bool = False) 
 	]
 
 	pub_bytes = (chal + id).encode('ascii')
-	pub_bytes += b'0' * (8 - (len(pub_bytes) % 8))
+	pub_bytes += b'0' * (-len(pub_bytes) % 8)
 	public_seed = [
 		struct.unpack('<I', pub_bytes[i:i+4])[0] & 0x7FFFFFFF
 		for i in range(0, len(pub_bytes), 4)
@@ -585,7 +557,7 @@ Reliability: 1.0
 Notification: 1.0
 NotifNum: 0
 Uri: /user
-NotifType: Partial
+NotifType: Full
 Content-Type: application/user+xml
 Content-Length: {cl}
 
@@ -597,9 +569,11 @@ NFY_PUT_PRESENCE_USER_S_CM = '<CurrentMedia>{cm}</CurrentMedia>'
 
 NFY_PUT_PRESENCE_USER_S_PE = '<s n="PE"><UserTileLocation>{msnobj}</UserTileLocation><FriendlyName>{name}</FriendlyName>\
 <PSM>{message}</PSM><DDP>{ddp}</DDP><ColorScheme>{colorscheme}</ColorScheme>\
-<Scene>{scene}</Scene><SignatureSound>{sigsound}</SignatureSound></s>'
+<Scene>{scene}</Scene>{extra}<SignatureSound>{sigsound}</SignatureSound></s>'
 
 NFY_PUT_PRESENCE_USER_SEP_IM = '<sep n="IM"{epid_attrib}><Capabilities>{capabilities}</Capabilities></sep>'
+
+NFY_PUT_PRESENCE_USER_SEP_IM_EMPTY = '<sep n="IM"{epid_attrib}></sep>'
 
 NFY_PUT_PRESENCE_USER_SEP_PE = '<sep n="PE"{epid_attrib}>{pe_data}</sep>'
 
@@ -613,8 +587,88 @@ NFY_PUT_PRESENCE_USER_SEP_PD = '<sep n="PD" epid="{mguid}">{ped_data}</sep>'
 
 NFY_PUT_PRESENCE_USER_SEP_EPID = ' epid="{mguid}"'
 
+NFY_DEL_PRESENCE_USER = '<user>{rst}</user>'
+
+NFY_DEL_PRESENCE_USER_SEP = '<sep n="{n}" epid="{mguid}"/>'
+
 MAX_CAPABILITIES_BASIC = 1073741824
 
+CAPABILITIES_SIP_INVITE = 0x00100000
+CAPABILITIES_P2P_TURN = 0x02000000
+CAPABILITIES_P2P_BOOTSTRAP_VIA_UUN = 0x04000000
+CAPABILITIESEX_P2PV2 = 0x00000020
+CAPABILITIESEX_OFFLINE_IM = 0x00000100
+CAPABILITIESEX_NUDGES = 0x00000400
+CAPABILITIESEX_SIP_TUNNEL_V2 = 0x00800000
+CAPABILITIESEX_CUSTOM_EMOTICONS = 0x08000000
+CAPABILITIESEX_UTF8_PSM = 0x10000000
+
+CAPABILITIES_DIRECT_IM = 0x00004000
+CAPABILITIES_DIRECT_MASK = CAPABILITIES_DIRECT_IM | CAPABILITIES_P2P_TURN | CAPABILITIES_P2P_BOOTSTRAP_VIA_UUN
+CAPABILITIESEX_FTURN = 0x20000000
+CAPABILITIESEX_DIRECT_MASK = CAPABILITIESEX_FTURN
+
+CAPABILITIESEX_MULTIPARTY = 0x80000000
+CAPABILITIESEX_P2P_ENVELOPING = 0x00080000
+
+CAPABILITIES_VERSION_SHIFT = 28
+
+NULL_EPID = '00000000-0000-0000-0000-000000000000'
+
+DATACAST_MSNOBJ = { '2': 'Wink', '3': 'Voice' }
+
+DATACAST_ACTION = '4'
+
+PE_EXTRA_ELEMENTS = ('ASN', 'BDG', 'RUM', 'RUL', 'RLT', 'RID', 'SUL')
+
+UNSUPPORTED_MESSAGE_TEXT = "CrossTalk System Message: This message cannot be viewed on the client you're currently using."
+
+def get_session_capabilities(sess: 'BackendSession', dialect: int, *, pe: bool = False) -> Tuple[int, int]:
+	if sess.front_data.get('msn') is True:
+		capabilities = int(sess.front_data.get('msn_capabilities') or 0)
+		capabilitiesex = int(sess.front_data.get('msn_capabilitiesex') or 0)
+	else:
+		capabilities = MAX_CAPABILITIES_BASIC
+		capabilitiesex = 0
+	
+	if sess.front_data.get('msn_PE'):
+		pe_capabilities = int(sess.front_data.get('msn_PE_capabilities') or 0)
+		if pe:
+			return _mask_direct(pe_capabilities, int(sess.front_data.get('msn_PE_capabilitiesex') or 0))
+		if dialect < 19:
+			capabilities |= pe_capabilities
+			capabilitiesex |= CAPABILITIESEX_P2PV2
+			if capabilitiesex & CAPABILITIESEX_SIP_TUNNEL_V2:
+				capabilities |= CAPABILITIES_SIP_INVITE
+		return _mask_direct(capabilities, capabilitiesex)
+
+	version = capabilities >> CAPABILITIES_VERSION_SHIFT
+	if pe:
+		if version < 1 or sess.front_data.get('msn') is not True:
+			return 0, 0
+		return 0, (capabilitiesex & CAPABILITIESEX_P2PV2) | CAPABILITIESEX_P2P_ENVELOPING
+	if dialect >= 19:
+		if version >= 1: capabilitiesex |= CAPABILITIESEX_CUSTOM_EMOTICONS
+		if version >= 4: capabilitiesex |= CAPABILITIESEX_NUDGES | CAPABILITIESEX_UTF8_PSM
+		if version >= 7: capabilitiesex |= CAPABILITIESEX_OFFLINE_IM
+		if sess.front_data.get('msn') is True: capabilitiesex |= CAPABILITIESEX_MULTIPARTY
+	return _mask_direct(capabilities, capabilitiesex)
+
+def _mask_direct(capabilities: int, capabilitiesex: int) -> Tuple[int, int]:
+	return capabilities & ~CAPABILITIES_DIRECT_MASK, capabilitiesex & ~CAPABILITIESEX_DIRECT_MASK
+
+def session_p2pv2(sess: 'BackendSession') -> bool:
+	front_data = sess.front_data
+	if front_data.get('msn_PE'): return True
+	if front_data.get('msn_pop_id') is None: return False
+	return bool(int(front_data.get('msn_capabilitiesex') or 0) & CAPABILITIESEX_P2PV2)
+
+def session_p2p_epid(sess: 'BackendSession') -> Optional[str]:
+	if not session_p2pv2(sess): return None
+	return sess.front_data.get('msn_pop_id')
+
+def is_null_epid(epid: Optional[str]) -> bool:
+	return epid is None or normalize_pop_id(epid).strip().lower() in ('', NULL_EPID)
 class MSNObj:
 	__slots__ = ('data',)
 	
@@ -682,11 +736,13 @@ class Err:
 	PrincipalNotOnline = 217
 	AlreadyInMode = 218
 	MutuallyExclusiveList = 219
+	NotAcceptingPages = 220
 	GroupInvalid = 224
 	PrincipalNotInGroup = 225
 	GroupAlreadyExists = 228
 	GroupNameTooLong = 229
 	GroupZeroUnremovable = 230
+	InvalidMSISDN = 232
 	XXLEmptyDomain = 240
 	XXLInvalidPayload = 241
 	ContactListUnavailable = 402
@@ -698,6 +754,8 @@ class Err:
 	ChallengeResponseFailed = 540
 	Overload = 712
 	NotExpected = 715
+	InvalidCVQ = 731
+	RateLimitExceeded = 800
 	AuthFail = 911
 	NotAllowedWhileHDN = 913
 	InvalidDomain = 917

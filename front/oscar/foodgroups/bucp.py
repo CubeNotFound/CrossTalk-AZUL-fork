@@ -2,6 +2,7 @@ from core.client import Client
 from util.misc import Logger
 from util.hash import gen_salt
 
+from ..proto import names
 from ..proto.backend import login, LoginError
 from ..proto.buffer import Buffer
 from ..proto.snac import OSCARClient, OSCARContext, SNACMessage, Foodgroup, Subgroup
@@ -20,15 +21,20 @@ class BUCPFoodgroup:
 
 		tlvs = unmarshal_tlvs(message.data)
 		screen_name_tlv = find_tlv(tlvs, 0x0001)
-		screen_name = screen_name_tlv.data.decode()
+		screen_name = screen_name_tlv.data.decode('latin-1') if screen_name_tlv is not None else ''
 
-		salt = context.backend.user_service.aim_get_md5_salt(screen_name)
+		# ICQ signs on with its UIN, AIM with a screen name; the salt is the account's, whichever one the name means
+		salt = None
+		for uuid in (context.backend.util_get_uuids_for_login(screen_name) if names.valid_name(screen_name) else []):
+			salt = context.backend.user_service.aim_get_md5_salt_by_uuid(uuid)
+			if salt is not None:
+				break
 
 		if salt is None:
 			# screen name doesn't exist or user did not enable OSCAR
 			salt = gen_salt()
 
-		response_msg = SNACMessage(0x0001, 0x0007)
+		response_msg = SNACMessage(0x0017, 0x0007, 0x0000, message.request_id)
 		response_msg.write_u16(len(salt))
 		response_msg.write_string(salt)
 
@@ -39,50 +45,49 @@ class BUCPFoodgroup:
 	def login_request(self, client: OSCARClient, context: OSCARContext, message: SNACMessage) -> None:
 		self.logger.info('[Client] BUCP__LOGIN_REQUEST')
 
+		from ..ctrl import authenticate, client_version, multi_conn_flag
+
 		tlvs = unmarshal_tlvs(message.data)
 
 		screen_name_tlv = find_tlv(tlvs, 0x0001)
 		hashed_pw_tlv   = find_tlv(tlvs, 0x0025)
 
-		screen_name = screen_name_tlv.data.decode()
+		screen_name = screen_name_tlv.data.decode('latin-1') if screen_name_tlv is not None else ''
+		client_hash = hashed_pw_tlv.data if hashed_pw_tlv is not None else b''
 
-		major_tlv = find_tlv(tlvs, 0x0017)
-		minor_tlv = find_tlv(tlvs, 0x0018)
-		build_tlv = find_tlv(tlvs, 0x001A)
-
-		major = Buffer(major_tlv.data).read_u16() if major_tlv else 0
-		minor = Buffer(minor_tlv.data).read_u16() if minor_tlv else 0
-		build = Buffer(build_tlv.data).read_u16() if build_tlv else 0
-
-		version_str = '{}.{}.{}'.format(major, minor, build)
-		context.client = Client('aim', version_str, context.client.via)
+		version_str = client_version(tlvs)
 
 		self.logger.info('Screen Name (client-given):', screen_name)
 		self.logger.info('Client version:', version_str)
-		self.logger.info('Password (hashed):', hashed_pw_tlv.data)
+		self.logger.info('Password (hashed):', client_hash)
 
-		response_msg = SNACMessage(0x0017, 0x0003)
+		response_msg = SNACMessage(0x0017, 0x0003, 0x0000, message.request_id)
 
-		error_code = None
-		uuid = None
+		user_service = context.backend.user_service
+		matched = {}
 
-		if (uuid := context.backend.util_get_uuid_from_username(screen_name)) is None:
-			error_code = LoginError.UnregisteredScreenname
+		def check(uuid: str) -> bool:
+			pw_bucp1 = user_service.aim_get_md5_password_by_uuid(uuid)
+			pw_bucp2 = user_service.aim_get_md5_password_bucp2_by_uuid(uuid)
+			if pw_bucp2 is not None and pw_bucp2 and pw_bucp2 == client_hash:
+				matched[uuid] = 'AIM5.x'
+				return True
+			if pw_bucp1 is not None and pw_bucp1 and pw_bucp1 == client_hash:
+				matched[uuid] = 'AIM3.5-4.8'
+				return True
+			return False
+
+		uuid, icq, error_code = authenticate(context.backend, screen_name, check)
+		if error_code in (LoginError.UnregisteredScreenname, LoginError.ICQUserError):
 			self.logger.info('Unregistered screenname')
+		elif error_code == LoginError.IncorrectPassword:
+			self.logger.info('Incorrect password')
 		else:
-			client_hash = hashed_pw_tlv.data
+			self.logger.info('Authenticated via', matched.get(uuid))
 
-			pw_bucp1 = context.backend.user_service.aim_get_md5_password(screen_name)
-			pw_bucp2 = context.backend.user_service.aim_get_md5_password_bucp2(screen_name)
+		context.client = Client('icq' if icq else 'aim', version_str, context.client.via)
+		client.ctrl.client = context.client
 
-			auth_ok = (pw_bucp1 is not None and pw_bucp1 == client_hash) or (pw_bucp2 is not None and pw_bucp2 == client_hash)
-
-			if not auth_ok:
-				error_code = LoginError.IncorrectPassword
-				self.logger.info('Incorrect password')
-			else:
-				self.logger.info('Authenticated via', 'AIM5.x' if (pw_bucp2 == client_hash) else 'AIM3.5-4.8')
-
-		response_msg.write_bytes(login(self.logger, context, tlvs, uuid, error_code))
+		response_msg.write_bytes(login(self.logger, context, tlvs, uuid, error_code, icq = icq, multi_conn = multi_conn_flag(tlvs)))
 
 		client.send_snac(response_msg)
